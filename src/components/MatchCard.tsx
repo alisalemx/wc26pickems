@@ -228,7 +228,7 @@ export function MatchCard({
 }
 
 /** Quick-pick row of the crowd's most-predicted scorelines. Counts are
- *  anonymous aggregates (see `prediction_distribution`), so it's safe to show
+ *  anonymous aggregates (see `prediction_distributions`), so it's safe to show
  *  before kickoff; tapping a chip fills the score inputs. */
 function PopularPicks({
   matchId,

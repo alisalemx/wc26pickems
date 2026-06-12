@@ -93,20 +93,19 @@ export function useRevealedPredictions(matchId: number, enabled: boolean) {
   })
 }
 
-/** Anonymous crowd distribution of scorelines for a match — counts only, no
- *  user identity, so it's safe to show before kickoff (see the
- *  `prediction_distribution` RPC). Rows arrive most-picked first. */
+/** Crowd distribution for ALL upcoming matches in one RPC call. Every
+ *  PopularPicks subscribes to the same query key, so ~100 cards share a
+ *  single request; `select` picks out this card's match. */
 export function usePredictionDistribution(matchId: number, enabled: boolean) {
   return useQuery({
-    queryKey: ["prediction-distribution", matchId],
+    queryKey: ["prediction-distributions"],
     enabled,
     queryFn: async (): Promise<PredictionDistributionRow[]> => {
-      const { data, error } = await supabase.rpc("prediction_distribution", {
-        p_match_id: matchId,
-      })
+      const { data, error } = await supabase.rpc("prediction_distributions")
       if (error) throw error
       return data as PredictionDistributionRow[]
     },
+    select: (rows) => rows.filter((r) => r.match_id === matchId),
     staleTime: 60_000,
   })
 }
@@ -142,6 +141,7 @@ export function useUpsertPrediction(userId: string | undefined) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["predictions", userId] })
+      qc.invalidateQueries({ queryKey: ["prediction-distributions"] })
     },
   })
 }
