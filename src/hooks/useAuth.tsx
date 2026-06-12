@@ -13,17 +13,7 @@ interface AuthState {
   session: Session | null
   profile: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  /** Returns true if a session started immediately, false if email
-   *  confirmation is required (no session yet). */
-  signUp: (
-    email: string,
-    password: string,
-    username: string
-  ) => Promise<boolean>
   signInWithGoogle: () => Promise<void>
-  resetPassword: (email: string) => Promise<void>
-  updatePassword: (password: string) => Promise<void>
   setUsername: (username: string) => Promise<void>
   isUsernameAvailable: (username: string) => Promise<boolean>
   signOut: () => Promise<void>
@@ -67,49 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) throw error
-  }
-
-  const signUp = async (
-    email: string,
-    password: string,
-    username: string
-  ) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username },
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    })
-    if (error) throw error
-    // When "Confirm email" is on, signUp returns a user but no session.
-    return Boolean(data.session)
-  }
-
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/` },
     })
-    if (error) throw error
-  }
-
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset`,
-    })
-    if (error) throw error
-  }
-
-  const updatePassword = async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password })
     if (error) throw error
   }
 
@@ -142,11 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        signIn,
-        signUp,
         signInWithGoogle,
-        resetPassword,
-        updatePassword,
         setUsername,
         isUsernameAvailable,
         signOut,

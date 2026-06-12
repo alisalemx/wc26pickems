@@ -6,7 +6,6 @@ import {
   AdminRoute,
 } from "@/components/ProtectedRoute"
 import { Login } from "@/pages/Login"
-import { ResetPassword } from "@/pages/ResetPassword"
 import { Welcome } from "@/pages/Welcome"
 import { Matches } from "@/pages/Matches"
 import { Leaderboard } from "@/pages/Leaderboard"
@@ -20,8 +19,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
-          {/* Need a session but not (yet) a chosen handle. */}
-          <Route path="/reset" element={<ResetPassword />} />
+          {/* Session but no chosen handle yet — Google OAuth users land here. */}
           <Route path="/welcome" element={<Welcome />} />
           <Route element={<RequireUsername />}>
             <Route element={<Layout />}>

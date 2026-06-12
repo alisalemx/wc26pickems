@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import { hasSupabaseConfig } from "@/lib/supabase"
@@ -10,21 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, MailCheck } from "lucide-react"
-
-// Keep in sync with the username_format check in 0001_init.sql.
-const USERNAME_RE = /^[a-z0-9_]{3,20}$/
-
-// Email/password sign-in is hidden until custom SMTP is configured (otherwise
-// confirmation/reset emails don't reliably send). Flip on by setting
-// VITE_EMAIL_PASSWORD_AUTH=true once SMTP is wired up.
-const EMAIL_PASSWORD_AUTH =
-  import.meta.env.VITE_EMAIL_PASSWORD_AUTH === "true"
+import { AlertTriangle } from "lucide-react"
 
 function GoogleIcon() {
   return (
@@ -50,62 +37,8 @@ function GoogleIcon() {
 }
 
 export function Login() {
-  const {
-    signIn,
-    signUp,
-    signInWithGoogle,
-    resetPassword,
-    isUsernameAvailable,
-  } = useAuth()
-  const navigate = useNavigate()
+  const { signInWithGoogle } = useAuth()
   const [busy, setBusy] = useState(false)
-
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [username, setUsername] = useState("")
-  // When email confirmation is required, signUp returns no session; we show a
-  // "check your inbox" state instead of redirecting into a protected route.
-  const [confirmSentTo, setConfirmSentTo] = useState<string | null>(null)
-  const [forgot, setForgot] = useState(false)
-
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      await signIn(email, password)
-      navigate("/")
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function handleSignUp(e: React.FormEvent) {
-    e.preventDefault()
-    if (!USERNAME_RE.test(username)) {
-      toast.error("Username must be 3–20 chars: lowercase letters, numbers, _")
-      return
-    }
-    setBusy(true)
-    try {
-      if (!(await isUsernameAvailable(username))) {
-        toast.error(`@${username} is taken — try another`)
-        return
-      }
-      const started = await signUp(email, password, username)
-      if (started) {
-        toast.success("Account created — you're in!")
-        navigate("/")
-      } else {
-        setConfirmSentTo(email)
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign up failed")
-    } finally {
-      setBusy(false)
-    }
-  }
 
   async function handleGoogle() {
     setBusy(true)
@@ -114,20 +47,6 @@ export function Login() {
       await signInWithGoogle()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed")
-      setBusy(false)
-    }
-  }
-
-  async function handleForgot(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      await resetPassword(email)
-      toast.success("If that email has an account, a reset link is on its way.")
-      setForgot(false)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not send reset email")
-    } finally {
       setBusy(false)
     }
   }
@@ -151,195 +70,26 @@ export function Login() {
           </Alert>
         )}
 
-        {confirmSentTo ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MailCheck className="size-5 text-primary" />
-                Confirm your email
-              </CardTitle>
-              <CardDescription>
-                We sent a confirmation link to <strong>{confirmSentTo}</strong>.
-                Click it to activate your account, then sign in.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setConfirmSentTo(null)}
-              >
-                Back to sign in
-              </Button>
-            </CardContent>
-          </Card>
-        ) : forgot ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Reset your password</CardTitle>
-              <CardDescription>
-                Enter your email and we'll send you a reset link.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-3" onSubmit={handleForgot}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="fp-email">Email</Label>
-                  <Input
-                    id="fp-email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={busy}>
-                  Send reset link
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setForgot(false)}
-                >
-                  Back
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Join the league</CardTitle>
-              <CardDescription>
-                {EMAIL_PASSWORD_AUTH
-                  ? "Sign in or create an account to start predicting."
-                  : "Sign in with Google to start predicting."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={busy}
-                onClick={handleGoogle}
-              >
-                <GoogleIcon />
-                Continue with Google
-              </Button>
-
-              {EMAIL_PASSWORD_AUTH && (
-                <>
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-border" />
-                    <span className="text-xs text-muted-foreground">or</span>
-                    <div className="h-px flex-1 bg-border" />
-                  </div>
-
-                  <Tabs defaultValue="signin">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="signin">Sign in</TabsTrigger>
-                  <TabsTrigger value="signup">Sign up</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="signin">
-                  <form className="mt-4 space-y-3" onSubmit={handleSignIn}>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="si-email">Email</Label>
-                      <Input
-                        id="si-email"
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="si-pw">Password</Label>
-                        <button
-                          type="button"
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                          onClick={() => setForgot(true)}
-                        >
-                          Forgot?
-                        </button>
-                      </div>
-                      <Input
-                        id="si-pw"
-                        type="password"
-                        autoComplete="current-password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={busy}>
-                      Sign in
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="signup">
-                  <form className="mt-4 space-y-3" onSubmit={handleSignUp}>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-name">Username</Label>
-                      <Input
-                        id="su-name"
-                        autoComplete="username"
-                        placeholder="shown as @you on the leaderboard"
-                        required
-                        value={username}
-                        onChange={(e) =>
-                          setUsername(
-                            e.target.value
-                              .toLowerCase()
-                              .replace(/[^a-z0-9_]/g, "")
-                              .slice(0, 20)
-                          )
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        3–20 characters: lowercase letters, numbers, underscore.
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-email">Email</Label>
-                      <Input
-                        id="su-email"
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-pw">Password</Label>
-                      <Input
-                        id="su-pw"
-                        type="password"
-                        autoComplete="new-password"
-                        minLength={6}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={busy}>
-                      Create account
-                    </Button>
-                  </form>
-                  </TabsContent>
-                </Tabs>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Join the league</CardTitle>
+            <CardDescription>
+              Sign in with Google to start predicting.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={busy}
+              onClick={handleGoogle}
+            >
+              <GoogleIcon />
+              Continue with Google
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

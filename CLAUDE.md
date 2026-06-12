@@ -56,29 +56,27 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
 - The sync function uses the service role key, which bypasses RLS.
 
 ### Auth & identity / usernames (`0001_init.sql`, `0002_auth.sql`)
-Two sign-in methods: **Google OAuth** and **email/password** (with email
-confirmation + password reset). OAuth needs a Google client configured in the
-Supabase dashboard; confirmation emails need custom SMTP. React flows live in
-`src/hooks/useAuth.tsx`: `signInWithGoogle`; `signUp` returns `false` when
-confirmation is pending so `Login` shows a "check your inbox" state instead of
-redirecting into a protected route; `resetPassword` → `/reset` page.
+Sign-in is **Google OAuth only** (email/password was removed). OAuth needs a
+Google client configured in the Supabase dashboard. The React flow lives in
+`src/hooks/useAuth.tsx`: `signInWithGoogle` redirects to Google and back to `/`.
 
 Signup is open to anyone. Each profile has a unique `username` (no first/last
 name) rendered as `@handle` everywhere.
 - Format `^[a-z0-9_]{3,20}$` and a unique index are enforced at the DB layer
   (`username_format` check + `profiles_username_key`), not just in the form.
-- Email/password users pick the handle at signup; `handle_new_user()` trusts the
-  `username` in signup metadata and sets `username_chosen = true`. OAuth (no
-  metadata) gets an email-derived fallback handle with `username_chosen = false`,
-  so `RequireUsername` holds them at `/welcome` until they pick one.
+- Google OAuth carries no username metadata, so `handle_new_user()` assigns an
+  email-derived fallback handle with `username_chosen = false`, and
+  `RequireUsername` holds the user at `/welcome` until they pick one. (The
+  trigger still honors a `username` in signup metadata and sets
+  `username_chosen = true` if present, but no current sign-in path supplies it.)
 - `set_username(name)` is a `SECURITY DEFINER` RPC (granted to `authenticated`)
   that validates format + uniqueness, updates the caller's own handle, and flips
   `username_chosen` — the single path for choosing/changing a handle (avoids
   widening the column grant on `profiles`).
-- `username_available(name)` is a `SECURITY DEFINER` RPC granted to `anon` so
-  the (logged-out) signup form can pre-check availability, which RLS would
-  otherwise hide. The client regex mirrors the SQL check — it now lives in
-  **both** `src/pages/Login.tsx` and `src/pages/Welcome.tsx`.
+- `username_available(name)` is a `SECURITY DEFINER` RPC granted to
+  `authenticated` (the `anon` grant was dropped in `0003` along with the signup
+  form). Its only caller is the `/welcome` handle-picker. The client regex
+  mirroring the SQL check now lives only in `src/pages/Welcome.tsx`.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
@@ -88,13 +86,13 @@ name) rendered as `@handle` everywhere.
 ### Routing (`src/App.tsx`)
 `ProtectedRoute` gates all pages behind a session (`src/hooks/useAuth.tsx`);
 `RequireUsername` further gates the main app behind a chosen handle (but not
-`/welcome` or `/reset`, which only need a session); `AdminRoute` gates `/admin`.
+`/welcome`, which only needs a session); `AdminRoute` gates `/admin`.
 Pages: Matches (index), Leaderboard, Standings, MyPredictions (`/me`), Admin,
-Login, Welcome (`/welcome`), ResetPassword (`/reset`).
+Login, Welcome (`/welcome`).
 
 ## Gotchas
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
-- **`USERNAME_RE` in `src/pages/Login.tsx` _and_ `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep all of them identical if you change the allowed username shape.
+- **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
