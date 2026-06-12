@@ -15,11 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
-import { initials } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
@@ -65,11 +63,6 @@ export function Leaderboard() {
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
-                        <Avatar className="size-7">
-                          <AvatarFallback className="text-[10px]">
-                            {initials(row.username)}
-                          </AvatarFallback>
-                        </Avatar>
                         <span className="truncate font-medium">
                           @{row.username}
                         </span>
