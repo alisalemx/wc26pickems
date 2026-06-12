@@ -22,6 +22,15 @@ interface Props {
   saving?: boolean
 }
 
+/** Score inputs are filled with a muted background once locked, so a past
+ *  match reads clearly as disabled rather than just dimmed. */
+function scoreInputClass(predictable: boolean): string {
+  return cn(
+    "h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl",
+    !predictable && "bg-muted text-muted-foreground disabled:opacity-100"
+  )
+}
+
 function TeamRow({
   name,
   code,
@@ -117,7 +126,7 @@ export function MatchCard({
             value={home}
             disabled={!predictable}
             onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className="h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl"
+            className={scoreInputClass(predictable)}
           />
           <span className="text-muted-foreground">:</span>
           <Input
@@ -128,7 +137,7 @@ export function MatchCard({
             value={away}
             disabled={!predictable}
             onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className="h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl"
+            className={scoreInputClass(predictable)}
           />
         </div>
         <TeamRow name={match.away_team} code={match.away_code} align="right" />
