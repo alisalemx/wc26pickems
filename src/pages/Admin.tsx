@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { StageBadge } from "@/components/StageBadge"
 import { TeamDisplay } from "@/components/TeamDisplay"
+import { ScorePair } from "@/components/ScoreInput"
 import { DayHeader } from "@/components/DayHeader"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
@@ -135,7 +136,6 @@ function AdminRow({
     match.away_score != null ? String(match.away_score) : ""
   )
   const num = (s: string) => (s === "" ? null : Number(s))
-  const scoreInputClass = "h-11 w-14 text-center text-xl font-bold tabular-nums"
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
@@ -148,27 +148,14 @@ function AdminRow({
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
         <TeamDisplay name={match.home_team} code={match.home_code} stack />
-        <div className="flex items-center gap-1.5">
-          <Input
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
-            aria-label={`${match.home_team ?? "Home"} score`}
-            value={home}
-            onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass}
-          />
-          <span className="text-muted-foreground">:</span>
-          <Input
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
-            aria-label={`${match.away_team ?? "Away"} score`}
-            value={away}
-            onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass}
-          />
-        </div>
+        <ScorePair
+          home={home}
+          away={away}
+          onHome={setHome}
+          onAway={setAway}
+          homeLabel={`${match.home_team ?? "Home"} score`}
+          awayLabel={`${match.away_team ?? "Away"} score`}
+        />
         <TeamDisplay
           name={match.away_team}
           code={match.away_code}

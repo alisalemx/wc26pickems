@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { ChevronDown, Lock, Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { StageBadge } from "./StageBadge"
 import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
+import { ScorePair } from "./ScoreInput"
 import { kickoffTime, isLocked } from "@/lib/format"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import { useRevealedPredictions, usePredictionDistribution } from "@/hooks/queries"
@@ -20,15 +20,6 @@ interface Props {
   ownUserId?: string
   onSave: (homePred: number, awayPred: number) => void
   saving?: boolean
-}
-
-/** Score inputs are filled with a muted background once locked, so a past
- *  match reads clearly as disabled rather than just dimmed. */
-function scoreInputClass(predictable: boolean): string {
-  return cn(
-    "h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl",
-    !predictable && "bg-muted text-muted-foreground disabled:opacity-60"
-  )
 }
 
 export function MatchCard({
@@ -112,29 +103,16 @@ export function MatchCard({
         <TeamDisplay name={match.home_team} code={match.home_code} stack />
         {signedIn ? (
           // Signed in: the boxes hold (or capture) your prediction.
-          <div className="flex items-center gap-1.5">
-            <Input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={2}
-              aria-label={`${match.home_team ?? "Home"} predicted goals`}
-              value={home}
-              disabled={!canPredict}
-              onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-              className={scoreInputClass(canPredict)}
-            />
-            <span className="text-muted-foreground">:</span>
-            <Input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={2}
-              aria-label={`${match.away_team ?? "Away"} predicted goals`}
-              value={away}
-              disabled={!canPredict}
-              onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-              className={scoreInputClass(canPredict)}
-            />
-          </div>
+          <ScorePair
+            home={home}
+            away={away}
+            onHome={setHome}
+            onAway={setAway}
+            homeLabel={`${match.home_team ?? "Home"} predicted goals`}
+            awayLabel={`${match.away_team ?? "Away"} predicted goals`}
+            disabled={!canPredict}
+            muted={!canPredict}
+          />
         ) : finished ? (
           // Visitor, match over: show the final score instead of empty inputs.
           <div className="flex flex-col items-center leading-none">
