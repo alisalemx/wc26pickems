@@ -56,7 +56,7 @@ export function Login() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="text-5xl">🏆</div>
-          <h1 className="mt-2 text-2xl font-bold">World Cup 2026</h1>
+          <h1 className="mt-2 text-2xl font-bold">WC26 Pick'ems</h1>
           <p className="text-muted-foreground">Predict every match. Top the table.</p>
         </div>
 

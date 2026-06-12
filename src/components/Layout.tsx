@@ -26,7 +26,7 @@ export function Layout() {
         <div className="flex items-center gap-2">
           <span className="text-xl">🏆</span>
           <div className="leading-tight">
-            <p className="text-sm font-semibold">World Cup 2026</p>
+            <p className="text-sm font-semibold">WC26 Pick'ems</p>
             <p className="text-xs text-muted-foreground">Prediction League</p>
           </div>
         </div>
