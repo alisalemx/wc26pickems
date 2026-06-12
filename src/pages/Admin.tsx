@@ -1,0 +1,174 @@
+import { useMemo, useState } from "react"
+import { toast } from "sonner"
+import { useMatches, useAdminUpdateMatch } from "@/hooks/queries"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { StageBadge } from "@/components/StageBadge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Info } from "lucide-react"
+import { flagEmoji } from "@/lib/flags"
+import { dayHeading, kickoffTime } from "@/lib/format"
+import type { MatchRow } from "@/lib/types"
+
+export function Admin() {
+  const { data: matches } = useMatches()
+  const update = useAdminUpdateMatch()
+  const [query, setQuery] = useState("")
+
+  const filtered = useMemo(() => {
+    if (!matches) return []
+    const q = query.trim().toLowerCase()
+    const list = q
+      ? matches.filter(
+          (m) =>
+            m.home_team?.toLowerCase().includes(q) ||
+            m.away_team?.toLowerCase().includes(q) ||
+            m.group_name?.toLowerCase() === q ||
+            String(m.id) === q
+        )
+      : matches
+    return list.slice(0, 60)
+  }, [matches, query])
+
+  return (
+    <div className="space-y-4">
+      <Alert>
+        <Info />
+        <AlertTitle>Manual override</AlertTitle>
+        <AlertDescription>
+          The scheduled sync fills results automatically. Use this to correct or
+          enter a result early. Saving with status FINISHED scores it instantly.
+        </AlertDescription>
+      </Alert>
+
+      <Input
+        placeholder="Search by team, group letter, or match #"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
+      <div className="space-y-2">
+        {filtered.map((m) => (
+          <AdminRow
+            key={m.id}
+            match={m}
+            saving={update.isPending}
+            onSave={(payload) =>
+              update.mutate(
+                { id: m.id, ...payload },
+                {
+                  onSuccess: () => toast.success(`Match #${m.id} saved`),
+                  onError: (err) =>
+                    toast.error(
+                      err instanceof Error ? err.message : "Save failed"
+                    ),
+                }
+              )
+            }
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AdminRow({
+  match,
+  onSave,
+  saving,
+}: {
+  match: MatchRow
+  saving: boolean
+  onSave: (payload: {
+    home_score: number | null
+    away_score: number | null
+    status: string
+    home_pens: number | null
+    away_pens: number | null
+    duration: string
+  }) => void
+}) {
+  const [home, setHome] = useState(
+    match.home_score != null ? String(match.home_score) : ""
+  )
+  const [away, setAway] = useState(
+    match.away_score != null ? String(match.away_score) : ""
+  )
+  const num = (s: string) => (s === "" ? null : Number(s))
+
+  return (
+    <Card className="gap-0 py-3">
+      <CardHeader className="px-4 pb-2">
+        <div className="flex items-center justify-between">
+          <StageBadge stage={match.stage} group={match.group_name} />
+          <span className="text-xs text-muted-foreground">
+            #{match.id} · {dayHeading(match.kickoff)} {kickoffTime(match.kickoff)}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex-1 truncate text-sm">
+            {flagEmoji(match.home_code)} {match.home_team ?? "TBD"}
+          </span>
+          <Input
+            inputMode="numeric"
+            value={home}
+            onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            className="h-9 w-12 text-center"
+          />
+          <span className="text-muted-foreground">:</span>
+          <Input
+            inputMode="numeric"
+            value={away}
+            onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            className="h-9 w-12 text-center"
+          />
+          <span className="flex-1 truncate text-right text-sm">
+            {match.away_team ?? "TBD"} {flagEmoji(match.away_code)}
+          </span>
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <Badge variant="outline">{match.status}</Badge>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={saving}
+              onClick={() =>
+                onSave({
+                  home_score: num(home),
+                  away_score: num(away),
+                  status: "IN_PLAY",
+                  home_pens: null,
+                  away_pens: null,
+                  duration: "REGULAR",
+                })
+              }
+            >
+              Save live
+            </Button>
+            <Button
+              size="sm"
+              disabled={saving || home === "" || away === ""}
+              onClick={() =>
+                onSave({
+                  home_score: num(home),
+                  away_score: num(away),
+                  status: "FINISHED",
+                  home_pens: null,
+                  away_pens: null,
+                  duration: "REGULAR",
+                })
+              }
+            >
+              Final
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
