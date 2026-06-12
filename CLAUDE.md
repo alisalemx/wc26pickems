@@ -15,12 +15,14 @@ npm run dev          # Vite dev server
 npm run build        # tsc -b (typecheck) + vite build → dist/
 npm run typecheck    # tsc -b only
 npm run lint         # eslint .
+npm test             # vitest run (unit tests for scoring + format helpers)
 npm run seed         # load 104 fixtures into Supabase matches table (needs SUPABASE_* env)
 npm run generate-schedule   # regenerate scripts/data/matches-2026.json
 ```
 
-There is no test runner configured. After code changes, validate with
-`npm run typecheck` and `npm run lint`.
+After code changes, validate with `npm run typecheck`, `npm run lint`, and
+`npm test`. Test coverage is currently limited to the pure helpers
+(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`).
 
 To run the scheduled sync function locally: `netlify functions:invoke sync-results`.
 
@@ -65,6 +67,28 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
 - You can read others' predictions for a match only after its kickoff (`read predictions after lock`); your own are always visible.
 - `matches` updates restricted to admins (`is_admin()`); `profiles.is_admin` is protected by a column-level grant so users can't self-escalate.
 - The sync function uses the service role key, which bypasses RLS.
+- The `matches` table is **publicly readable** (`0004_public_matches.sql` grants
+  `select` to `anon`) so fixtures and standings render for logged-out visitors.
+  `predictions`, `scored_predictions`, and `leaderboard` are deliberately **not**
+  granted to `anon` — predicting and the leaderboard still require a session.
+
+### Popular picks (`0007`–`0009`)
+The match list shows the crowd's most-predicted scorelines per upcoming match
+(quick-pick chips in `MatchCard`). `prediction_distributions()` is a
+`SECURITY DEFINER` RPC (authenticated only) that returns the top-3 scorelines
+and pick counts for every match where `kickoff > now()`, in one call —
+**anonymous aggregate counts only, never a user_id or username**, so the
+"read predictions after lock" guarantee on *individual* picks holds. A
+k-anonymity floor (`predictors >= N`) suppresses chips for matches with too few
+predictors; `0008` set it to 4, `0009` lowered it to 2 for small friends
+leagues (accepting the deanonymization-by-subtraction trade-off). The client
+reads it via `usePredictionDistribution` (query key `["prediction-distributions"]`).
+
+### Admin result locks (`0006_result_lock.sql`)
+`matches.result_locked` lets an admin's manual result survive the 10-min sync:
+when set, the sync function skips the result fields (status/scores/pens/duration)
+for that row but keeps reconciling fixture metadata (teams, kickoff, `fd_id`).
+Unlocking re-opens the row to the API.
 
 ### Auth & identity / usernames (`0001_init.sql`, `0002_auth.sql`)
 Sign-in is **Google OAuth only** (email/password was removed). OAuth needs a
@@ -91,13 +115,17 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows by `fd_id`, falling back to `(stage + kickoff day)` for statically-seeded rows that lack an `fd_id`.
+- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows by `fd_id`, falling back to `(stage + kickoff day)` for statically-seeded rows that lack an `fd_id`. Skips result fields for rows with `result_locked = true` (see admin result locks above).
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
+- `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 
 ### Routing (`src/App.tsx`)
-`ProtectedRoute` gates all pages behind a session (`src/hooks/useAuth.tsx`);
-`RequireUsername` further gates the main app behind a chosen handle (but not
-`/welcome`, which only needs a session); `AdminRoute` gates `/admin`.
+The app shell is **public**: Matches (index) and Standings render for anonymous
+visitors (backed by the public `matches` grant above). `RequireUsername` lets
+anonymous visitors through but funnels a signed-in user to `/welcome` until they
+pick a handle. `ProtectedRoute` (session required, `src/hooks/useAuth.tsx`) gates
+Leaderboard, MyPredictions (`/me`), and Admin; `AdminRoute` further gates
+`/admin`. `/welcome` needs a session but no handle; `/login` is open.
 Pages: Matches (index), Leaderboard, Standings, MyPredictions (`/me`), Admin,
 Login, Welcome (`/welcome`).
 
