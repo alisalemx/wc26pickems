@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-An unofficial FIFA World Cup 2026 prediction game. Players predict exact scores
+An unofficial World Cup 2026 prediction game. Players predict exact scores
 for all 104 matches, compete on a shared leaderboard, and results sync
 automatically from football-data.org.
 

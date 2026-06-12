@@ -1,4 +1,4 @@
-/** Maps FIFA three-letter codes to ISO-3166 alpha-2 for flag emoji. */
+/** Maps three-letter team codes (football-data.org `tla`) to ISO-3166 alpha-2 for flag emoji. */
 const TLA_TO_ISO2: Record<string, string> = {
   MEX: "MX", KOR: "KR", RSA: "ZA", NOR: "NO",
   CAN: "CA", CRO: "HR", QAT: "QA", ECU: "EC",

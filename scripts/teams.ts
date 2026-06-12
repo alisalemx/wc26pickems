@@ -9,7 +9,7 @@
  */
 export interface Team {
   name: string
-  code: string // FIFA/ISO three-letter code, used for flag emoji + display
+  code: string // three-letter code (football-data.org `tla`), used for flag emoji + display
 }
 
 export const GROUPS: Record<string, Team[]> = {
