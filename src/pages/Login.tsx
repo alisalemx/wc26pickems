@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AuthShell } from "@/components/AuthShell"
 import { AlertTriangle } from "lucide-react"
 
 function GoogleIcon() {
@@ -52,45 +53,40 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="text-5xl">🏆</div>
-          <h1 className="mt-2 text-2xl font-bold">WC26 Pick'ems</h1>
-          <p className="text-muted-foreground">Predict every match. Top the table.</p>
-        </div>
+    <AuthShell
+      title="WC26 Pick'ems"
+      subtitle="Predict every match. Top the table."
+    >
+      {!hasSupabaseConfig && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertTitle>Backend not configured</AlertTitle>
+          <AlertDescription>
+            Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then reload.
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {!hasSupabaseConfig && (
-          <Alert variant="destructive">
-            <AlertTriangle />
-            <AlertTitle>Backend not configured</AlertTitle>
-            <AlertDescription>
-              Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then reload.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Join the league</CardTitle>
-            <CardDescription>
-              Sign in with Google to start predicting.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              disabled={busy}
-              onClick={handleGoogle}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Join the league</CardTitle>
+          <CardDescription>
+            Sign in with Google to start predicting.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={busy}
+            onClick={handleGoogle}
+          >
+            <GoogleIcon />
+            Continue with Google
+          </Button>
+        </CardContent>
+      </Card>
+    </AuthShell>
   )
 }

@@ -22,11 +22,11 @@ export function Layout() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b-2 bg-background px-4 py-3">
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-ink bg-background px-4">
         <div className="flex items-center gap-2">
           <span className="text-xl">🏆</span>
           <div className="leading-tight">
-            <p className="text-sm font-semibold">WC26 Pick'ems</p>
+            <p className="text-sm font-semibold tracking-tight">WC26 Pick'ems</p>
             <p className="text-xs text-muted-foreground">Prediction League</p>
           </div>
         </div>
@@ -54,8 +54,8 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t-2 bg-background">
-        <div className="mx-auto flex max-w-2xl">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-ink bg-background">
+        <div className="mx-auto flex max-w-2xl pb-[env(safe-area-inset-bottom)]">
           {items.map((item) => (
             <NavLink
               key={item.to}

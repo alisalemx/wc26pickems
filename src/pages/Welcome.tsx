@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { AuthShell } from "@/components/AuthShell"
 
 // Keep in sync with the username_format check in 0001_init.sql.
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/
@@ -55,52 +56,46 @@ export function Welcome() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="text-5xl">🏆</div>
-          <h1 className="mt-2 text-2xl font-bold">Pick your handle</h1>
-          <p className="text-muted-foreground">
-            This is how you'll show up on the leaderboard.
-          </p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose a username</CardTitle>
-            <CardDescription>Make it count — this is your identity in the league.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-3" onSubmit={handleSubmit}>
-              <div className="space-y-1.5">
-                <Label htmlFor="wc-name">Username</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">@</span>
-                  <Input
-                    id="wc-name"
-                    autoComplete="username"
-                    required
-                    value={username}
-                    onChange={(e) =>
-                      setUsernameInput(
-                        e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9_]/g, "")
-                          .slice(0, 20)
-                      )
-                    }
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  3–20 characters: lowercase letters, numbers, underscore.
-                </p>
+    <AuthShell
+      title="Pick your handle"
+      subtitle="This is how you'll show up on the leaderboard."
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>Choose a username</CardTitle>
+          <CardDescription>Make it count — this is your identity in the league.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <div className="space-y-1.5">
+              <Label htmlFor="wc-name">Username</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">@</span>
+                <Input
+                  id="wc-name"
+                  autoComplete="username"
+                  required
+                  value={username}
+                  onChange={(e) =>
+                    setUsernameInput(
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_]/g, "")
+                        .slice(0, 20)
+                    )
+                  }
+                />
               </div>
-              <Button type="submit" className="w-full" disabled={busy}>
-                Continue
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+              <p className="text-xs text-muted-foreground">
+                3–20 characters: lowercase letters, numbers, underscore.
+              </p>
+            </div>
+            <Button type="submit" className="w-full" disabled={busy}>
+              Continue
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </AuthShell>
   )
 }

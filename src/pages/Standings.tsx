@@ -14,8 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { flagEmoji } from "@/lib/flags"
+import { ListSkeleton } from "@/components/ListSkeleton"
+import { TeamDisplay } from "@/components/TeamDisplay"
 import type { MatchRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -104,11 +104,11 @@ export function Standings() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full" />
-        ))}
-      </div>
+      <ListSkeleton
+        count={4}
+        className="grid gap-3 sm:grid-cols-2"
+        itemClassName="h-48 w-full"
+      />
     )
   }
 
@@ -132,9 +132,8 @@ export function Standings() {
               <TableBody>
                 {g.rows.map((r, i) => (
                   <TableRow key={r.team} className={cn(i < 2 && "bg-primary/5")}>
-                    <TableCell className="flex items-center gap-2 truncate">
-                      <span>{flagEmoji(r.code)}</span>
-                      <span className="truncate">{r.team}</span>
+                    <TableCell>
+                      <TeamDisplay name={r.team} code={r.code} size="sm" />
                     </TableCell>
                     <TableCell className="text-center tabular-nums text-muted-foreground">
                       {r.p}

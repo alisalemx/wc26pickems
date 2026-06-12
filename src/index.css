@@ -4,9 +4,11 @@
 
 :root {
   color-scheme: light dark;
-  --radius: 0rem;
+  --radius: 0.25rem;
 
-  /* Softened-brutalist light theme: warm paper, near-black ink, vivid green */
+  /* Polished neo-brutalist light theme: warm paper, near-black ink, vivid green.
+     Two-tier borders: --border is a soft hairline (rows, separators),
+     --ink is the strong structural outline (cards, buttons, inputs). */
   --background: oklch(0.97 0.012 105);
   --foreground: oklch(0.2 0.02 155);
   --card: oklch(0.995 0.004 105);
@@ -23,9 +25,11 @@
   --accent-foreground: oklch(0.2 0.06 152);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.98 0.01 27);
-  --border: oklch(0.28 0.02 155);
+  --border: oklch(0.84 0.012 150);
+  --ink: oklch(0.28 0.02 155);
   --input: oklch(0.28 0.02 155);
   --ring: oklch(0.64 0.19 148);
+  --shadow-color: oklch(0.28 0.02 155 / 0.22);
   --gold: oklch(0.8 0.16 85);
   --gold-foreground: oklch(0.25 0.06 80);
   --chart-1: oklch(0.64 0.19 148);
@@ -39,7 +43,7 @@
   --sidebar-primary-foreground: oklch(0.16 0.04 152);
   --sidebar-accent: oklch(0.9 0.07 148);
   --sidebar-accent-foreground: oklch(0.2 0.06 152);
-  --sidebar-border: oklch(0.28 0.02 155);
+  --sidebar-border: oklch(0.84 0.012 150);
   --sidebar-ring: oklch(0.64 0.19 148);
 }
 
@@ -62,9 +66,11 @@
     --accent-foreground: oklch(0.95 0.03 145);
     --destructive: oklch(0.66 0.2 25);
     --destructive-foreground: oklch(0.98 0.01 27);
-    --border: oklch(0.45 0.02 150);
-    --input: oklch(0.45 0.02 150);
+    --border: oklch(0.33 0.015 152);
+    --ink: oklch(0.55 0.02 150);
+    --input: oklch(0.55 0.02 150);
     --ring: oklch(0.74 0.2 148);
+    --shadow-color: oklch(0.05 0 0 / 0.55);
     --gold: oklch(0.82 0.15 85);
     --gold-foreground: oklch(0.25 0.06 80);
     --chart-1: oklch(0.74 0.2 148);
@@ -78,16 +84,16 @@
     --sidebar-primary-foreground: oklch(0.16 0.05 152);
     --sidebar-accent: oklch(0.3 0.05 150);
     --sidebar-accent-foreground: oklch(0.95 0.03 145);
-    --sidebar-border: oklch(0.45 0.02 150);
+    --sidebar-border: oklch(0.33 0.015 152);
     --sidebar-ring: oklch(0.74 0.2 148);
   }
 }
 
 @theme inline {
-  --radius-sm: var(--radius);
+  --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -107,6 +113,7 @@
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
   --color-border: var(--border);
+  --color-ink: var(--ink);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -123,8 +130,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
-  --shadow-brutal: 3px 3px 0 0 var(--border);
-  --shadow-brutal-sm: 2px 2px 0 0 var(--border);
+  --shadow-brutal: 3px 3px 0 0 var(--shadow-color);
+  --shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
 }
 
 @layer base {
@@ -136,5 +143,8 @@
     background-color: var(--background);
     color: var(--foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
   }
 }

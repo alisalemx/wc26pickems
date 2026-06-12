@@ -33,6 +33,17 @@ Vite + React 19 SPA, Supabase (Postgres + Auth + RLS) backend, one Netlify
 scheduled function. Path alias `@/` → `src/`. shadcn/ui (new-york style) in
 `src/components/ui/`; Tailwind v4 configured CSS-first via `@theme` in `src/index.css`.
 
+### Design system ("polished neo-brutalist")
+Theme tokens live in `src/index.css` (`:root` light, `@media (prefers-color-scheme: dark)`
+dark — no manual toggle). The look is small-radius cards with visible outlines and
+offset shadows. Borders are **two-tier**: `--border` (`border-*` utilities) is a soft
+hairline for table rows, separators, and inner boxes; `--ink` (`border-ink`) is the
+strong structural outline reserved for cards, buttons, inputs, alerts, and dialogs.
+Offset shadows use the translucent `--shadow-brutal`/`--shadow-brutal-sm` tokens.
+Shared, restyle-once UI atoms live in `src/components/` (not `ui/`):
+`TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell` —
+prefer these over re-inlining the pattern so a design change lands everywhere.
+
 **The database is the source of truth for scoring and anti-cheat — not the
 client.** This is the central design principle; the React app is a thin view layer.
 
@@ -93,6 +104,8 @@ Login, Welcome (`/welcome`).
 ## Gotchas
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
+- **Use `border-ink` (not plain `border`) for a card/control's structural outline.** Plain `border` resolves to the faint hairline `--border` token; the strong outline is the separate `--ink` token. The two are intentionally different (see the design-system note above).
+- **The sticky `DayHeader` offset (`top-14`) tracks the `h-14` app header in `Layout.tsx`.** If you change the header height, update `DayHeader`'s `top-*` to match or the day strip will misalign.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.

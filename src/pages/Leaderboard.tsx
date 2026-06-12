@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/EmptyState"
+import { ListSkeleton } from "@/components/ListSkeleton"
 import { initials } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -39,11 +40,7 @@ export function Leaderboard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
+          <ListSkeleton count={5} className="space-y-2" itemClassName="h-10 w-full" />
         ) : (
           <Table>
             <TableHeader>
@@ -61,7 +58,7 @@ export function Leaderboard() {
                 return (
                   <TableRow
                     key={row.user_id}
-                    className={cn(isMe && "bg-primary/10")}
+                    className={cn(isMe && "bg-primary/10 border-l-2 border-l-primary")}
                   >
                     <TableCell className="font-medium">
                       {MEDALS[i] ?? i + 1}
@@ -97,11 +94,8 @@ export function Leaderboard() {
               })}
               {data?.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No players yet.
+                  <TableCell colSpan={5} className="p-0">
+                    <EmptyState className="py-8">No players yet.</EmptyState>
                   </TableCell>
                 </TableRow>
               )}

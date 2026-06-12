@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { StageBadge } from "@/components/StageBadge"
+import { TeamDisplay } from "@/components/TeamDisplay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Info } from "lucide-react"
-import { flagEmoji } from "@/lib/flags"
 import { dayHeading, kickoffTime } from "@/lib/format"
 import type { MatchRow } from "@/lib/types"
 
@@ -116,9 +116,12 @@ function AdminRow({
       </CardHeader>
       <CardContent className="px-4">
         <div className="flex items-center justify-between gap-2">
-          <span className="flex-1 truncate text-sm">
-            {flagEmoji(match.home_code)} {match.home_team ?? "TBD"}
-          </span>
+          <TeamDisplay
+            name={match.home_team}
+            code={match.home_code}
+            size="sm"
+            className="flex-1"
+          />
           <Input
             inputMode="numeric"
             value={home}
@@ -132,9 +135,13 @@ function AdminRow({
             onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
             className="h-9 w-12 text-center"
           />
-          <span className="flex-1 truncate text-right text-sm">
-            {match.away_team ?? "TBD"} {flagEmoji(match.away_code)}
-          </span>
+          <TeamDisplay
+            name={match.away_team}
+            code={match.away_code}
+            size="sm"
+            align="right"
+            className="flex-1"
+          />
         </div>
         <div className="mt-2 flex items-center justify-between">
           <Badge variant="outline">{match.status}</Badge>

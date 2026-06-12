@@ -11,6 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ResultBadge } from "@/components/ResultBadge"
 import { StageBadge } from "@/components/StageBadge"
+import { StatCard } from "@/components/StatCard"
+import { EmptyState } from "@/components/EmptyState"
 import { Skeleton } from "@/components/ui/skeleton"
 import { flagEmoji } from "@/lib/flags"
 import { isLocked } from "@/lib/format"
@@ -76,9 +78,9 @@ export function MyPredictions() {
             <Skeleton className="h-16 w-full" />
           ) : (
             <div className="grid grid-cols-3 gap-3 text-center">
-              <Stat label="Total points" value={stats.points} highlight />
-              <Stat label="Exact scores" value={stats.exact} />
-              <Stat label="Picks made" value={stats.made} />
+              <StatCard label="Total points" value={stats.points} highlight />
+              <StatCard label="Exact scores" value={stats.exact} />
+              <StatCard label="Picks made" value={stats.made} />
             </div>
           )}
           {stats.predictable > 0 && (
@@ -96,9 +98,9 @@ export function MyPredictions() {
         </CardHeader>
         <CardContent className="space-y-2">
           {finishedWithPicks.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <EmptyState className="py-6">
               No results scored yet. Check back after kickoff!
-            </p>
+            </EmptyState>
           )}
           {finishedWithPicks.map((m) => {
             const p = predictions![m.id]
@@ -136,31 +138,6 @@ export function MyPredictions() {
           })}
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  highlight,
-}: {
-  label: string
-  value: number
-  highlight?: boolean
-}) {
-  return (
-    <div className="rounded-lg border p-3">
-      <div
-        className={
-          highlight
-            ? "text-2xl font-bold text-primary"
-            : "text-2xl font-bold"
-        }
-      >
-        {value}
-      </div>
-      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   )
 }

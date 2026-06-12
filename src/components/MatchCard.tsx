@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { StageBadge } from "./StageBadge"
 import { ResultBadge } from "./ResultBadge"
-import { flagEmoji } from "@/lib/flags"
+import { TeamDisplay } from "./TeamDisplay"
 import { kickoffTime, isLocked } from "@/lib/format"
 import { scorePrediction, maxPoints } from "@/lib/scoring"
 import { useRevealedPredictions } from "@/hooks/queries"
@@ -28,28 +28,6 @@ function scoreInputClass(predictable: boolean): string {
   return cn(
     "h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl",
     !predictable && "bg-muted text-muted-foreground disabled:opacity-100"
-  )
-}
-
-function TeamRow({
-  name,
-  code,
-  align = "left",
-}: {
-  name: string | null
-  code: string | null
-  align?: "left" | "right"
-}) {
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 items-center gap-2",
-        align === "right" && "flex-row-reverse text-right"
-      )}
-    >
-      <span className="text-2xl leading-none">{flagEmoji(code)}</span>
-      <span className="truncate font-medium">{name ?? "TBD"}</span>
-    </div>
   )
 }
 
@@ -116,7 +94,7 @@ export function MatchCard({
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
-        <TeamRow name={match.home_team} code={match.home_code} />
+        <TeamDisplay name={match.home_team} code={match.home_code} />
         <div className="flex items-center gap-1.5">
           <Input
             inputMode="numeric"
@@ -140,7 +118,7 @@ export function MatchCard({
             className={scoreInputClass(predictable)}
           />
         </div>
-        <TeamRow name={match.away_team} code={match.away_code} align="right" />
+        <TeamDisplay name={match.away_team} code={match.away_code} align="right" />
       </div>
 
       {finished && (

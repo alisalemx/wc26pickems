@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import {
@@ -8,9 +7,11 @@ import {
   useUpsertPrediction,
 } from "@/hooks/queries"
 import { MatchCard } from "@/components/MatchCard"
+import { DayHeader } from "@/components/DayHeader"
+import { EmptyState } from "@/components/EmptyState"
+import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
 import { dayHeading, dayKey } from "@/lib/format"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
@@ -114,54 +115,24 @@ export function Matches() {
         </TabsList>
       </Tabs>
 
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
-          ))}
-        </div>
-      )}
+      {isLoading && <ListSkeleton count={4} itemClassName="h-28 w-full" />}
 
       {!isLoading && days.length === 0 && (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No matches yet. Seed the schedule to get started.
-        </p>
+        <EmptyState>No matches yet. Seed the schedule to get started.</EmptyState>
       )}
 
       {/* Day-by-day view */}
       {!isLoading && view === "day" && current && (
         <div className="space-y-3">
-          <div className="sticky top-[57px] z-10 -mx-3 flex items-center gap-2 bg-background/90 px-3 py-1.5 backdrop-blur sm:-mx-4 sm:px-4">
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Previous day"
-              disabled={dayIndex <= 0}
-              onClick={() => setSelectedDay(days[dayIndex - 1][0])}
-            >
-              <ChevronLeft />
-            </Button>
-            <div className="flex-1 text-center">
-              <h2 className="text-sm font-semibold">
-                {dayHeading(current[1][0].kickoff)}
-                {current[0] === todayKey && (
-                  <span className="ml-2 text-primary">Today</span>
-                )}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {current[1].length} match{current[1].length === 1 ? "" : "es"}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Next day"
-              disabled={dayIndex >= days.length - 1}
-              onClick={() => setSelectedDay(days[dayIndex + 1][0])}
-            >
-              <ChevronRight />
-            </Button>
-          </div>
+          <DayHeader
+            heading={dayHeading(current[1][0].kickoff)}
+            isToday={current[0] === todayKey}
+            subtitle={`${current[1].length} match${current[1].length === 1 ? "" : "es"}`}
+            onPrev={() => setSelectedDay(days[dayIndex - 1][0])}
+            onNext={() => setSelectedDay(days[dayIndex + 1][0])}
+            prevDisabled={dayIndex <= 0}
+            nextDisabled={dayIndex >= days.length - 1}
+          />
           {current[0] !== todayKey && days.some(([k]) => k >= todayKey) && (
             <div className="text-center">
               <Button
@@ -193,9 +164,7 @@ export function Matches() {
           </Tabs>
 
           {grouped.length === 0 && (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No matches in this stage.
-            </p>
+            <EmptyState>No matches in this stage.</EmptyState>
           )}
 
           {grouped.map(([day, dayMatches]) => (
@@ -204,14 +173,10 @@ export function Matches() {
               id={day === todayKey ? "today" : undefined}
               className="space-y-3"
             >
-              <div className="sticky top-[57px] z-10 -mx-3 bg-background/90 px-3 py-1.5 backdrop-blur sm:-mx-4 sm:px-4">
-                <h2 className="text-sm font-semibold text-muted-foreground">
-                  {dayHeading(dayMatches[0].kickoff)}
-                  {day === todayKey && (
-                    <span className="ml-2 text-primary">Today</span>
-                  )}
-                </h2>
-              </div>
+              <DayHeader
+                heading={dayHeading(dayMatches[0].kickoff)}
+                isToday={day === todayKey}
+              />
               {dayMatches.map(renderCard)}
             </section>
           ))}
