@@ -20,6 +20,12 @@ import { AlertTriangle, MailCheck } from "lucide-react"
 // Keep in sync with the username_format check in 0001_init.sql.
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/
 
+// Email/password sign-in is hidden until custom SMTP is configured (otherwise
+// confirmation/reset emails don't reliably send). Flip on by setting
+// VITE_EMAIL_PASSWORD_AUTH=true once SMTP is wired up.
+const EMAIL_PASSWORD_AUTH =
+  import.meta.env.VITE_EMAIL_PASSWORD_AUTH === "true"
+
 function GoogleIcon() {
   return (
     <svg className="size-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -207,7 +213,9 @@ export function Login() {
             <CardHeader>
               <CardTitle>Join the league</CardTitle>
               <CardDescription>
-                Sign in or create an account to start predicting.
+                {EMAIL_PASSWORD_AUTH
+                  ? "Sign in or create an account to start predicting."
+                  : "Sign in with Google to start predicting."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -222,13 +230,15 @@ export function Login() {
                 Continue with Google
               </Button>
 
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">or</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
+              {EMAIL_PASSWORD_AUTH && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
 
-              <Tabs defaultValue="signin">
+                  <Tabs defaultValue="signin">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="signin">Sign in</TabsTrigger>
                   <TabsTrigger value="signup">Sign up</TabsTrigger>
@@ -323,8 +333,10 @@ export function Login() {
                       Create account
                     </Button>
                   </form>
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                </Tabs>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
