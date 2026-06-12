@@ -34,6 +34,7 @@ export interface MatchRow {
   home_pens: number | null
   away_pens: number | null
   duration: string
+  result_locked: boolean
   updated_at: string
 }
 

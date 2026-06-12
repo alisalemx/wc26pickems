@@ -157,6 +157,7 @@ export function useAdminUpdateMatch() {
       home_pens?: number | null
       away_pens?: number | null
       duration?: string
+      result_locked?: boolean
     }) => {
       const { id, ...rest } = vars
       const { error } = await supabase

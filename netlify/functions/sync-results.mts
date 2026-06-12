@@ -99,10 +99,18 @@ export default async () => {
   // for rows seeded statically that don't yet have an fd_id.
   const { data: rows, error: loadErr } = await db
     .from("matches")
-    .select("id, fd_id, stage, kickoff, home_code, away_code")
+    .select("id, fd_id, stage, kickoff, home_code, away_code, result_locked")
   if (loadErr) {
     return new Response(`db load error: ${loadErr.message}`, { status: 500 })
   }
+
+  // Build a set of row ids whose results have been manually locked by an admin.
+  // The sync skips result fields for these rows but keeps updating fixture metadata.
+  const lockedIds = new Set<number>(
+    (rows ?? [])
+      .filter((r) => r.result_locked)
+      .map((r) => r.id as number)
+  )
 
   const apiLite: ApiMatchLite[] = matches.map((m) => ({
     fdId: m.id,
@@ -128,26 +136,34 @@ export default async () => {
     const ft = m.score?.fullTime ?? { home: null, away: null }
     const pens = m.score?.penalties ?? { home: null, away: null }
 
+    // Fixture metadata is always reconciled. Result fields (status, scores,
+    // pens, duration) are skipped when an admin has locked the row.
+    const fixtureFields = {
+      fd_id: m.id,
+      kickoff: m.utcDate,
+      stage,
+      group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
+      matchday: m.matchday ?? null,
+      home_team: m.homeTeam?.name ?? null,
+      away_team: m.awayTeam?.name ?? null,
+      home_code: m.homeTeam?.tla ?? null,
+      away_code: m.awayTeam?.tla ?? null,
+      updated_at: new Date().toISOString(),
+    }
+    const resultFields = lockedIds.has(ourId)
+      ? {}
+      : {
+          status: m.status,
+          home_score: ft.home,
+          away_score: ft.away,
+          home_pens: pens.home ?? null,
+          away_pens: pens.away ?? null,
+          duration: m.score?.duration ?? "REGULAR",
+        }
+
     const { error } = await db
       .from("matches")
-      .update({
-        fd_id: m.id,
-        status: m.status,
-        kickoff: m.utcDate,
-        stage,
-        group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
-        matchday: m.matchday ?? null,
-        home_team: m.homeTeam?.name ?? null,
-        away_team: m.awayTeam?.name ?? null,
-        home_code: m.homeTeam?.tla ?? null,
-        away_code: m.awayTeam?.tla ?? null,
-        home_score: ft.home,
-        away_score: ft.away,
-        home_pens: pens.home ?? null,
-        away_pens: pens.away ?? null,
-        duration: m.score?.duration ?? "REGULAR",
-        updated_at: new Date().toISOString(),
-      })
+      .update({ ...fixtureFields, ...resultFields })
       .eq("id", ourId)
     if (!error) updated++
   }

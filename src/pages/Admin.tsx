@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { StageBadge } from "@/components/StageBadge"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -94,6 +95,7 @@ function AdminRow({
     home_pens: number | null
     away_pens: number | null
     duration: string
+    result_locked: boolean
   }) => void
 }) {
   const [home, setHome] = useState(
@@ -144,7 +146,31 @@ function AdminRow({
           />
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <Badge variant="outline">{match.status}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{match.status}</Badge>
+            <Switch
+              id={`lock-${match.id}`}
+              checked={match.result_locked}
+              disabled={saving}
+              onCheckedChange={(checked) =>
+                onSave({
+                  home_score: match.home_score,
+                  away_score: match.away_score,
+                  status: match.status,
+                  home_pens: match.home_pens,
+                  away_pens: match.away_pens,
+                  duration: match.duration,
+                  result_locked: checked,
+                })
+              }
+            />
+            <label
+              htmlFor={`lock-${match.id}`}
+              className="cursor-pointer text-xs text-muted-foreground"
+            >
+              Lock result
+            </label>
+          </div>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -158,6 +184,7 @@ function AdminRow({
                   home_pens: null,
                   away_pens: null,
                   duration: "REGULAR",
+                  result_locked: true,
                 })
               }
             >
@@ -174,6 +201,7 @@ function AdminRow({
                   home_pens: null,
                   away_pens: null,
                   duration: "REGULAR",
+                  result_locked: true,
                 })
               }
             >
