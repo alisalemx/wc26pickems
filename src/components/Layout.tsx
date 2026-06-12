@@ -1,4 +1,6 @@
+import { useState } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import {
   CalendarDays,
   Trophy,
@@ -10,6 +12,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
+import { GoogleIcon } from "@/components/GoogleIcon"
 import { cn } from "@/lib/utils"
 
 type NavItem = {
@@ -32,8 +35,21 @@ const MEMBER_NAV: NavItem[] = [
 ]
 
 export function Layout() {
-  const { session, profile, signOut } = useAuth()
+  const { session, profile, signOut, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const [signingIn, setSigningIn] = useState(false)
+
+  async function handleSignIn() {
+    setSigningIn(true)
+    try {
+      // Redirects away on success, so no navigate() here.
+      await signInWithGoogle()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed")
+      setSigningIn(false)
+    }
+  }
+
   const items: NavItem[] = [
     ...PUBLIC_NAV,
     ...(session ? MEMBER_NAV : []),
@@ -73,7 +89,13 @@ export function Layout() {
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={() => navigate("/login")}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={signingIn}
+              onClick={handleSignIn}
+            >
+              <GoogleIcon />
               Sign in
             </Button>
           )}

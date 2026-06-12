@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
 import { ChevronDown, Lock, Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -169,11 +168,6 @@ export function MatchCard({
             onClick={() => onSave(Number(home), Number(away))}
           >
             {prediction ? "Update" : "Save"}
-          </Button>
-        )}
-        {predictable && !signedIn && (
-          <Button asChild size="sm" variant="outline">
-            <Link to="/login">Sign in to predict</Link>
           </Button>
         )}
         {signedIn && locked && (
