@@ -86,20 +86,57 @@ function computeGroup(matches: MatchRow[]): Standing[] {
   )
 }
 
+// Cross-group ordering of teams: points, then goal difference, then goals
+// scored, then name as a stable fallback. Mirrors the per-group sort and is the
+// same simplification — the real tournament has further tiebreakers (head-to-
+// head, disciplinary, drawing of lots) we can't compute client-side.
+function rankThirds(x: Standing, y: Standing): number {
+  return (
+    y.pts - x.pts ||
+    y.gf - y.ga - (x.gf - x.ga) ||
+    y.gf - x.gf ||
+    x.team.localeCompare(y.team)
+  )
+}
+
 export function Standings() {
   const { data: matches, isLoading } = useMatches()
 
-  const groups = useMemo(() => {
-    if (!matches) return []
+  const { groups, qualifyingThirds, thirdsComparable } = useMemo(() => {
     const byGroup = new Map<string, MatchRow[]>()
-    for (const m of matches) {
+    const finishedByGroup = new Map<string, number>()
+    for (const m of matches ?? []) {
       if (m.stage !== "GROUP" || !m.group_name) continue
       if (!byGroup.has(m.group_name)) byGroup.set(m.group_name, [])
       byGroup.get(m.group_name)!.push(m)
+      if (m.status === "FINISHED" && m.home_score != null) {
+        finishedByGroup.set(
+          m.group_name,
+          (finishedByGroup.get(m.group_name) ?? 0) + 1
+        )
+      }
     }
-    return [...byGroup.entries()]
+
+    const groups = [...byGroup.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([name, ms]) => ({ name, rows: computeGroup(ms) }))
+
+    // The 8 best third-placed teams across all groups also advance to the R32.
+    const thirds = groups
+      .map((g) => g.rows[2])
+      .filter((r): r is Standing => Boolean(r))
+      .sort(rankThirds)
+    const qualifyingThirds = new Set(thirds.slice(0, 8).map((r) => r.team))
+
+    // Comparable only when every group has played the same number of games (and
+    // at least one): then the thirds are ranked on equal footing. While a round
+    // is mid-flight the counts differ, so the highlight hides until groups level
+    // out again (it re-appears live as the final matchday completes).
+    const counts = [...byGroup.keys()].map((name) => finishedByGroup.get(name) ?? 0)
+    const thirdsComparable =
+      counts.length > 0 && counts[0] > 0 && counts.every((c) => c === counts[0])
+
+    return { groups, qualifyingThirds, thirdsComparable }
   }, [matches])
 
   if (isLoading) {
@@ -113,7 +150,8 @@ export function Standings() {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
       {groups.map((g) => (
         <Card key={g.name} className="gap-1.5">
           <CardHeader className="pb-0">
@@ -131,7 +169,16 @@ export function Standings() {
               </TableHeader>
               <TableBody>
                 {g.rows.map((r, i) => (
-                  <TableRow key={r.team} className={cn(i < 2 && "bg-primary/5")}>
+                  <TableRow
+                    key={r.team}
+                    className={cn(
+                      i < 2 && "bg-primary/5",
+                      i === 2 &&
+                        thirdsComparable &&
+                        qualifyingThirds.has(r.team) &&
+                        "bg-amber-500/10"
+                    )}
+                  >
                     <TableCell>
                       <TeamDisplay name={r.team} code={r.code} size="sm" />
                     </TableCell>
@@ -152,6 +199,18 @@ export function Standings() {
           </CardContent>
         </Card>
       ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[3px] bg-primary/30" />
+          Top 2 qualify
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[3px] bg-amber-500/40" />
+          Best 8 third-place teams advance
+        </span>
+      </div>
     </div>
   )
 }
