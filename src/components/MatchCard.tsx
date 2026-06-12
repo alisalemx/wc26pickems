@@ -230,13 +230,15 @@ function PopularPicks({
 }) {
   const { data } = usePredictionDistribution(matchId, true)
   if (!data || data.length === 0) return null
-  const total = data.reduce((sum, d) => sum + d.picks, 0)
+  // The RPC returns only the top 3 scorelines, so percentages divide by the
+  // match's full predictor count, not the sum of the rows received.
+  const total = data[0].predictors
 
   return (
     <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
       <span className="text-xs text-muted-foreground">Popular picks</span>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {data.slice(0, 3).map((d) => {
+        {data.map((d) => {
           const key = `${d.home_pred}-${d.away_pred}`
           const active = key === selected
           return (
