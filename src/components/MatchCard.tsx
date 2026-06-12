@@ -209,7 +209,6 @@ export function MatchCard({
             size="sm"
             variant="ghost"
             onClick={() => setExpanded((v) => !v)}
-            className="text-muted-foreground"
           >
             Picks
             <ChevronDown
@@ -251,16 +250,13 @@ function PopularPicks({
           const key = `${d.home_pred}-${d.away_pred}`
           const active = key === selected
           return (
-            <button
+            <Button
               key={key}
               type="button"
+              size="sm"
+              variant={active ? "default" : "outline"}
               onClick={() => onPick(d.home_pred, d.away_pred)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border border-ink px-2 py-1 text-xs shadow-brutal-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background hover:bg-accent hover:text-accent-foreground"
-              )}
+              className="h-7 gap-1.5 px-2 text-xs"
             >
               <span className="font-semibold tabular-nums">
                 {d.home_pred}–{d.away_pred}
@@ -273,7 +269,7 @@ function PopularPicks({
               >
                 {Math.round((d.picks / total) * 100)}%
               </span>
-            </button>
+            </Button>
           )
         })}
       </div>

@@ -62,8 +62,8 @@
     --secondary-foreground: oklch(0.95 0.012 110);
     --muted: oklch(0.25 0.015 155);
     --muted-foreground: oklch(0.7 0.02 150);
-    --accent: oklch(0.3 0.05 150);
-    --accent-foreground: oklch(0.95 0.03 145);
+    --accent: oklch(0.36 0.06 149);
+    --accent-foreground: oklch(0.96 0.03 145);
     --destructive: oklch(0.66 0.2 25);
     --destructive-foreground: oklch(0.98 0.01 27);
     --border: oklch(0.33 0.015 152);
@@ -82,8 +82,8 @@
     --sidebar-foreground: oklch(0.95 0.012 110);
     --sidebar-primary: oklch(0.74 0.2 148);
     --sidebar-primary-foreground: oklch(0.16 0.05 152);
-    --sidebar-accent: oklch(0.3 0.05 150);
-    --sidebar-accent-foreground: oklch(0.95 0.03 145);
+    --sidebar-accent: oklch(0.36 0.06 149);
+    --sidebar-accent-foreground: oklch(0.96 0.03 145);
     --sidebar-border: oklch(0.33 0.015 152);
     --sidebar-ring: oklch(0.74 0.2 148);
   }
@@ -151,6 +151,10 @@
   isolation: isolate;
   color: var(--foreground);
   background-color: var(--card);
+  /* The default button now outlines itself with the on-primary ink, which is
+     near-black and would vanish on this card-colored surface in dark mode;
+     restore the structural ink outline so the CTA keeps a visible edge. */
+  border-color: var(--ink);
 }
 .play-cta::before {
   content: "";

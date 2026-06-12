@@ -136,7 +136,7 @@ export function Matches() {
           {current[0] !== todayKey && days.some(([k]) => k >= todayKey) && (
             <div className="text-center">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() =>
                   setSelectedDay(days.find(([k]) => k >= todayKey)![0])
