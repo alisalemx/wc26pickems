@@ -10,7 +10,7 @@ import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
 import { kickoffTime, isLocked } from "@/lib/format"
 import { scorePrediction, maxPoints } from "@/lib/scoring"
-import { useRevealedPredictions } from "@/hooks/queries"
+import { useRevealedPredictions, usePredictionDistribution } from "@/hooks/queries"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -143,6 +143,17 @@ export function MatchCard({
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
       </div>
 
+      {canPredict && (
+        <PopularPicks
+          matchId={match.id}
+          selected={`${home}-${away}`}
+          onPick={(h, a) => {
+            setHome(String(h))
+            setAway(String(a))
+          }}
+        />
+      )}
+
       {signedIn && finished && (
         <div className="flex items-center justify-center gap-2 px-4 pb-1 text-sm">
           <span className="text-muted-foreground">Result</span>
@@ -213,6 +224,58 @@ export function MatchCard({
         <RevealedPicks match={match} ownUserId={ownUserId} />
       )}
     </Card>
+  )
+}
+
+/** Quick-pick row of the crowd's most-predicted scorelines. Counts are
+ *  anonymous aggregates (see `prediction_distribution`), so it's safe to show
+ *  before kickoff; tapping a chip fills the score inputs. */
+function PopularPicks({
+  matchId,
+  selected,
+  onPick,
+}: {
+  matchId: number
+  selected: string
+  onPick: (home: number, away: number) => void
+}) {
+  const { data } = usePredictionDistribution(matchId, true)
+  if (!data || data.length === 0) return null
+  const total = data.reduce((sum, d) => sum + d.picks, 0)
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3">
+      <span className="text-xs text-muted-foreground">Popular picks</span>
+      {data.slice(0, 3).map((d) => {
+        const key = `${d.home_pred}-${d.away_pred}`
+        const active = key === selected
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onPick(d.home_pred, d.away_pred)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border border-ink px-2 py-1 text-xs shadow-brutal-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+              active
+                ? "bg-primary text-primary-foreground"
+                : "bg-background hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <span className="font-semibold tabular-nums">
+              {d.home_pred}–{d.away_pred}
+            </span>
+            <span
+              className={cn(
+                "tabular-nums",
+                active ? "text-primary-foreground/80" : "text-muted-foreground"
+              )}
+            >
+              {Math.round((d.picks / total) * 100)}%
+            </span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 

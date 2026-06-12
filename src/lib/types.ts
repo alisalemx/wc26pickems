@@ -74,3 +74,11 @@ export interface RevealedPrediction {
 }
 
 export type ResultType = "EXACT" | "OUTCOME" | "MISS"
+
+/** One scoreline and how many players predicted it for a match — anonymous
+ *  aggregate from the `prediction_distribution` RPC (no user identity). */
+export interface PredictionDistributionRow {
+  home_pred: number
+  away_pred: number
+  picks: number
+}

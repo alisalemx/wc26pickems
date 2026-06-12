@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase"
 import type {
   LeaderboardRow,
   MatchRow,
+  PredictionDistributionRow,
   PredictionRow,
   RevealedPrediction,
 } from "@/lib/types"
@@ -89,6 +90,24 @@ export function useRevealedPredictions(matchId: number, enabled: boolean) {
         }
       })
     },
+  })
+}
+
+/** Anonymous crowd distribution of scorelines for a match — counts only, no
+ *  user identity, so it's safe to show before kickoff (see the
+ *  `prediction_distribution` RPC). Rows arrive most-picked first. */
+export function usePredictionDistribution(matchId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["prediction-distribution", matchId],
+    enabled,
+    queryFn: async (): Promise<PredictionDistributionRow[]> => {
+      const { data, error } = await supabase.rpc("prediction_distribution", {
+        p_match_id: matchId,
+      })
+      if (error) throw error
+      return data as PredictionDistributionRow[]
+    },
+    staleTime: 60_000,
   })
 }
 
