@@ -96,7 +96,7 @@ export function Matches() {
         match={m}
         prediction={predictions?.[m.id]}
         ownUserId={userId}
-        saving={upsert.isPending}
+        saving={upsert.isPending && upsert.variables?.matchId === m.id}
         onSave={(h, a) => handleSave(m.id, h, a)}
       />
     )

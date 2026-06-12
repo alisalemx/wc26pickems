@@ -55,7 +55,7 @@ export function Admin() {
           <AdminRow
             key={m.id}
             match={m}
-            saving={update.isPending}
+            saving={update.isPending && update.variables?.id === m.id}
             onSave={(payload) =>
               update.mutate(
                 { id: m.id, ...payload },
