@@ -134,6 +134,54 @@
   --shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
 }
 
+/* "Ultramode" sign-in CTA, à la Claude Code's Ultracode slider: a soft green
+   gradient over a light base that flows endlessly left → right. The symmetric
+   stops let the 200% tile loop seamlessly with no visible jump. Structural
+   outline and offset shadow still come from the Button. */
+@keyframes play-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.play-cta {
+  position: relative;
+  overflow: hidden;
+  /* New stacking context so the gradient's z-index: -1 stays inside the
+     button (above its background, below its label + icon). */
+  isolation: isolate;
+  color: var(--foreground);
+  background-color: var(--card);
+}
+.play-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(
+    100deg,
+    oklch(0.64 0.19 148 / 0.1),
+    oklch(0.64 0.19 148 / 0.3),
+    oklch(0.68 0.19 149 / 0.42),
+    oklch(0.64 0.19 148 / 0.3),
+    oklch(0.64 0.19 148 / 0.1)
+  );
+  background-size: 200% 100%;
+  animation: play-flow 4s linear infinite;
+  opacity: 0.75;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+/* Changing animation-duration mid-flight makes the gradient jump, so hover
+   smoothly deepens the green instead of speeding it up. */
+.play-cta:hover::before {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .play-cta::before {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--border);

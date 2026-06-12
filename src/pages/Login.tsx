@@ -55,13 +55,13 @@ export function Login() {
         <CardContent>
           <Button
             type="button"
-            variant="outline"
-            className="w-full"
+            size="lg"
+            className="play-cta w-full text-base"
             disabled={busy}
             onClick={handleGoogle}
           >
             <GoogleIcon />
-            Continue with Google
+            Sign in to play
           </Button>
         </CardContent>
       </Card>

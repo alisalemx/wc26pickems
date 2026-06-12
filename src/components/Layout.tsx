@@ -91,12 +91,12 @@ export function Layout() {
           ) : (
             <Button
               size="sm"
-              variant="outline"
+              className="play-cta"
               disabled={signingIn}
               onClick={handleSignIn}
             >
               <GoogleIcon />
-              Sign in
+              Sign in to play
             </Button>
           )}
         </div>
