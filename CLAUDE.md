@@ -55,6 +55,20 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
 - `matches` updates restricted to admins (`is_admin()`); `profiles.is_admin` is protected by a column-level grant so users can't self-escalate.
 - The sync function uses the service role key, which bypasses RLS.
 
+### Identity / usernames (`0001_init.sql`)
+Signup is open to anyone. Each profile has a unique `username` (no first/last
+name), chosen at signup and rendered as `@handle` everywhere.
+- Format `^[a-z0-9_]{3,20}$` and a unique index are enforced at the DB layer
+  (`username_format` check + `profiles_username_key`), not just in the form.
+- `handle_new_user()` trusts the `username` passed in signup metadata; a
+  duplicate/malformed value fails the insert so signup errors cleanly. The
+  email-fallback path (no username supplied) sanitizes the local-part and
+  auto-suffixes to stay valid and unique.
+- `username_available(name)` is a `SECURITY DEFINER` RPC granted to `anon` so
+  the (logged-out) signup form can pre-check availability, which RLS would
+  otherwise hide. The client regex in `src/pages/Login.tsx` mirrors the SQL
+  check and must be kept in sync with it.
+
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
 - `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows by `fd_id`, falling back to `(stage + kickoff day)` for statically-seeded rows that lack an `fd_id`.
@@ -67,5 +81,6 @@ gates `/admin`. Pages: Matches (index), Leaderboard, Standings, MyPredictions (`
 ## Gotchas
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
+- **`USERNAME_RE` in `src/pages/Login.tsx` mirrors the `username_format` SQL check** — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
