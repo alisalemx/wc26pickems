@@ -12,6 +12,9 @@ const TLA_TO_ISO2: Record<string, string> = {
   NED: "NL", JPN: "JP", MAR: "MA", SCO: "GB-SCT",
   GER: "DE", AUS: "AU", GHA: "GH", HON: "HN",
   ITA: "IT", IRN: "IR", CPV: "CV", CUW: "CW",
+  BIH: "BA", COD: "CD", CUR: "CW", CZE: "CZ",
+  HAI: "HT", IRQ: "IQ", SWE: "SE", TUR: "TR",
+  URY: "UY",
 }
 
 const ENGLAND_FLAG = "🏴\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}"
