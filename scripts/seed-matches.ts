@@ -57,7 +57,7 @@ async function fromApi(): Promise<MatchUpsert[]> {
       id,
       fd_id: m.id,
       stage,
-      group_name: m.group ? m.group.replace(/^Group /, "") : null,
+      group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
       matchday: m.matchday ?? null,
       home_team: m.homeTeam?.name ?? null,
       away_team: m.awayTeam?.name ?? null,

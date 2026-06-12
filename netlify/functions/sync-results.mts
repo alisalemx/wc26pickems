@@ -60,6 +60,30 @@ export default async () => {
     return new Response("missing env vars", { status: 500 })
   }
 
+  const db = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  })
+
+  // This function is reachable over HTTP at /.netlify/functions/sync-results, so
+  // throttle upstream calls to protect the football-data.org quota. The 10-min
+  // cron never trips this; rapid manual/abusive hits return early without a fetch.
+  const COOLDOWN_MS = 60_000
+  const { data: lastRows } = await db
+    .from("matches")
+    .select("updated_at")
+    .not("updated_at", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+  const lastSync = lastRows?.[0]?.updated_at
+    ? new Date(lastRows[0].updated_at).getTime()
+    : 0
+  if (now.getTime() - lastSync < COOLDOWN_MS) {
+    return new Response(JSON.stringify({ skipped: "recently synced" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })
+  }
+
   const res = await fetch(
     "https://api.football-data.org/v4/competitions/WC/matches",
     { headers: { "X-Auth-Token": token } }
@@ -68,10 +92,6 @@ export default async () => {
     return new Response(`football-data error ${res.status}`, { status: 502 })
   }
   const { matches } = (await res.json()) as { matches: ApiMatch[] }
-
-  const db = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false },
-  })
 
   // Load our rows once so we can link by fd_id, or by (stage + kickoff day)
   // for rows seeded statically that don't yet have an fd_id.
@@ -115,7 +135,7 @@ export default async () => {
         status: m.status,
         kickoff: m.utcDate,
         stage,
-        group_name: m.group ? m.group.replace(/^Group /, "") : null,
+        group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
         matchday: m.matchday ?? null,
         home_team: m.homeTeam?.name ?? null,
         away_team: m.awayTeam?.name ?? null,
