@@ -7,10 +7,15 @@
 -- =========================================================================
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  display_name text not null,
+  -- Handle-style username: lowercase letters/digits/underscore, 3-20 chars.
+  -- Stored lowercase, so a plain unique index is effectively case-insensitive.
+  username text not null
+    constraint username_format check (username ~ '^[a-z0-9_]{3,20}$'),
   is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+create unique index profiles_username_key on public.profiles (username);
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -18,15 +23,35 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  requested text := nullif(new.raw_user_meta_data ->> 'username', '');
+  base text;
+  candidate text;
+  suffix int := 0;
 begin
-  insert into public.profiles (id, display_name)
-  values (
-    new.id,
-    coalesce(
-      nullif(new.raw_user_meta_data ->> 'display_name', ''),
-      split_part(new.email, '@', 1)
-    )
-  );
+  if requested is not null then
+    -- Username chosen at sign-up: trust it. The format + unique constraints
+    -- reject anything malformed or already taken, surfacing an error to the
+    -- client so the sign-up fails cleanly.
+    insert into public.profiles (id, username) values (new.id, lower(requested));
+    return new;
+  end if;
+
+  -- Fallback (no username supplied, e.g. future OAuth paths): derive a valid,
+  -- guaranteed-unique handle from the email local-part so the insert can't fail.
+  base := lower(regexp_replace(split_part(new.email, '@', 1), '[^a-z0-9_]', '_', 'g'));
+  base := substr(base, 1, 20);
+  if length(base) < 3 then
+    base := base || 'fan';
+  end if;
+
+  candidate := base;
+  while exists (select 1 from public.profiles where username = candidate) loop
+    suffix := suffix + 1;
+    candidate := substr(base, 1, 16) || suffix::text;
+  end loop;
+
+  insert into public.profiles (id, username) values (new.id, candidate);
   return new;
 end;
 $$;
@@ -34,6 +59,22 @@ $$;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
+
+-- Lets the (unauthenticated) sign-up form check availability before submitting,
+-- since RLS otherwise hides profiles from anon. Reveals only taken/free, not who.
+create or replace function public.username_available(name text)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select not exists (
+    select 1 from public.profiles where username = lower(name)
+  );
+$$;
+
+grant execute on function public.username_available(text) to anon, authenticated;
 
 create or replace function public.is_admin()
 returns boolean
@@ -137,14 +178,14 @@ create view public.leaderboard
 with (security_invoker = true) as
 select
   pr.id as user_id,
-  pr.display_name,
+  pr.username,
   coalesce(sum(sp.points), 0)::int as total_points,
   count(*) filter (where sp.result_type = 'EXACT')::int as exact_count,
   count(*) filter (where sp.result_type = 'OUTCOME')::int as outcome_count,
   count(*) filter (where sp.result_type is not null)::int as scored_count
 from public.profiles pr
 left join public.scored_predictions sp on sp.user_id = pr.id
-group by pr.id, pr.display_name;
+group by pr.id, pr.username;
 
 -- =========================================================================
 -- Row Level Security
@@ -154,7 +195,8 @@ alter table public.matches enable row level security;
 alter table public.predictions enable row level security;
 
 -- profiles: everyone signed in can read; you can edit only your own row, and
--- only the display_name column (column grant below blocks is_admin escalation).
+-- only the username column (column grant below blocks is_admin escalation).
+-- Format + uniqueness are still enforced by the table constraints on update.
 create policy "profiles readable" on public.profiles
   for select to authenticated using (true);
 
@@ -164,7 +206,7 @@ create policy "update own profile" on public.profiles
   with check (auth.uid() = id);
 
 revoke update on table public.profiles from authenticated;
-grant update (display_name) on table public.profiles to authenticated;
+grant update (username) on table public.profiles to authenticated;
 
 -- matches: readable by all signed-in users; only admins may update (manual
 -- result override). Automated sync runs as the service role and bypasses RLS.

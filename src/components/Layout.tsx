@@ -33,7 +33,7 @@ export function Layout() {
         <div className="flex items-center gap-2">
           <Avatar className="size-8">
             <AvatarFallback>
-              {profile ? initials(profile.display_name) : "?"}
+              {profile ? initials(profile.username) : "?"}
             </AvatarFallback>
           </Avatar>
           <Button

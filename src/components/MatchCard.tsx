@@ -238,7 +238,7 @@ function RevealedPicks({
               className="flex items-center justify-between text-sm"
             >
               <span className="flex items-center gap-2">
-                <span className="truncate">{p.display_name}</span>
+                <span className="truncate">@{p.username}</span>
                 {p.user_id === ownUserId && (
                   <Badge variant="outline" className="px-1 py-0 text-[10px]">
                     you

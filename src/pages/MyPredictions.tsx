@@ -68,7 +68,7 @@ export function MyPredictions() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{profile?.display_name ?? "My"} predictions</CardTitle>
+          <CardTitle>{profile ? `@${profile.username}` : "My"} predictions</CardTitle>
           <CardDescription>Your tournament at a glance.</CardDescription>
         </CardHeader>
         <CardContent>

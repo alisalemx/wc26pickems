@@ -47,14 +47,14 @@ export interface PredictionRow {
 
 export interface Profile {
   id: string
-  display_name: string
+  username: string
   is_admin: boolean
   created_at: string
 }
 
 export interface LeaderboardRow {
   user_id: string
-  display_name: string
+  username: string
   total_points: number
   exact_count: number
   outcome_count: number
@@ -65,7 +65,7 @@ export interface LeaderboardRow {
 export interface RevealedPrediction {
   match_id: number
   user_id: string
-  display_name: string
+  username: string
   home_pred: number
   away_pred: number
   points: number | null

@@ -70,11 +70,11 @@ export function Leaderboard() {
                       <span className="flex items-center gap-2">
                         <Avatar className="size-7">
                           <AvatarFallback className="text-[10px]">
-                            {initials(row.display_name)}
+                            {initials(row.username)}
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate font-medium">
-                          {row.display_name}
+                          @{row.username}
                         </span>
                         {isMe && (
                           <Badge variant="outline" className="px-1 py-0 text-[10px]">

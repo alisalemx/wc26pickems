@@ -29,10 +29,11 @@ export function isLocked(iso: string, now: number = Date.now()): boolean {
 }
 
 export function initials(name: string): string {
-  return name
-    .split(/\s+/)
+  const parts = name.split(/[\s_]+/).filter(Boolean)
+  // Usernames are single handles (no spaces): take their first two characters.
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return parts
     .map((p) => p[0])
-    .filter(Boolean)
     .slice(0, 2)
     .join("")
     .toUpperCase()

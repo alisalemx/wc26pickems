@@ -17,8 +17,9 @@ interface AuthState {
   signUp: (
     email: string,
     password: string,
-    displayName: string
+    username: string
   ) => Promise<void>
+  isUsernameAvailable: (username: string) => Promise<boolean>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -71,14 +72,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (
     email: string,
     password: string,
-    displayName: string
+    username: string
   ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: { data: { username } },
     })
     if (error) throw error
+  }
+
+  const isUsernameAvailable = async (username: string) => {
+    const { data, error } = await supabase.rpc("username_available", {
+      name: username,
+    })
+    if (error) throw error
+    return data as boolean
   }
 
   const signOut = async () => {
@@ -98,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signIn,
         signUp,
+        isUsernameAvailable,
         signOut,
         refreshProfile,
       }}

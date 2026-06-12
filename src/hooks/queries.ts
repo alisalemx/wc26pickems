@@ -69,7 +69,7 @@ export function useRevealedPredictions(matchId: number, enabled: boolean) {
     queryFn: async (): Promise<RevealedPrediction[]> => {
       const { data, error } = await supabase
         .from("predictions")
-        .select("match_id, user_id, home_pred, away_pred, profiles(display_name)")
+        .select("match_id, user_id, home_pred, away_pred, profiles(username)")
         .eq("match_id", matchId)
       if (error) throw error
       // Points are computed client-side via the scored view shape; we fetch the
@@ -81,7 +81,7 @@ export function useRevealedPredictions(matchId: number, enabled: boolean) {
         return {
           match_id: r.match_id,
           user_id: r.user_id,
-          display_name: prof?.display_name ?? "Player",
+          username: prof?.username ?? "player",
           home_pred: r.home_pred,
           away_pred: r.away_pred,
           points: null,
@@ -97,7 +97,7 @@ interface RawRevealed {
   user_id: string
   home_pred: number
   away_pred: number
-  profiles: { display_name: string } | { display_name: string }[] | null
+  profiles: { username: string } | { username: string }[] | null
 }
 
 export function useUpsertPrediction(userId: string | undefined) {

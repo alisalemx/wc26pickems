@@ -17,14 +17,17 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 
+// Keep in sync with the username_format check in 0001_init.sql.
+const USERNAME_RE = /^[a-z0-9_]{3,20}$/
+
 export function Login() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, isUsernameAvailable } = useAuth()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [displayName, setDisplayName] = useState("")
+  const [username, setUsername] = useState("")
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault()
@@ -41,13 +44,17 @@ export function Login() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault()
-    if (displayName.trim().length < 2) {
-      toast.error("Pick a display name (2+ characters)")
+    if (!USERNAME_RE.test(username)) {
+      toast.error("Username must be 3–20 chars: lowercase letters, numbers, _")
       return
     }
     setBusy(true)
     try {
-      await signUp(email, password, displayName.trim())
+      if (!(await isUsernameAvailable(username))) {
+        toast.error(`@${username} is taken — try another`)
+        return
+      }
+      await signUp(email, password, username)
       toast.success("Account created — you're in!")
       navigate("/")
     } catch (err) {
@@ -123,15 +130,25 @@ export function Login() {
               <TabsContent value="signup">
                 <form className="mt-4 space-y-3" onSubmit={handleSignUp}>
                   <div className="space-y-1.5">
-                    <Label htmlFor="su-name">Display name</Label>
+                    <Label htmlFor="su-name">Username</Label>
                     <Input
                       id="su-name"
-                      autoComplete="nickname"
-                      placeholder="Shown on the leaderboard"
+                      autoComplete="username"
+                      placeholder="shown as @you on the leaderboard"
                       required
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
+                      value={username}
+                      onChange={(e) =>
+                        setUsername(
+                          e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9_]/g, "")
+                            .slice(0, 20)
+                        )
+                      }
                     />
+                    <p className="text-xs text-muted-foreground">
+                      3–20 characters: lowercase letters, numbers, underscore.
+                    </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="su-email">Email</Label>
