@@ -151,6 +151,17 @@ export function Standings() {
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[3px] bg-primary/30" />
+          Top 2 qualify
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[3px] bg-amber-500/40" />
+          Best 8 third-place teams advance
+        </span>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
       {groups.map((g) => (
         <Card key={g.name} className="gap-1.5">
@@ -199,17 +210,6 @@ export function Standings() {
           </CardContent>
         </Card>
       ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-primary/30" />
-          Top 2 qualify
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-amber-500/40" />
-          Best 8 third-place teams advance
-        </span>
       </div>
     </div>
   )

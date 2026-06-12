@@ -27,7 +27,7 @@ interface Props {
 function scoreInputClass(predictable: boolean): string {
   return cn(
     "h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl",
-    !predictable && "bg-muted text-muted-foreground disabled:opacity-100"
+    !predictable && "bg-muted text-muted-foreground disabled:opacity-60"
   )
 }
 
@@ -97,10 +97,10 @@ export function MatchCard({
     <Card className="gap-0 overflow-hidden py-0">
       <div className="flex items-center justify-between px-4 pt-3 text-xs text-muted-foreground">
         <StageBadge stage={match.stage} group={match.group_name} />
-        <span className="flex items-center gap-1">
+        <span className={cn("flex items-center gap-1", finished && "text-primary")}>
           {locked ? (
             <>
-              <Lock className="size-3" /> {finished ? "Full time" : "Locked"}
+              <Lock className="size-3" /> {finished ? "Ended" : "Locked"}
             </>
           ) : (
             kickoffTime(match.kickoff)

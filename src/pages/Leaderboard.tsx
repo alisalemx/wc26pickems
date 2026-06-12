@@ -32,8 +32,13 @@ export function Leaderboard() {
         <CardTitle className="flex items-center gap-2">
           <span>🏆</span> Leaderboard
         </CardTitle>
-        <CardDescription>
-          3 pts exact score · 1 pt correct outcome · knockout multipliers apply.
+        <CardDescription className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          <Badge variant="gold">+3</Badge> exact score
+          <span className="text-muted-foreground/40">·</span>
+          <Badge variant="default">+1</Badge> correct outcome
+          <span className="text-muted-foreground/40">·</span>
+          <span className="font-semibold text-foreground">up to ×4</span> in the
+          knockouts
         </CardDescription>
       </CardHeader>
       <CardContent>
