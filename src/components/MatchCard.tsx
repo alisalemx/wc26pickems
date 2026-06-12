@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { ChevronDown, Lock, Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -38,10 +39,13 @@ export function MatchCard({
   onSave,
   saving,
 }: Props) {
+  const signedIn = ownUserId != null
   const locked = isLocked(match.kickoff)
   const finished = match.status === "FINISHED" && match.home_score != null
   const predictable =
     !locked && match.home_team != null && match.away_team != null
+  // Anonymous visitors can see the match but can't enter or save a prediction.
+  const canPredict = predictable && signedIn
 
   const [home, setHome] = useState(prediction ? String(prediction.home_pred) : "")
   const [away, setAway] = useState(prediction ? String(prediction.away_pred) : "")
@@ -102,9 +106,9 @@ export function MatchCard({
             maxLength={2}
             aria-label={`${match.home_team ?? "Home"} predicted goals`}
             value={home}
-            disabled={!predictable}
+            disabled={!canPredict}
             onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass(predictable)}
+            className={scoreInputClass(canPredict)}
           />
           <span className="text-muted-foreground">:</span>
           <Input
@@ -113,9 +117,9 @@ export function MatchCard({
             maxLength={2}
             aria-label={`${match.away_team ?? "Away"} predicted goals`}
             value={away}
-            disabled={!predictable}
+            disabled={!canPredict}
             onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass(predictable)}
+            className={scoreInputClass(canPredict)}
           />
         </div>
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
@@ -158,7 +162,7 @@ export function MatchCard({
           )}
         </div>
 
-        {predictable && (
+        {canPredict && (
           <Button
             size="sm"
             disabled={!dirty || saving}
@@ -167,7 +171,12 @@ export function MatchCard({
             {prediction ? "Update" : "Save"}
           </Button>
         )}
-        {locked && (
+        {predictable && !signedIn && (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/login">Sign in to predict</Link>
+          </Button>
+        )}
+        {signedIn && locked && (
           <Button
             size="sm"
             variant="ghost"
@@ -182,7 +191,7 @@ export function MatchCard({
         )}
       </div>
 
-      {expanded && locked && (
+      {expanded && signedIn && locked && (
         <RevealedPicks match={match} ownUserId={ownUserId} />
       )}
     </Card>

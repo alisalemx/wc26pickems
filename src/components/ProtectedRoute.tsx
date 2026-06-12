@@ -19,13 +19,27 @@ export function ProtectedRoute() {
   return <Outlet />
 }
 
-// Gate that holds users at /welcome until they've deliberately chosen a handle
-// (OAuth sign-ups start with an auto-generated one). Sits inside ProtectedRoute
-// so a session is guaranteed; /welcome itself lives outside this gate.
+// Holds a *signed-in* user at /welcome until they've deliberately chosen a
+// handle (OAuth sign-ups start with an auto-generated one). Anonymous visitors
+// pass straight through — the public pages (Matches, Groups) sit behind this
+// gate, and login is enforced separately by ProtectedRoute on the routes that
+// need it.
 export function RequireUsername() {
-  const { profile } = useAuth()
+  const { session, profile, loading } = useAuth()
 
-  // Session is set but the profile row is still loading.
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-3 p-4">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    )
+  }
+
+  // Not signed in: public page, let it render.
+  if (!session) return <Outlet />
+
+  // Signed in but the profile row is still loading.
   if (!profile) {
     return (
       <div className="mx-auto max-w-2xl space-y-3 p-4">

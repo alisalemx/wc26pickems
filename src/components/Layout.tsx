@@ -1,22 +1,46 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { CalendarDays, Trophy, User, ListChecks, Shield, LogOut } from "lucide-react"
+import {
+  CalendarDays,
+  Trophy,
+  User,
+  ListChecks,
+  Shield,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-const NAV = [
+type NavItem = {
+  to: string
+  label: string
+  icon: LucideIcon
+  end?: boolean
+}
+
+// Matches and Groups are public; Table and Me only appear once signed in
+// (tapping Table while logged out still routes to /login via ProtectedRoute,
+// but we keep the bar uncluttered for visitors).
+const PUBLIC_NAV: NavItem[] = [
   { to: "/", label: "Matches", icon: CalendarDays, end: true },
-  { to: "/leaderboard", label: "Table", icon: Trophy },
   { to: "/standings", label: "Groups", icon: ListChecks },
+]
+const MEMBER_NAV: NavItem[] = [
+  { to: "/leaderboard", label: "Table", icon: Trophy },
   { to: "/me", label: "Me", icon: User },
 ]
 
 export function Layout() {
-  const { profile, signOut } = useAuth()
+  const { session, profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const items = profile?.is_admin
-    ? [...NAV, { to: "/admin", label: "Admin", icon: Shield }]
-    : NAV
+  const items: NavItem[] = [
+    ...PUBLIC_NAV,
+    ...(session ? MEMBER_NAV : []),
+    ...(profile?.is_admin
+      ? [{ to: "/admin", label: "Admin", icon: Shield }]
+      : []),
+  ]
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
@@ -29,22 +53,30 @@ export function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {profile && (
-            <span className="text-sm font-medium tracking-tight">
-              @{profile.username}
-            </span>
+          {session ? (
+            <>
+              {profile && (
+                <span className="text-sm font-medium tracking-tight">
+                  @{profile.username}
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+                onClick={async () => {
+                  await signOut()
+                  navigate("/login")
+                }}
+              >
+                <LogOut className="size-4" />
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => navigate("/login")}>
+              Sign in
+            </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Sign out"
-            onClick={async () => {
-              await signOut()
-              navigate("/login")
-            }}
-          >
-            <LogOut className="size-4" />
-          </Button>
         </div>
       </header>
 

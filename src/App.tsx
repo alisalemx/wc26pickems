@@ -21,11 +21,17 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           {/* Session but no chosen handle yet — Google OAuth users land here. */}
           <Route path="/welcome" element={<Welcome />} />
+        </Route>
+        {/* The shell is public. Matches and Groups (standings) are viewable by
+            anyone; predicting, the leaderboard and Me require a session.
+            RequireUsername lets anonymous visitors through, but still funnels a
+            signed-in user to /welcome until they've chosen a handle. */}
+        <Route element={<Layout />}>
           <Route element={<RequireUsername />}>
-            <Route element={<Layout />}>
-              <Route index element={<Matches />} />
+            <Route index element={<Matches />} />
+            <Route path="standings" element={<Standings />} />
+            <Route element={<ProtectedRoute />}>
               <Route path="leaderboard" element={<Leaderboard />} />
-              <Route path="standings" element={<Standings />} />
               <Route path="me" element={<MyPredictions />} />
               <Route element={<AdminRoute />}>
                 <Route path="admin" element={<Admin />} />
