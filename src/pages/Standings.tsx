@@ -115,8 +115,8 @@ export function Standings() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {groups.map((g) => (
-        <Card key={g.name}>
-          <CardHeader className="pb-2">
+        <Card key={g.name} className="gap-1.5">
+          <CardHeader className="pb-0">
             <CardTitle className="text-base">Group {g.name}</CardTitle>
           </CardHeader>
           <CardContent className="px-2">
