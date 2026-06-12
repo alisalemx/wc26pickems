@@ -1,6 +1,7 @@
 /**
- * Generates a structurally-complete 104-match schedule for the 2026 World Cup
- * and writes it to scripts/data/matches-2026.json. No network required.
+ * Generates a structurally-complete 104-match schedule for the 2026 World
+ * Soccer Tournament and writes it to scripts/data/matches-2026.json. No
+ * network required.
  *
  * Run: npx tsx scripts/generate-schedule.ts
  *

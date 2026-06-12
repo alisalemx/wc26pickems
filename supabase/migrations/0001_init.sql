@@ -1,4 +1,4 @@
--- World Cup 2026 Prediction Game — initial schema, RLS, and scoring views.
+-- 2026 World Soccer Tournament prediction game — initial schema, RLS, and scoring views.
 -- Scoring is computed on the fly in SQL (never stored), so admin corrections
 -- and result re-syncs are reflected on the leaderboard instantly.
 

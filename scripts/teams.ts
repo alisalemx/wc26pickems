@@ -1,5 +1,6 @@
 /**
- * 48 nations distributed across the 12 groups (A–L) of the 2026 World Cup.
+ * 48 nations distributed across the 12 groups (A–L) of the 2026 World Soccer
+ * Tournament.
  *
  * NOTE: group assignments here are a best-effort, illustrative seed so the app
  * is fully functional out of the box. The Netlify sync function and the

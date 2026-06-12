@@ -1,6 +1,6 @@
-# 🏆 World Cup 2026 Prediction League
+# 🏆 2026 World Soccer Tournament Prediction League
 
-A friends-league prediction game for the 2026 World Cup. Predict the exact
+A friends-league prediction game for the 2026 World Soccer Tournament. Predict the exact
 score of all **104 matches**, compete on a shared leaderboard, and watch results
 sync in automatically from [football-data.org](https://www.football-data.org).
 
