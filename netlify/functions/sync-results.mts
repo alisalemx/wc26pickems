@@ -1,5 +1,7 @@
 import type { Config } from "@netlify/functions"
 import { createClient } from "@supabase/supabase-js"
+import { linkMatches } from "../lib/link-matches.mts"
+import type { ApiMatchLite } from "../lib/link-matches.mts"
 
 type Stage = "GROUP" | "R32" | "R16" | "QF" | "SF" | "THIRD" | "FINAL"
 
@@ -97,33 +99,31 @@ export default async () => {
   // for rows seeded statically that don't yet have an fd_id.
   const { data: rows, error: loadErr } = await db
     .from("matches")
-    .select("id, fd_id, stage, kickoff")
+    .select("id, fd_id, stage, kickoff, home_code, away_code")
   if (loadErr) {
     return new Response(`db load error: ${loadErr.message}`, { status: 500 })
   }
 
-  const byFd = new Map<number, number>() // fd_id -> our id
-  const byStageDay = new Map<string, number>() // `${stage}|${yyyy-mm-dd}` -> our id
-  for (const r of rows ?? []) {
-    if (r.fd_id != null) byFd.set(Number(r.fd_id), r.id)
-    const day = new Date(r.kickoff).toISOString().slice(0, 10)
-    const key = `${r.stage}|${day}`
-    if (!byStageDay.has(key)) byStageDay.set(key, r.id)
-  }
+  const apiLite: ApiMatchLite[] = matches.map((m) => ({
+    fdId: m.id,
+    stage: mapStage(m.stage),
+    utcDate: m.utcDate,
+    homeTla: m.homeTeam?.tla ?? null,
+    awayTla: m.awayTeam?.tla ?? null,
+  }))
+
+  const links = linkMatches(rows ?? [], apiLite)
 
   let updated = 0
-  let linked = 0
+  let unlinked = 0
 
   for (const m of matches) {
     const stage = mapStage(m.stage)
-    let ourId = byFd.get(m.id)
+    const ourId = links.get(m.id)
     if (ourId == null) {
-      // Fallback linker for static-seeded rows: match by stage + kickoff day.
-      const day = m.utcDate.slice(0, 10)
-      ourId = byStageDay.get(`${stage}|${day}`)
-      if (ourId != null) linked++
+      unlinked++
+      continue
     }
-    if (ourId == null) continue
 
     const ft = m.score?.fullTime ?? { home: null, away: null }
     const pens = m.score?.penalties ?? { home: null, away: null }
@@ -153,7 +153,7 @@ export default async () => {
   }
 
   return new Response(
-    JSON.stringify({ received: matches.length, updated, linked }),
+    JSON.stringify({ received: matches.length, updated, unlinked }),
     { status: 200, headers: { "content-type": "application/json" } }
   )
 }
