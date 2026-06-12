@@ -82,7 +82,7 @@ export function Layout() {
                 aria-label="Sign out"
                 onClick={async () => {
                   await signOut()
-                  navigate("/login")
+                  navigate("/")
                 }}
               >
                 <LogOut className="size-4" />
