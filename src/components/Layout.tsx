@@ -2,8 +2,6 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { CalendarDays, Trophy, User, ListChecks, Shield, LogOut } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { initials } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const NAV = [
@@ -31,11 +29,11 @@ export function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Avatar className="size-8">
-            <AvatarFallback>
-              {profile ? initials(profile.username) : "?"}
-            </AvatarFallback>
-          </Avatar>
+          {profile && (
+            <span className="text-sm font-medium tracking-tight">
+              @{profile.username}
+            </span>
+          )}
           <Button
             variant="ghost"
             size="icon"
