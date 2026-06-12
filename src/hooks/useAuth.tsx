@@ -14,11 +14,17 @@ interface AuthState {
   profile: Profile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  /** Returns true if a session started immediately, false if email
+   *  confirmation is required (no session yet). */
   signUp: (
     email: string,
     password: string,
     username: string
-  ) => Promise<void>
+  ) => Promise<boolean>
+  signInWithGoogle: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
+  setUsername: (username: string) => Promise<void>
   isUsernameAvailable: (username: string) => Promise<boolean>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -74,12 +80,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     username: string
   ) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: {
+        data: { username },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     })
     if (error) throw error
+    // When "Confirm email" is on, signUp returns a user but no session.
+    return Boolean(data.session)
+  }
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/` },
+    })
+    if (error) throw error
+  }
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset`,
+    })
+    if (error) throw error
+  }
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
+  const setUsername = async (username: string) => {
+    const { error } = await supabase.rpc("set_username", { name: username })
+    if (error) throw error
+    if (session) await loadProfile(session.user.id)
   }
 
   const isUsernameAvailable = async (username: string) => {
@@ -107,6 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signIn,
         signUp,
+        signInWithGoogle,
+        resetPassword,
+        updatePassword,
+        setUsername,
         isUsernameAvailable,
         signOut,
         refreshProfile,

@@ -48,6 +48,7 @@ export interface PredictionRow {
 export interface Profile {
   id: string
   username: string
+  username_chosen: boolean
   is_admin: boolean
   created_at: string
 }
