@@ -98,33 +98,52 @@ export function MatchCard({
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
         <TeamDisplay name={match.home_team} code={match.home_code} stack />
-        <div className="flex items-center gap-1.5">
-          <Input
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
-            aria-label={`${match.home_team ?? "Home"} predicted goals`}
-            value={home}
-            disabled={!canPredict}
-            onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass(canPredict)}
-          />
-          <span className="text-muted-foreground">:</span>
-          <Input
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
-            aria-label={`${match.away_team ?? "Away"} predicted goals`}
-            value={away}
-            disabled={!canPredict}
-            onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className={scoreInputClass(canPredict)}
-          />
-        </div>
+        {signedIn ? (
+          // Signed in: the boxes hold (or capture) your prediction.
+          <div className="flex items-center gap-1.5">
+            <Input
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
+              aria-label={`${match.home_team ?? "Home"} predicted goals`}
+              value={home}
+              disabled={!canPredict}
+              onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              className={scoreInputClass(canPredict)}
+            />
+            <span className="text-muted-foreground">:</span>
+            <Input
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
+              aria-label={`${match.away_team ?? "Away"} predicted goals`}
+              value={away}
+              disabled={!canPredict}
+              onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              className={scoreInputClass(canPredict)}
+            />
+          </div>
+        ) : finished ? (
+          // Visitor, match over: show the final score instead of empty inputs.
+          <div className="flex flex-col items-center leading-none">
+            <span className="text-2xl font-bold tabular-nums">
+              {match.home_score} : {match.away_score}
+            </span>
+            {match.duration === "PENALTY_SHOOTOUT" &&
+              match.home_pens != null && (
+                <span className="mt-1 text-[10px] text-muted-foreground">
+                  pens {match.home_pens}–{match.away_pens}
+                </span>
+              )}
+          </div>
+        ) : (
+          // Visitor, upcoming match: nothing to show yet.
+          <span className="px-3 text-sm font-medium text-muted-foreground">vs</span>
+        )}
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
       </div>
 
-      {finished && (
+      {signedIn && finished && (
         <div className="flex items-center justify-center gap-2 px-4 pb-1 text-sm">
           <span className="text-muted-foreground">Result</span>
           <span className="font-semibold tabular-nums">
@@ -139,6 +158,10 @@ export function MatchCard({
         </div>
       )}
 
+      {/* Visitors only ever see footer content on an upcoming match ("Worth up
+          to N" / "Awaiting teams"); for a locked or finished one it would be
+          an empty bar, so drop it. */}
+      {(signedIn || !locked) && (
       <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
         <div className="min-h-6 text-xs text-muted-foreground">
           {!predictable && !locked && "Awaiting teams"}
@@ -184,6 +207,7 @@ export function MatchCard({
           </Button>
         )}
       </div>
+      )}
 
       {expanded && signedIn && locked && (
         <RevealedPicks match={match} ownUserId={ownUserId} />
