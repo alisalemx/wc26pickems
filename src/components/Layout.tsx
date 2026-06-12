@@ -104,6 +104,17 @@ export function Layout() {
 
       <main className="flex-1 px-3 pb-24 pt-3 sm:px-4">
         <Outlet />
+        <footer className="mt-8 text-center text-xs text-muted-foreground">
+          Match data provided by{" "}
+          <a
+            href="https://www.football-data.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            football-data.org
+          </a>
+        </footer>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-ink bg-background">
