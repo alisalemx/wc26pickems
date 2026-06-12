@@ -9,7 +9,7 @@ import { StageBadge } from "./StageBadge"
 import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
 import { kickoffTime, isLocked } from "@/lib/format"
-import { scorePrediction, maxPoints } from "@/lib/scoring"
+import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import { useRevealedPredictions, usePredictionDistribution } from "@/hooks/queries"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -80,6 +80,18 @@ export function MatchCard({
           match.away_score!
         )
       : null
+
+  // Whether the footer bar will actually hold anything — a status hint on the
+  // left or a button on the right. When it won't (e.g. an anonymous visitor on
+  // an upcoming group match, now that the "Worth up to 3 pts" line is gone),
+  // skip the bar entirely so it doesn't render as empty padding.
+  const hasFooter =
+    (!predictable && !locked) ||
+    (predictable && (prediction != null || maxPoints(match.stage) > EXACT_BASE)) ||
+    (finished && own != null) ||
+    (locked && !finished && prediction != null) ||
+    canPredict ||
+    (signedIn && locked)
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
@@ -169,22 +181,22 @@ export function MatchCard({
         </div>
       )}
 
-      {/* Visitors only ever see footer content on an upcoming match ("Worth up
-          to N" / "Awaiting teams"); for a locked or finished one it would be
-          an empty bar, so drop it. */}
-      {(signedIn || !locked) && (
+      {hasFooter && (
       <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
-        <div className="min-h-6 text-xs text-muted-foreground">
+        <div className="flex min-h-6 items-center text-sm text-muted-foreground">
           {!predictable && !locked && "Awaiting teams"}
           {predictable &&
             (prediction ? (
               <span className="flex items-center gap-1 text-primary">
-                <Check className="size-3" /> Saved {prediction.home_pred}–
+                <Check className="size-3.5" /> Saved {prediction.home_pred}–
                 {prediction.away_pred}
               </span>
-            ) : (
+            ) : maxPoints(match.stage) > EXACT_BASE ? (
+              // Only flag the points on knockout cards, where the stage
+              // multiplier bumps them above the base — otherwise every group
+              // match repeats the same "Worth up to 3 pts".
               `Worth up to ${maxPoints(match.stage)} pts`
-            ))}
+            ) : null)}
           {finished && own && (
             <ResultBadge result={own.result} points={own.points} />
           )}
