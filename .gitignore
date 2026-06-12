@@ -18,6 +18,9 @@ dist-ssr
 !.env.example
 .netlify
 
+# Advisor implementation plans (local working docs)
+plans/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
