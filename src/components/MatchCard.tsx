@@ -94,7 +94,7 @@ export function MatchCard({
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
-        <TeamDisplay name={match.home_team} code={match.home_code} />
+        <TeamDisplay name={match.home_team} code={match.home_code} stack />
         <div className="flex items-center gap-1.5">
           <Input
             inputMode="numeric"
@@ -118,7 +118,7 @@ export function MatchCard({
             className={scoreInputClass(predictable)}
           />
         </div>
-        <TeamDisplay name={match.away_team} code={match.away_code} align="right" />
+        <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
       </div>
 
       {finished && (
