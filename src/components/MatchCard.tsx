@@ -244,37 +244,39 @@ function PopularPicks({
   const total = data.reduce((sum, d) => sum + d.picks, 0)
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3">
+    <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
       <span className="text-xs text-muted-foreground">Popular picks</span>
-      {data.slice(0, 3).map((d) => {
-        const key = `${d.home_pred}-${d.away_pred}`
-        const active = key === selected
-        return (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onPick(d.home_pred, d.away_pred)}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md border border-ink px-2 py-1 text-xs shadow-brutal-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "bg-background hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <span className="font-semibold tabular-nums">
-              {d.home_pred}–{d.away_pred}
-            </span>
-            <span
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {data.slice(0, 3).map((d) => {
+          const key = `${d.home_pred}-${d.away_pred}`
+          const active = key === selected
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onPick(d.home_pred, d.away_pred)}
               className={cn(
-                "tabular-nums",
-                active ? "text-primary-foreground/80" : "text-muted-foreground"
+                "inline-flex items-center gap-1.5 rounded-md border border-ink px-2 py-1 text-xs shadow-brutal-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              {Math.round((d.picks / total) * 100)}%
-            </span>
-          </button>
-        )
-      })}
+              <span className="font-semibold tabular-nums">
+                {d.home_pred}–{d.away_pred}
+              </span>
+              <span
+                className={cn(
+                  "tabular-nums",
+                  active ? "text-primary-foreground/80" : "text-muted-foreground"
+                )}
+              >
+                {Math.round((d.picks / total) * 100)}%
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
