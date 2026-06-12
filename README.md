@@ -89,6 +89,7 @@ src/
   lib/              supabase client, scoring, formatting, types (+ unit tests)
   pages/            Login, Welcome, Matches, Leaderboard, Standings, MyPredictions, Admin
 netlify/functions/  sync-results.mts (scheduled result fetcher)
+netlify/lib/        link-matches.mts (API↔fixture match linker + unit tests)
 scripts/            generate-schedule.ts, seed-matches.ts, fd-shared.ts, teams.ts
 supabase/migrations/  schema + RLS + scoring views
 ```

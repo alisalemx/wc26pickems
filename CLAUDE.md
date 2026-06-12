@@ -22,7 +22,8 @@ npm run generate-schedule   # regenerate scripts/data/matches-2026.json
 
 After code changes, validate with `npm run typecheck`, `npm run lint`, and
 `npm test`. Test coverage is currently limited to the pure helpers
-(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`).
+(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`) and the sync match-linker
+(`netlify/lib/link-matches.test.mts`).
 
 To run the scheduled sync function locally: `netlify functions:invoke sync-results`.
 
@@ -72,17 +73,20 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
   `predictions`, `scored_predictions`, and `leaderboard` are deliberately **not**
   granted to `anon` — predicting and the leaderboard still require a session.
 
-### Popular picks (`0007`–`0009`)
+### Popular picks (`0007`–`0010`)
 The match list shows the crowd's most-predicted scorelines per upcoming match
 (quick-pick chips in `MatchCard`). `prediction_distributions()` is a
 `SECURITY DEFINER` RPC (authenticated only) that returns the top-3 scorelines
 and pick counts for every match where `kickoff > now()`, in one call —
 **anonymous aggregate counts only, never a user_id or username**, so the
-"read predictions after lock" guarantee on *individual* picks holds. A
-k-anonymity floor (`predictors >= N`) suppresses chips for matches with too few
-predictors; `0008` set it to 4, `0009` lowered it to 2 for small friends
-leagues (accepting the deanonymization-by-subtraction trade-off). The client
-reads it via `usePredictionDistribution` (query key `["prediction-distributions"]`).
+"read predictions after lock" guarantee on *individual* picks holds. Each row
+also carries `predictors`, the match's total predictor count (`0010`): chip
+percentages divide by it, not by a sum of the returned rows, because the
+result is truncated to the top 3. A k-anonymity floor (`predictors >= N`)
+suppresses chips for matches with too few predictors; `0008` set it to 4,
+`0009` lowered it to 2 for small friends leagues (accepting the
+deanonymization-by-subtraction trade-off). The client reads it via
+`usePredictionDistribution` (query key `["prediction-distributions"]`).
 
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:
@@ -115,7 +119,7 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows by `fd_id`, falling back to `(stage + kickoff day)` for statically-seeded rows that lack an `fd_id`. Skips result fields for rows with `result_locked = true` (see admin result locks above).
+- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. Skips result fields for rows with `result_locked = true` (see admin result locks above).
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
 - `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 
