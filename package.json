@@ -9,10 +9,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-schedule": "tsx scripts/generate-schedule.ts",
-    "seed": "tsx scripts/seed-matches.ts",
+    "seed": "tsx --env-file-if-exists=.env scripts/seed-matches.ts",
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.2.10",
     "@radix-ui/react-avatar": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.16",
     "@radix-ui/react-label": "^2.1.9",

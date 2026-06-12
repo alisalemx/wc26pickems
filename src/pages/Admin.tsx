@@ -59,7 +59,13 @@ export function Admin() {
               update.mutate(
                 { id: m.id, ...payload },
                 {
-                  onSuccess: () => toast.success(`Match #${m.id} saved`),
+                  onSuccess: () =>
+                    toast.success(`Match #${m.id} saved`, {
+                      description:
+                        payload.home_score != null && payload.away_score != null
+                          ? `${m.home_team ?? "Home"} ${payload.home_score}–${payload.away_score} ${m.away_team ?? "Away"} · ${payload.status}`
+                          : `${m.home_team ?? "Home"} v ${m.away_team ?? "Away"} · ${payload.status}`,
+                    }),
                   onError: (err) =>
                     toast.error(
                       err instanceof Error ? err.message : "Save failed"

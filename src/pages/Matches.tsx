@@ -49,10 +49,16 @@ export function Matches() {
   const todayKey = dayKey(new Date().toISOString())
 
   function handleSave(matchId: number, h: number, a: number) {
+    const match = matches?.find((m) => m.id === matchId)
     upsert.mutate(
       { matchId, homePred: h, awayPred: a },
       {
-        onSuccess: () => toast.success("Prediction saved"),
+        onSuccess: () =>
+          toast.success("Prediction saved", {
+            description: match
+              ? `${match.home_team ?? "Home"} ${h}–${a} ${match.away_team ?? "Away"}`
+              : `${h}–${a}`,
+          }),
         onError: (err) =>
           toast.error(
             err instanceof Error ? err.message : "Could not save (match locked?)"

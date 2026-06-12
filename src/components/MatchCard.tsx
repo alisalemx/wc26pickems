@@ -117,7 +117,7 @@ export function MatchCard({
             value={home}
             disabled={!predictable}
             onChange={(e) => setHome(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className="h-11 w-12 text-center text-lg font-semibold"
+            className="h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl"
           />
           <span className="text-muted-foreground">:</span>
           <Input
@@ -128,7 +128,7 @@ export function MatchCard({
             value={away}
             disabled={!predictable}
             onChange={(e) => setAway(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            className="h-11 w-12 text-center text-lg font-semibold"
+            className="h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl"
           />
         </div>
         <TeamRow name={match.away_team} code={match.away_code} align="right" />

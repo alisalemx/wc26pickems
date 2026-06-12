@@ -22,7 +22,7 @@ export function Layout() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b-2 bg-background px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">🏆</span>
           <div className="leading-tight">
@@ -54,7 +54,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t-2 bg-background">
         <div className="mx-auto flex max-w-2xl">
           {items.map((item) => (
             <NavLink
@@ -65,7 +65,7 @@ export function Layout() {
                 cn(
                   "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors",
                   isActive
-                    ? "text-primary"
+                    ? "font-semibold text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )
               }
