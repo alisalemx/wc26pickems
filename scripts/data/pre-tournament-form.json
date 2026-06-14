@@ -1,0 +1,482 @@
+{
+  "ALG": {
+    "form": "LWDWW",
+    "results": [
+      { "date": "2026-01-10", "opponent": "Nigeria", "gf": 0, "ga": 2, "outcome": "L", "competition": "AFCON" },
+      { "date": "2026-03-27", "opponent": "Guatemala", "gf": 7, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Uruguay", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-03", "opponent": "Netherlands", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-10", "opponent": "Bolivia", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "ARG": {
+    "form": "WWWWW",
+    "results": [
+      { "date": "2025-11-14", "opponent": "Angola", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Mauritania", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Zambia", "gf": 5, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Honduras", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Iceland", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "AUS": {
+    "form": "LWWLD",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Colombia", "gf": 0, "ga": 3, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Cameroon", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Curaçao", "gf": 5, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Mexico", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Switzerland", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "AUT": {
+    "form": "WDWWW",
+    "results": [
+      { "date": "2025-11-15", "opponent": "Cyprus", "gf": 2, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2025-11-18", "opponent": "Bosnia and Herzegovina", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Ghana", "gf": 5, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "South Korea", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-01", "opponent": "Tunisia", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "BEL": {
+    "form": "WWDWW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Liechtenstein", "gf": 7, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-28", "opponent": "United States", "gf": 5, "ga": 2, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Mexico", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-02", "opponent": "Croatia", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Tunisia", "gf": 5, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "BIH": {
+    "form": "WDDDD",
+    "results": [
+      { "date": "2025-11-15", "opponent": "Romania", "gf": 3, "ga": 1, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2025-11-18", "opponent": "Austria", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Wales", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Playoff" },
+      { "date": "2026-03-31", "opponent": "Italy", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Playoff" },
+      { "date": "2026-05-29", "opponent": "North Macedonia", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "BRA": {
+    "form": "WDLWW",
+    "results": [
+      { "date": "2025-11-15", "opponent": "Senegal", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2025-11-18", "opponent": "Tunisia", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-26", "opponent": "France", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Croatia", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Panama", "gf": 6, "ga": 2, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "CAN": {
+    "form": "WDDWD",
+    "results": [
+      { "date": "2026-01-17", "opponent": "Guatemala", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-28", "opponent": "Iceland", "gf": 2, "ga": 2, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Tunisia", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-01", "opponent": "Uzbekistan", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-05", "opponent": "Republic of Ireland", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "CIV": {
+    "form": "WLWWW",
+    "results": [
+      { "date": "2026-01-06", "opponent": "Burkina Faso", "gf": 3, "ga": 0, "outcome": "W", "competition": "AFCON" },
+      { "date": "2026-01-10", "opponent": "Egypt", "gf": 2, "ga": 3, "outcome": "L", "competition": "AFCON" },
+      { "date": "2026-03-28", "opponent": "South Korea", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Scotland", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "France", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "COD": {
+    "form": "LWWDL",
+    "results": [
+      { "date": "2026-01-06", "opponent": "Algeria", "gf": 0, "ga": 1, "outcome": "L", "competition": "AFCON" },
+      { "date": "2026-03-25", "opponent": "Bermuda", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Jamaica", "gf": 1, "ga": 0, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-06-03", "opponent": "Denmark", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Chile", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "COL": {
+    "form": "WWLLW",
+    "results": [
+      { "date": "2025-11-15", "opponent": "New Zealand", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2025-11-18", "opponent": "Australia", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-26", "opponent": "Croatia", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-29", "opponent": "France", "gf": 1, "ga": 3, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Jordan", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "CPV": {
+    "form": "DLDWW",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Egypt", "gf": 1, "ga": 1, "outcome": "D", "competition": "Al-Ain Cup" },
+      { "date": "2026-03-26", "opponent": "Chile", "gf": 2, "ga": 4, "outcome": "L", "competition": "FIFA Series" },
+      { "date": "2026-03-29", "opponent": "Finland", "gf": 1, "ga": 1, "outcome": "D", "competition": "FIFA Series" },
+      { "date": "2026-05-31", "opponent": "Serbia", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Bermuda", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "CRO": {
+    "form": "WWLLW",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Montenegro", "gf": 3, "ga": 2, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Colombia", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Brazil", "gf": 1, "ga": 3, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-02", "opponent": "Belgium", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Slovenia", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "CUW": {
+    "form": "DLLLW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Jamaica", "gf": 0, "ga": 0, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "China", "gf": 0, "ga": 2, "outcome": "L", "competition": "FIFA Series" },
+      { "date": "2026-03-31", "opponent": "Australia", "gf": 1, "ga": 5, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Scotland", "gf": 1, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Aruba", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "CZE": {
+    "form": "WDDWW",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Gibraltar", "gf": 6, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Ireland", "gf": 2, "ga": 2, "outcome": "D", "competition": "WC Playoff" },
+      { "date": "2026-03-31", "opponent": "Denmark", "gf": 2, "ga": 2, "outcome": "D", "competition": "WC Playoff" },
+      { "date": "2026-05-31", "opponent": "Kosovo", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Guatemala", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "ECU": {
+    "form": "WDDWW",
+    "results": [
+      { "date": "2025-11-19", "opponent": "New Zealand", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Morocco", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Netherlands", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Saudi Arabia", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Guatemala", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "EGY": {
+    "form": "DWDWL",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Cape Verde", "gf": 1, "ga": 1, "outcome": "D", "competition": "Al-Ain Cup" },
+      { "date": "2026-03-27", "opponent": "Saudi Arabia", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Spain", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-05-28", "opponent": "Russia", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Brazil", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "ENG": {
+    "form": "WDLWW",
+    "results": [
+      { "date": "2025-11-16", "opponent": "Albania", "gf": 2, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Uruguay", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Japan", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "New Zealand", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-10", "opponent": "Costa Rica", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "ESP": {
+    "form": "DWDDW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Türkiye", "gf": 2, "ga": 2, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Serbia", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Egypt", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Iraq", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Peru", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "FRA": {
+    "form": "WWWLW",
+    "results": [
+      { "date": "2025-11-16", "opponent": "Azerbaijan", "gf": 3, "ga": 1, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Brazil", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-29", "opponent": "Colombia", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Ivory Coast", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-08", "opponent": "Northern Ireland", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "GER": {
+    "form": "WWWWW",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Slovakia", "gf": 6, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Switzerland", "gf": 4, "ga": 3, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-30", "opponent": "Ghana", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Finland", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "United States", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "GHA": {
+    "form": "LLLLD",
+    "results": [
+      { "date": "2025-11-18", "opponent": "South Korea", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Austria", "gf": 1, "ga": 5, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-30", "opponent": "Germany", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-22", "opponent": "Mexico", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-02", "opponent": "Wales", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "HAI": {
+    "form": "WLDWL",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Nicaragua", "gf": 2, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-28", "opponent": "Tunisia", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Iceland", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-02", "opponent": "New Zealand", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-05", "opponent": "Peru", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "IRN": {
+    "form": "DLWDW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Uzbekistan", "gf": 0, "ga": 0, "outcome": "D", "competition": "Al-Ain Cup" },
+      { "date": "2026-03-27", "opponent": "Nigeria", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Costa Rica", "gf": 5, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-29", "opponent": "Gambia", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Mali", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "IRQ": {
+    "form": "DWWDL",
+    "results": [
+      { "date": "2025-11-13", "opponent": "United Arab Emirates", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2025-11-18", "opponent": "United Arab Emirates", "gf": 2, "ga": 1, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-31", "opponent": "Bolivia", "gf": 2, "ga": 1, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-06-04", "opponent": "Spain", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Venezuela", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "JOR": {
+    "form": "DDDLL",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Mali", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Costa Rica", "gf": 2, "ga": 2, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Nigeria", "gf": 2, "ga": 2, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Switzerland", "gf": 1, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Colombia", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "JPN": {
+    "form": "WWWWW",
+    "results": [
+      { "date": "2025-11-14", "opponent": "Ghana", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2025-11-18", "opponent": "Bolivia", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-28", "opponent": "Scotland", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "England", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Iceland", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "KOR": {
+    "form": "WLLWW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Ghana", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-28", "opponent": "Ivory Coast", "gf": 0, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Austria", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Trinidad and Tobago", "gf": 5, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-03", "opponent": "El Salvador", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "KSA": {
+    "form": "LLLWD",
+    "results": [
+      { "date": "2026-03-27", "opponent": "Egypt", "gf": 0, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Serbia", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Ecuador", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-05", "opponent": "Puerto Rico", "gf": 3, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Senegal", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "MAR": {
+    "form": "DWWWD",
+    "results": [
+      { "date": "2026-03-27", "opponent": "Ecuador", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Paraguay", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-26", "opponent": "Burundi", "gf": 5, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-02", "opponent": "Madagascar", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Norway", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "MEX": {
+    "form": "DDWWW",
+    "results": [
+      { "date": "2026-03-28", "opponent": "Portugal", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Belgium", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-05-22", "opponent": "Ghana", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Australia", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Serbia", "gf": 5, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "NED": {
+    "form": "WWDLW",
+    "results": [
+      { "date": "2025-11-17", "opponent": "Lithuania", "gf": 4, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Norway", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Ecuador", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-03", "opponent": "Algeria", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-08", "opponent": "Uzbekistan", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "NOR": {
+    "form": "WLDWD",
+    "results": [
+      { "date": "2025-11-16", "opponent": "Italy", "gf": 4, "ga": 1, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Netherlands", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Switzerland", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-01", "opponent": "Sweden", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-07", "opponent": "Morocco", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "NZL": {
+    "form": "LLWLL",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Ecuador", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Finland", "gf": 0, "ga": 2, "outcome": "L", "competition": "FIFA Series" },
+      { "date": "2026-03-30", "opponent": "Chile", "gf": 4, "ga": 1, "outcome": "W", "competition": "FIFA Series" },
+      { "date": "2026-06-02", "opponent": "Haiti", "gf": 0, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "England", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "PAN": {
+    "form": "DWLWD",
+    "results": [
+      { "date": "2026-03-27", "opponent": "South Africa", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "South Africa", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Brazil", "gf": 2, "ga": 6, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-03", "opponent": "Dominican Republic", "gf": 4, "ga": 2, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Bosnia and Herzegovina", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "PAR": {
+    "form": "DWWLW",
+    "results": [
+      { "date": "2025-09-04", "opponent": "Ecuador", "gf": 0, "ga": 0, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2025-09-09", "opponent": "Peru", "gf": 1, "ga": 0, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Greece", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Morocco", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-05", "opponent": "Nicaragua", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "POR": {
+    "form": "WDWWW",
+    "results": [
+      { "date": "2025-11-16", "opponent": "Armenia", "gf": 9, "ga": 1, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-28", "opponent": "Mexico", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "United States", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Chile", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-10", "opponent": "Nigeria", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "QAT": {
+    "form": "LDLLD",
+    "results": [
+      { "date": "2025-12-01", "opponent": "Palestine", "gf": 0, "ga": 1, "outcome": "L", "competition": "Arab Cup" },
+      { "date": "2025-12-04", "opponent": "Syria", "gf": 1, "ga": 1, "outcome": "D", "competition": "Arab Cup" },
+      { "date": "2025-12-07", "opponent": "Tunisia", "gf": 0, "ga": 3, "outcome": "L", "competition": "Arab Cup" },
+      { "date": "2026-05-28", "opponent": "Republic of Ireland", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "El Salvador", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "RSA": {
+    "form": "LDLDW",
+    "results": [
+      { "date": "2026-01-04", "opponent": "Cameroon", "gf": 1, "ga": 2, "outcome": "L", "competition": "AFCON" },
+      { "date": "2026-03-27", "opponent": "Panama", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Panama", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-29", "opponent": "Nicaragua", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Jamaica", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "SCO": {
+    "form": "WLLWW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Denmark", "gf": 4, "ga": 2, "outcome": "W", "competition": "WC Qual" },
+      { "date": "2026-03-28", "opponent": "Japan", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Ivory Coast", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-30", "opponent": "Curaçao", "gf": 4, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Bolivia", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "SEN": {
+    "form": "LWWLD",
+    "results": [
+      { "date": "2026-01-18", "opponent": "Morocco", "gf": 0, "ga": 3, "outcome": "L", "competition": "AFCON" },
+      { "date": "2026-03-28", "opponent": "Peru", "gf": 2, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Gambia", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "United States", "gf": 2, "ga": 3, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-09", "opponent": "Saudi Arabia", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "SUI": {
+    "form": "DLDWD",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Kosovo", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-27", "opponent": "Germany", "gf": 3, "ga": 4, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Norway", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Jordan", "gf": 4, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Australia", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "SWE": {
+    "form": "DWWLD",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Slovenia", "gf": 1, "ga": 1, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Ukraine", "gf": 3, "ga": 1, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-03-31", "opponent": "Poland", "gf": 3, "ga": 2, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-06-01", "opponent": "Norway", "gf": 1, "ga": 3, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-04", "opponent": "Greece", "gf": 2, "ga": 2, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "TUN": {
+    "form": "DWDLL",
+    "results": [
+      { "date": "2026-01-03", "opponent": "Mali", "gf": 1, "ga": 1, "outcome": "D", "competition": "AFCON" },
+      { "date": "2026-03-28", "opponent": "Haiti", "gf": 1, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Canada", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-01", "opponent": "Austria", "gf": 0, "ga": 1, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Belgium", "gf": 0, "ga": 5, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "TUR": {
+    "form": "DWWWW",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Spain", "gf": 2, "ga": 2, "outcome": "D", "competition": "WC Qual" },
+      { "date": "2026-03-26", "opponent": "Romania", "gf": 1, "ga": 0, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-03-31", "opponent": "Kosovo", "gf": 1, "ga": 0, "outcome": "W", "competition": "WC Playoff" },
+      { "date": "2026-06-01", "opponent": "North Macedonia", "gf": 4, "ga": 0, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Venezuela", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" }
+    ]
+  },
+  "URY": {
+    "form": "WDLDD",
+    "results": [
+      { "date": "2025-10-13", "opponent": "Uzbekistan", "gf": 2, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2025-11-15", "opponent": "Mexico", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2025-11-18", "opponent": "United States", "gf": 1, "ga": 5, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "England", "gf": 1, "ga": 1, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Algeria", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" }
+    ]
+  },
+  "USA": {
+    "form": "WLLWL",
+    "results": [
+      { "date": "2025-11-18", "opponent": "Uruguay", "gf": 5, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-28", "opponent": "Belgium", "gf": 2, "ga": 5, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-03-31", "opponent": "Portugal", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-05-31", "opponent": "Senegal", "gf": 3, "ga": 2, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-06-06", "opponent": "Germany", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  },
+  "UZB": {
+    "form": "DWDLL",
+    "results": [
+      { "date": "2026-01-26", "opponent": "China", "gf": 2, "ga": 2, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-03-27", "opponent": "Gabon", "gf": 3, "ga": 1, "outcome": "W", "competition": "Friendly" },
+      { "date": "2026-03-30", "opponent": "Venezuela", "gf": 0, "ga": 0, "outcome": "D", "competition": "Friendly" },
+      { "date": "2026-06-01", "opponent": "Canada", "gf": 0, "ga": 2, "outcome": "L", "competition": "Friendly" },
+      { "date": "2026-06-08", "opponent": "Netherlands", "gf": 1, "ga": 2, "outcome": "L", "competition": "Friendly" }
+    ]
+  }
+}

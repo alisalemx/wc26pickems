@@ -8,10 +8,16 @@ import { StageBadge } from "./StageBadge"
 import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
 import { PredictionCountdown } from "./PredictionCountdown"
+import { TeamForm } from "./TeamForm"
 import { ScorePair } from "./ScoreInput"
 import { kickoffTime, isLocked } from "@/lib/format"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
-import { useRevealedPredictions, usePredictionDistribution } from "@/hooks/queries"
+import {
+  useRevealedPredictions,
+  usePredictionDistribution,
+  useTeamForm,
+  useTournamentForm,
+} from "@/hooks/queries"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -37,6 +43,17 @@ export function MatchCard({
     !locked && match.home_team != null && match.away_team != null
   // Anonymous visitors can see the match but can't enter or save a prediction.
   const canPredict = predictable && signedIn
+
+  // Recent form per side: frozen pre-tournament 5 (team_form) + live
+  // in-tournament results (derived from matches), shown either side of a divider.
+  const preByCode = useTeamForm().data
+  const tourByCode = useTournamentForm()
+  const homePre = match.home_code ? preByCode?.[match.home_code]?.form : null
+  const awayPre = match.away_code ? preByCode?.[match.away_code]?.form : null
+  const homeTour = match.home_code ? tourByCode[match.home_code] : null
+  const awayTour = match.away_code ? tourByCode[match.away_code] : null
+  const showForm =
+    !finished && Boolean(homePre || awayPre || homeTour || awayTour)
 
   const [home, setHome] = useState(prediction ? String(prediction.home_pred) : "")
   const [away, setAway] = useState(prediction ? String(prediction.away_pred) : "")
@@ -151,6 +168,19 @@ export function MatchCard({
         )}
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
       </div>
+
+      {showForm && (
+        <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
+          <span className="text-xs text-muted-foreground">Recent form</span>
+          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <TeamForm pre={homePre} tournament={homeTour} />
+            <span aria-hidden className="px-3 text-sm font-medium opacity-0">
+              vs
+            </span>
+            <TeamForm pre={awayPre} tournament={awayTour} />
+          </div>
+        </div>
+      )}
 
       {canPredict && (
         <PopularPicks

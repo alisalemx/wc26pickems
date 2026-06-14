@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // `.claude` holds agent state and git worktrees (full repo copies); linting
+  // them trips the typed parser with duplicate tsconfig roots.
+  globalIgnores(['dist', '.claude']),
   {
     files: ['**/*.{ts,tsx,mts}'],
     extends: [

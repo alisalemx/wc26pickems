@@ -1,15 +1,18 @@
+import { useMemo } from "react"
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
+import { computeTournamentForm } from "@/lib/form"
 import type {
   LeaderboardRow,
   MatchRow,
   PredictionDistributionRow,
   PredictionRow,
   RevealedPrediction,
+  TeamFormRow,
 } from "@/lib/types"
 
 export function useMatches() {
@@ -108,6 +111,33 @@ export function usePredictionDistribution(matchId: number, enabled: boolean) {
     select: (rows) => rows.filter((r) => r.match_id === matchId),
     staleTime: 60_000,
   })
+}
+
+/** Recent form for every team, in one tiny query keyed by football-data TLA.
+ *  Like usePredictionDistribution, all ~100 match cards share this single
+ *  request; each looks up its two teams by `home_code`/`away_code`. Form only
+ *  changes when a team plays (roughly daily at most), so it's cached an hour.
+ *  Public-readable, so it resolves for logged-out visitors too. */
+export function useTeamForm() {
+  return useQuery({
+    queryKey: ["team-form"],
+    queryFn: async (): Promise<TeamFormRow[]> => {
+      const { data, error } = await supabase.from("team_form").select("*")
+      if (error) throw error
+      return data as TeamFormRow[]
+    },
+    select: (rows) =>
+      Object.fromEntries(rows.map((r) => [r.code, r])) as Record<string, TeamFormRow>,
+    staleTime: 60 * 60_000,
+  })
+}
+
+/** Each team's in-tournament W/D/L, derived from the shared `matches` query
+ *  (no extra request) and memoised per render. Keyed by team code; pairs with
+ *  useTeamForm (the frozen pre-tournament half) in MatchCard. */
+export function useTournamentForm(): Record<string, string> {
+  const { data } = useMatches()
+  return useMemo(() => computeTournamentForm(data ?? []), [data])
 }
 
 interface RawRevealed {

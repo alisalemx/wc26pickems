@@ -76,6 +76,30 @@ export interface RevealedPrediction {
 
 export type ResultType = "EXACT" | "OUTCOME" | "MISS"
 
+/** One finished match from a team's perspective, backing a single form pill.
+ *  Stored in the `results` jsonb of `team_form` (see 0011_team_form.sql). */
+export interface TeamFormMatch {
+  date: string
+  opponent: string
+  gf: number
+  ga: number
+  outcome: "W" | "D" | "L"
+  competition: string
+}
+
+/** A national team's recent form, sourced from API-Football by the sync-form
+ *  function (football-data.org's free tier has no out-of-tournament matches).
+ *  `code` is the football-data TLA, joining to `matches.home_code`/`away_code`;
+ *  `api_id` is API-Football's id. `form` is W/D/L oldest -> newest. */
+export interface TeamFormRow {
+  code: string
+  name: string | null
+  api_id: number | null
+  form: string | null
+  results: TeamFormMatch[] | null
+  updated_at: string
+}
+
 /** One scoreline and how many players predicted it for a match — anonymous
  *  aggregate from the `prediction_distributions` RPC (no user identity).
  *  `predictors` is the match's total predictor count: the RPC truncates to the

@@ -17,13 +17,14 @@ npm run typecheck    # tsc -b only
 npm run lint         # eslint .
 npm test             # vitest run (unit tests for scoring + format helpers)
 npm run seed         # load 104 fixtures into Supabase matches table (needs SUPABASE_* env)
+npm run seed-team-form      # load static pre-tournament form into team_form (needs SUPABASE_* env)
 npm run generate-schedule   # regenerate scripts/data/matches-2026.json
 ```
 
 After code changes, validate with `npm run typecheck`, `npm run lint`, and
 `npm test`. Test coverage is currently limited to the pure helpers
-(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`) and the sync match-linker
-(`netlify/lib/link-matches.test.mts`).
+(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`, `src/lib/form.test.ts`)
+and the sync match-linker (`netlify/lib/link-matches.test.mts`).
 
 To run the scheduled sync function locally: `netlify functions:invoke sync-results`.
 
@@ -88,6 +89,29 @@ suppresses chips for matches with too few predictors; `0008` set it to 4,
 deanonymization-by-subtraction trade-off). The client reads it via
 `usePredictionDistribution` (query key `["prediction-distributions"]`).
 
+### Team form (`0011_team_form.sql`)
+`MatchCard` shows each side's recent W/D/L form below the countries (upcoming
+matches only), in **two halves separated by a vertical divider**:
+- **Frozen pre-tournament (left, up to 5 pills)** — each team's last 5 matches
+  *before* the World Cup kicked off (friendlies/qualifiers/Nations League). This
+  is **static**: those matches are all in the past and never change, and no free
+  API carries them (football-data.org's free tier has no out-of-tournament
+  national-team matches; API-Football's free tier blocks current seasons). So the
+  data was researched once and committed to `scripts/data/pre-tournament-form.json`,
+  then loaded into the `team_form` table (publicly readable like `matches`,
+  written only by the service role) via `npm run seed-team-form`
+  (`scripts/seed-team-form.ts`). `form` string + `results` jsonb, keyed by
+  football-data TLA `code`. Read client-side via `useTeamForm`
+  (query key `["team-form"]`).
+- **Live in-tournament (right, grows each matchday)** — the team's finished
+  World Cup results so far, computed **client-side from our own `matches` table**
+  (no API), via the pure `computeTournamentForm` (`src/lib/form.ts`) behind the
+  `useTournamentForm` hook (derives from the shared `["matches"]` query).
+
+There is **no scheduled sync** for form — the pre-tournament half is static
+(re-run `seed-team-form` only to correct the committed JSON) and the
+in-tournament half is derived live from `matches`.
+
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:
 when set, the sync function skips the result fields (status/scores/pens/duration)
@@ -122,6 +146,7 @@ name) rendered as `@handle` everywhere.
 - `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. Skips result fields for rows with `result_locked = true` (see admin result locks above).
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
 - `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
+- `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
 
 ### Routing (`src/App.tsx`)
 The app shell is **public**: Matches (index) and Standings render for anonymous
@@ -140,4 +165,5 @@ Login, Welcome (`/welcome`).
 - **The sticky `DayHeader` offset (`top-14`) tracks the `h-14` app header in `Layout.tsx`.** If you change the header height, update `DayHeader`'s `top-*` to match or the day strip will misalign.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
+- **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
