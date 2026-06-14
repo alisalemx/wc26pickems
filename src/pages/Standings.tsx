@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { TeamDisplay } from "@/components/TeamDisplay"
+import { TeamDetailDialog } from "@/components/TeamInfoDialog"
 import type { MatchRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -191,7 +192,10 @@ export function Standings() {
                     )}
                   >
                     <TableCell>
-                      <TeamDisplay name={r.team} code={r.code} size="sm" />
+                      <div className="flex items-center gap-1">
+                        <TeamDisplay name={r.team} code={r.code} size="sm" />
+                        <TeamDetailDialog name={r.team} code={r.code} />
+                      </div>
                     </TableCell>
                     <TableCell className="text-center tabular-nums text-muted-foreground">
                       {r.p}

@@ -140,6 +140,51 @@ function TeamPanel({
   )
 }
 
+/** Small info-icon button that opens a modal with one team's recent form, its
+ *  results so far in this tournament, and the major trophies it's won. Used in
+ *  the group standings, where each row is a single team. */
+export function TeamDetailDialog({
+  name,
+  code,
+}: {
+  name: string | null
+  code: string | null
+}) {
+  const formByCode = useTeamForm().data
+  const tourByCode = useTournamentResults()
+  const form = code ? formByCode?.[code] : undefined
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6 text-muted-foreground"
+          aria-label={`${name ?? "Team"} details`}
+        >
+          <Info className="size-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Team details</DialogTitle>
+          <DialogDescription>
+            {name ?? "Team"} — recent form, this tournament, and honours.
+          </DialogDescription>
+        </DialogHeader>
+        <TeamPanel
+          name={name}
+          code={code}
+          pre={form?.results ?? []}
+          tournament={code ? tourByCode[code] ?? [] : []}
+          honors={form?.honors ?? []}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /** Info-icon button that opens a modal comparing both teams' recent form, their
  *  results so far in this tournament, and the major trophies they've won. */
 export function TeamInfoDialog({ match }: { match: MatchRow }) {
