@@ -22,15 +22,15 @@ type NavItem = {
   end?: boolean
 }
 
-// Matches and Groups are public; Table and Me only appear once signed in
-// (tapping Table while logged out still routes to /login via ProtectedRoute,
+// Matches and Groups are public; Leaderboard and Me only appear once signed in
+// (tapping Leaderboard while logged out still routes to /login via ProtectedRoute,
 // but we keep the bar uncluttered for visitors).
 const PUBLIC_NAV: NavItem[] = [
   { to: "/", label: "Matches", icon: CalendarDays, end: true },
   { to: "/standings", label: "Groups", icon: ListChecks },
 ]
 const MEMBER_NAV: NavItem[] = [
-  { to: "/leaderboard", label: "Table", icon: Trophy },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/me", label: "Me", icon: User },
 ]
 
