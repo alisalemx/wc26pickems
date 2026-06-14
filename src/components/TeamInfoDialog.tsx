@@ -97,21 +97,8 @@ function TeamPanel({
         <span className="font-semibold">{name ?? "TBD"}</span>
       </div>
 
-      <Section title="Last 5 (pre-tournament)" empty={pre.length === 0}>
-        {pre.map((r, i) => (
-          <ResultRow
-            key={i}
-            outcome={r.outcome}
-            gf={r.gf}
-            ga={r.ga}
-            opponent={r.opponent}
-            label={r.competition}
-          />
-        ))}
-      </Section>
-
       <Section title="This tournament" empty={tournament.length === 0}>
-        {tournament.map((r) => (
+        {[...tournament].reverse().map((r) => (
           <ResultRow
             key={r.matchId}
             outcome={r.outcome}
@@ -119,6 +106,19 @@ function TeamPanel({
             ga={r.ga}
             opponent={r.opponent}
             label={STAGE_SHORT[r.stage] ?? r.stage}
+          />
+        ))}
+      </Section>
+
+      <Section title="Last 5 (pre-tournament)" empty={pre.length === 0}>
+        {[...pre].reverse().map((r, i) => (
+          <ResultRow
+            key={i}
+            outcome={r.outcome}
+            gf={r.gf}
+            ga={r.ga}
+            opponent={r.opponent}
+            label={r.competition}
           />
         ))}
       </Section>
