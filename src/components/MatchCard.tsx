@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { StageBadge } from "./StageBadge"
 import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
+import { PredictionCountdown } from "./PredictionCountdown"
 import { ScorePair } from "./ScoreInput"
 import { kickoffTime, isLocked } from "@/lib/format"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
@@ -86,16 +87,34 @@ export function MatchCard({
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
-      <div className="flex items-center justify-between px-4 pt-3 text-xs text-muted-foreground">
-        <StageBadge stage={match.stage} group={match.group_name} />
-        <span className={cn("flex items-center gap-1", finished && "text-primary")}>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-3 text-[13px] text-muted-foreground sm:text-xs">
+        <StageBadge
+          stage={match.stage}
+          group={match.group_name}
+          className="justify-self-start"
+        />
+
+        {/* Absolute kickoff time, centered (in strong foreground ink). Hidden
+            once locked — the right slot then carries the status instead. */}
+        <span className="justify-self-center font-medium tabular-nums text-foreground">
+          {!locked && kickoffTime(match.kickoff)}
+        </span>
+
+        <span
+          className={cn(
+            "flex items-center justify-self-end gap-1",
+            finished && "text-primary"
+          )}
+        >
           {locked ? (
             <>
               <Lock className="size-3" /> {finished ? "Ended" : "Locked"}
             </>
-          ) : (
-            kickoffTime(match.kickoff)
-          )}
+          ) : predictable ? (
+            // Teams are set and kickoff is ahead — the live window to get a
+            // prediction in before it locks.
+            <PredictionCountdown kickoff={match.kickoff} />
+          ) : null}
         </span>
       </div>
 
