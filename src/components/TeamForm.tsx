@@ -21,12 +21,20 @@ function pillsOf(form: string | null | undefined): Outcome[] {
     .filter((c): c is Outcome => c === "W" || c === "D" || c === "L")
 }
 
-function Pill({ outcome }: { outcome: Outcome }) {
+/** A single W/D/L outcome pill — shared by the form row and the team-info modal. */
+export function FormPill({
+  outcome,
+  className,
+}: {
+  outcome: Outcome
+  className?: string
+}) {
   return (
     <span
       className={cn(
         "grid size-4 place-items-center rounded-sm text-[10px] font-bold leading-none",
-        PILL[outcome]
+        PILL[outcome],
+        className
       )}
     >
       {outcome}
@@ -57,13 +65,13 @@ export function TeamForm({
       aria-label={label}
     >
       {preP.map((o, i) => (
-        <Pill key={`p${i}`} outcome={o} />
+        <FormPill key={`p${i}`} outcome={o} />
       ))}
       {preP.length > 0 && tourP.length > 0 && (
         <span aria-hidden className="mx-0.5 h-4 w-px bg-ink/40" />
       )}
       {tourP.map((o, i) => (
-        <Pill key={`t${i}`} outcome={o} />
+        <FormPill key={`t${i}`} outcome={o} />
       ))}
     </div>
   )

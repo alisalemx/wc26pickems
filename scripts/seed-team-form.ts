@@ -36,11 +36,21 @@ interface FormEntry {
   form: string
   results?: FormMatch[]
 }
+interface Honor {
+  competition: string
+  count: number
+  years: number[]
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 const data = JSON.parse(
   readFileSync(resolve(here, "data/pre-tournament-form.json"), "utf8")
 ) as Record<string, FormEntry>
+// Honours live in a separate file (keyed by the same code; a `_notes` key holds
+// provenance and is ignored here).
+const honorsData = JSON.parse(
+  readFileSync(resolve(here, "data/honors.json"), "utf8")
+) as Record<string, { honors?: Honor[] }>
 
 const nameByCode = new Map(
   Object.values(GROUPS)
@@ -53,6 +63,7 @@ const rows = Object.entries(data).map(([code, entry]) => ({
   name: nameByCode.get(code) ?? null,
   form: entry.form,
   results: entry.results ?? null,
+  honors: honorsData[code]?.honors ?? null,
   updated_at: new Date().toISOString(),
 }))
 

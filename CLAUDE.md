@@ -89,7 +89,7 @@ suppresses chips for matches with too few predictors; `0008` set it to 4,
 deanonymization-by-subtraction trade-off). The client reads it via
 `usePredictionDistribution` (query key `["prediction-distributions"]`).
 
-### Team form (`0011_team_form.sql`)
+### Team form (`0011_team_form.sql`, `0012_team_form_honors.sql`)
 `MatchCard` shows each side's recent W/D/L form below the countries (upcoming
 matches only), in **two halves separated by a vertical divider**:
 - **Frozen pre-tournament (left, up to 5 pills)** — each team's last 5 matches
@@ -108,9 +108,19 @@ matches only), in **two halves separated by a vertical divider**:
   (no API), via the pure `computeTournamentForm` (`src/lib/form.ts`) behind the
   `useTournamentForm` hook (derives from the shared `["matches"]` query).
 
-There is **no scheduled sync** for form — the pre-tournament half is static
-(re-run `seed-team-form` only to correct the committed JSON) and the
-in-tournament half is derived live from `matches`.
+An **info icon** in each card header (shown once both teams are known) opens
+`TeamInfoDialog` — a modal comparing the two teams side by side, each with three
+sections: the detailed **last-5 pre-tournament** results (from `team_form.results`),
+**this tournament** so far (detailed, via `computeTournamentResults` /
+`useTournamentResults` from `matches`), and **honours** — major senior trophies
+won (World Cup, continental championship, Confederations Cup, Nations League),
+stored static in `team_form.honors` (`0012`) from `scripts/data/honors.json`
+(separate file, merged by `seed-team-form`; counts + years per competition).
+
+There is **no scheduled sync** for form/honours — the pre-tournament half and
+honours are static (re-run `seed-team-form` only to correct the committed JSON
+files) and the in-tournament half is derived live from `matches`. The form
+pill (`FormPill`) is exported from `TeamForm` and reused in the modal.
 
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:

@@ -1,13 +1,27 @@
-import type { MatchRow } from "./types"
+import type { MatchRow, MatchStage } from "./types"
 
-/** Each team's in-tournament W/D/L, computed from our own `matches` table —
- *  no external API needed (the pre-tournament snapshot in `team_form` is the
- *  separate, frozen half). Keyed by team code, ordered oldest -> newest by
- *  kickoff. Group-stage draws are D; a knockout level after 90'+ET that's
- *  decided on penalties counts as W/L for the shootout winner. */
-export function computeTournamentForm(
+export type Outcome = "W" | "D" | "L"
+
+/** One finished tournament match from a team's perspective. */
+export interface TournamentResult {
+  matchId: number
+  date: string
+  stage: MatchStage
+  opponent: string | null
+  opponentCode: string | null
+  gf: number
+  ga: number
+  outcome: Outcome
+}
+
+/** Each team's finished World Cup matches, keyed by team code, oldest -> newest
+ *  by kickoff. Computed from our own `matches` table — no external API (the
+ *  pre-tournament snapshot in `team_form` is the separate, static half).
+ *  Group-stage draws are D; a knockout level after 90'+ET that's decided on
+ *  penalties counts as W/L for the shootout winner. */
+export function computeTournamentResults(
   matches: MatchRow[]
-): Record<string, string> {
+): Record<string, TournamentResult[]> {
   const finished = matches
     .filter(
       (m) =>
@@ -19,23 +33,54 @@ export function computeTournamentForm(
     )
     .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
 
-  const byCode: Record<string, string> = {}
+  const byCode: Record<string, TournamentResult[]> = {}
   for (const m of finished) {
     const hs = m.home_score as number
     const as = m.away_score as number
 
-    let home: "W" | "D" | "L"
+    let home: Outcome
     if (hs > as) home = "W"
     else if (hs < as) home = "L"
     else if (m.home_pens != null && m.away_pens != null)
       home = m.home_pens > m.away_pens ? "W" : m.home_pens < m.away_pens ? "L" : "D"
     else home = "D"
-    const away = home === "W" ? "L" : home === "L" ? "W" : "D"
+    const away: Outcome = home === "W" ? "L" : home === "L" ? "W" : "D"
 
     const hc = m.home_code as string
     const ac = m.away_code as string
-    byCode[hc] = (byCode[hc] ?? "") + home
-    byCode[ac] = (byCode[ac] ?? "") + away
+    ;(byCode[hc] ??= []).push({
+      matchId: m.id,
+      date: m.kickoff,
+      stage: m.stage,
+      opponent: m.away_team,
+      opponentCode: m.away_code,
+      gf: hs,
+      ga: as,
+      outcome: home,
+    })
+    ;(byCode[ac] ??= []).push({
+      matchId: m.id,
+      date: m.kickoff,
+      stage: m.stage,
+      opponent: m.home_team,
+      opponentCode: m.home_code,
+      gf: as,
+      ga: hs,
+      outcome: away,
+    })
   }
   return byCode
+}
+
+/** Each team's in-tournament W/D/L string (oldest -> newest), keyed by team
+ *  code. Thin projection of computeTournamentResults for the form chips. */
+export function computeTournamentForm(
+  matches: MatchRow[]
+): Record<string, string> {
+  const results = computeTournamentResults(matches)
+  const out: Record<string, string> = {}
+  for (const code in results) {
+    out[code] = results[code].map((r) => r.outcome).join("")
+  }
+  return out
 }

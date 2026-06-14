@@ -87,16 +87,25 @@ export interface TeamFormMatch {
   competition: string
 }
 
-/** A national team's recent form, sourced from API-Football by the sync-form
- *  function (football-data.org's free tier has no out-of-tournament matches).
- *  `code` is the football-data TLA, joining to `matches.home_code`/`away_code`;
- *  `api_id` is API-Football's id. `form` is W/D/L oldest -> newest. */
+/** A major senior international trophy a team has won (World Cup, continental
+ *  championship, Confederations Cup, Nations League). Static, in `team_form`. */
+export interface TeamHonor {
+  competition: string
+  count: number
+  years: number[]
+}
+
+/** A national team's static pre-tournament data, keyed by football-data TLA
+ *  `code` (joining to `matches.home_code`/`away_code`). `form` is the last-5
+ *  W/D/L oldest -> newest, `results` the per-match detail, `honors` the major
+ *  trophies won. `api_id`/`name` are vestigial (unused by the UI). */
 export interface TeamFormRow {
   code: string
   name: string | null
   api_id: number | null
   form: string | null
   results: TeamFormMatch[] | null
+  honors: TeamHonor[] | null
   updated_at: string
 }
 

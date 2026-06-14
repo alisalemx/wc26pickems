@@ -5,7 +5,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
-import { computeTournamentForm } from "@/lib/form"
+import { computeTournamentForm, computeTournamentResults } from "@/lib/form"
+import type { TournamentResult } from "@/lib/form"
 import type {
   LeaderboardRow,
   MatchRow,
@@ -138,6 +139,13 @@ export function useTeamForm() {
 export function useTournamentForm(): Record<string, string> {
   const { data } = useMatches()
   return useMemo(() => computeTournamentForm(data ?? []), [data])
+}
+
+/** Each team's detailed in-tournament results (for the team-info modal),
+ *  derived from the shared `matches` query and memoised. Keyed by team code. */
+export function useTournamentResults(): Record<string, TournamentResult[]> {
+  const { data } = useMatches()
+  return useMemo(() => computeTournamentResults(data ?? []), [data])
 }
 
 interface RawRevealed {
