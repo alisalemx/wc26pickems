@@ -155,9 +155,9 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
           variant="ghost"
           size="sm"
           className="h-7 gap-1 px-2 text-xs font-medium text-muted-foreground"
-          aria-label="Head-to-head"
+          aria-label="Compare teams"
         >
-          <Info className="size-3.5" /> Head-to-head
+          <Info className="size-3.5" /> Compare
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
