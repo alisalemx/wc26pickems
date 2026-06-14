@@ -45,14 +45,20 @@ export function Leaderboard() {
         {isLoading ? (
           <ListSkeleton count={5} className="space-y-2" itemClassName="h-10 w-full" />
         ) : (
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10">#</TableHead>
+                <TableHead className="w-7 px-1">#</TableHead>
                 <TableHead>Player</TableHead>
-                <TableHead className="text-center">Exact</TableHead>
-                <TableHead className="text-center">Outcome</TableHead>
-                <TableHead className="text-right">Pts</TableHead>
+                <TableHead className="w-11 px-1 text-center tracking-normal">
+                  Exact
+                </TableHead>
+                <TableHead className="w-11 px-1 text-center tracking-normal">
+                  Outc.
+                </TableHead>
+                <TableHead className="w-11 px-1 text-right tracking-normal">
+                  Pts
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -63,28 +69,31 @@ export function Leaderboard() {
                     key={row.user_id}
                     className={cn(isMe && "bg-primary/10 border-l-2 border-l-primary")}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="px-1 font-medium">
                       {MEDALS[i] ?? i + 1}
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
-                        <span className="truncate font-medium">
+                        <span className="min-w-0 truncate font-medium">
                           @{row.username}
                         </span>
                         {isMe && (
-                          <Badge variant="outline" className="px-1 py-0 text-[10px]">
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 px-1 py-0 text-[10px]"
+                          >
                             you
                           </Badge>
                         )}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center tabular-nums text-muted-foreground">
+                    <TableCell className="px-1 text-center tabular-nums text-muted-foreground">
                       {row.exact_count}
                     </TableCell>
-                    <TableCell className="text-center tabular-nums text-muted-foreground">
+                    <TableCell className="px-1 text-center tabular-nums text-muted-foreground">
                       {row.outcome_count}
                     </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
+                    <TableCell className="px-1 text-right font-semibold tabular-nums">
                       {row.total_points}
                     </TableCell>
                   </TableRow>
