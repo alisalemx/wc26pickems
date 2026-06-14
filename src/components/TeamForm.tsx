@@ -1,12 +1,18 @@
 import { cn } from "@/lib/utils"
 
 /** A row of small W/D/L pills showing a team's recent form, oldest -> newest
- *  (latest on the right). The frozen pre-tournament snapshot (`pre`, up to 5
- *  games) is separated from the live in-tournament results (`tournament`) by a
- *  vertical divider. Renders nothing when there's no form on either side, so
- *  callers can drop it in unconditionally. Pills use soft tints over the card —
- *  pale green win, pale red loss, neutral draw — with a near-ink letter. */
+ *  (latest on the right). The frozen pre-tournament snapshot (`pre`) and the
+ *  live in-tournament results (`tournament`) form one rolling 5-match window:
+ *  the row always shows the 5 most recent matches, so as a team plays World Cup
+ *  games the live results push the oldest pre-tournament pills off the left. A
+ *  vertical divider marks the pre→tournament boundary when both are visible.
+ *  Renders nothing when there's no form on either side, so callers can drop it
+ *  in unconditionally. Pills use soft tints over the card — pale green win,
+ *  pale red loss, neutral draw — with a near-ink letter. */
 type Outcome = "W" | "D" | "L"
+
+/** Total pills shown — pre-tournament + in-tournament combined. */
+const MAX_PILLS = 5
 
 const PILL: Record<Outcome, string> = {
   W: "bg-primary/20 text-foreground",
@@ -51,9 +57,17 @@ export function TeamForm({
   tournament?: string | null
   className?: string
 }) {
-  const preP = pillsOf(pre)
-  const tourP = pillsOf(tournament)
-  if (preP.length === 0 && tourP.length === 0) return null
+  const allPre = pillsOf(pre)
+  const allTour = pillsOf(tournament)
+  if (allPre.length === 0 && allTour.length === 0) return null
+
+  // One rolling 5-match window: tournament results fill from the right, and
+  // whatever room is left shows the most recent pre-tournament pills. Once a
+  // team has played 5+ World Cup games, no pre-tournament pills remain.
+  const tourP = allTour.slice(Math.max(0, allTour.length - MAX_PILLS))
+  const preP = allPre.slice(
+    Math.max(0, allPre.length - Math.max(0, MAX_PILLS - tourP.length))
+  )
 
   const label =
     "Recent form, oldest to newest: " +
