@@ -90,37 +90,47 @@ deanonymization-by-subtraction trade-off). The client reads it via
 `usePredictionDistribution` (query key `["prediction-distributions"]`).
 
 ### Team form (`0011_team_form.sql`, `0012_team_form_honors.sql`)
-`MatchCard` shows each side's recent W/D/L form below the countries (upcoming
-matches only), in **two halves separated by a vertical divider**:
-- **Frozen pre-tournament (left, up to 5 pills)** — each team's last 5 matches
-  *before* the World Cup kicked off (friendlies/qualifiers/Nations League). This
-  is **static**: those matches are all in the past and never change, and no free
-  API carries them (football-data.org's free tier has no out-of-tournament
-  national-team matches; API-Football's free tier blocks current seasons). So the
-  data was researched once and committed to `scripts/data/pre-tournament-form.json`,
-  then loaded into the `team_form` table (publicly readable like `matches`,
-  written only by the service role) via `npm run seed-team-form`
-  (`scripts/seed-team-form.ts`). `form` string + `results` jsonb, keyed by
-  football-data TLA `code`. Read client-side via `useTeamForm`
-  (query key `["team-form"]`).
-- **Live in-tournament (right, grows each matchday)** — the team's finished
-  World Cup results so far, computed **client-side from our own `matches` table**
-  (no API), via the pure `computeTournamentForm` (`src/lib/form.ts`) behind the
+`MatchCard` shows each side's recent W/D/L form (`TeamForm`) below the countries
+(upcoming matches only) as **one rolling 5-match window** (`MAX_PILLS = 5`),
+oldest → newest: in-tournament results fill from the right, and whatever slots
+remain show the most recent pre-tournament pills. A **vertical divider** marks
+the pre→tournament boundary when both are present; once a team has played 5+
+World Cup games no pre-tournament pills are left. Pills are soft tints (pale
+green win, neutral draw, pale red loss) with a near-ink letter. The two sources:
+- **Frozen pre-tournament (static)** — each team's last 5 matches *before* the
+  World Cup kicked off (friendlies/qualifiers/Nations League). These are all in
+  the past and never change, and no free API carries them (football-data.org's
+  free tier has no out-of-tournament national-team matches; API-Football's free
+  tier blocks current seasons). So the data was researched once and committed to
+  `scripts/data/pre-tournament-form.json`, then loaded into the `team_form` table
+  (publicly readable like `matches`, written only by the service role) via
+  `npm run seed-team-form` (`scripts/seed-team-form.ts`). `form` string +
+  `results` jsonb, keyed by football-data TLA `code`. Read client-side via
+  `useTeamForm` (query key `["team-form"]`).
+- **Live in-tournament (grows each matchday)** — the team's finished World Cup
+  results so far, computed **client-side from our own `matches` table** (no API),
+  via the pure `computeTournamentForm` (`src/lib/form.ts`) behind the
   `useTournamentForm` hook (derives from the shared `["matches"]` query).
 
-An **info icon** in each card header (shown once both teams are known) opens
-`TeamInfoDialog` — a modal comparing the two teams side by side, each with three
-sections: the detailed **last-5 pre-tournament** results (from `team_form.results`),
-**this tournament** so far (detailed, via `computeTournamentResults` /
-`useTournamentResults` from `matches`), and **honours** — major senior trophies
-won (World Cup, continental championship, Confederations Cup, Nations League),
-stored static in `team_form.honors` (`0012`) from `scripts/data/honors.json`
-(separate file, merged by `seed-team-form`; counts + years per competition).
+Two info dialogs (both in `TeamInfoDialog.tsx`, both rendering the same
+`TeamPanel`) open from:
+- a **"Compare" button** between the two form rows in `MatchCard` (shown once
+  both teams are known) → `TeamInfoDialog`, a **two-team side-by-side** modal.
+- an **info icon** on each group-standings row → `TeamDetailDialog`, the
+  **single-team** variant.
 
-There is **no scheduled sync** for form/honours — the pre-tournament half and
+Each panel has three sections, newest first: **This tournament** (detailed, via
+`computeTournamentResults` / `useTournamentResults` from `matches`), **Last 5
+(pre-tournament)** (from `team_form.results`), and **Honours** — major senior
+trophies won (World Cup, continental championship, Confederations Cup, Nations
+League), stored static in `team_form.honors` (`0012`) from
+`scripts/data/honors.json` (separate file, merged by `seed-team-form`; counts +
+years per competition).
+
+There is **no scheduled sync** for form/honours — the pre-tournament pills and
 honours are static (re-run `seed-team-form` only to correct the committed JSON
 files) and the in-tournament half is derived live from `matches`. The form
-pill (`FormPill`) is exported from `TeamForm` and reused in the modal.
+pill (`FormPill`) is exported from `TeamForm` and reused in both dialogs.
 
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:
