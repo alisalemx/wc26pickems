@@ -55,6 +55,8 @@ export function MatchCard({
   const awayTour = match.away_code ? tourByCode[match.away_code] : null
   const showForm =
     !finished && Boolean(homePre || awayPre || homeTour || awayTour)
+  // The "Compare" button (team-info dialog) needs both teams resolved.
+  const bothKnown = Boolean(match.home_code && match.away_code)
 
   const [home, setHome] = useState(prediction ? String(prediction.home_pred) : "")
   const [away, setAway] = useState(prediction ? String(prediction.away_pred) : "")
@@ -136,11 +138,12 @@ export function MatchCard({
         </span>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3">
         <TeamDisplay name={match.home_team} code={match.home_code} stack />
-        {signedIn ? (
-          // Signed in: the boxes hold (or capture) your prediction.
-          <ScorePair
+        <div className="flex justify-center">
+          {signedIn ? (
+            // Signed in: the boxes hold (or capture) your prediction.
+            <ScorePair
             home={home}
             away={away}
             onHome={setHome}
@@ -165,23 +168,37 @@ export function MatchCard({
           </div>
         ) : (
           // Visitor, upcoming match: nothing to show yet.
-          <span className="px-3 text-sm font-medium text-muted-foreground">vs</span>
-        )}
-        <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
-      </div>
-
-      {showForm && (
-        <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
-          <span className="text-xs text-muted-foreground">Recent form</span>
-          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <TeamForm pre={homePre} tournament={homeTour} />
-            <span aria-hidden className="px-3 text-sm font-medium opacity-0">
-              vs
-            </span>
-            <TeamForm pre={awayPre} tournament={awayTour} />
-          </div>
+            <span className="px-3 text-sm font-medium text-muted-foreground">vs</span>
+          )}
         </div>
-      )}
+        <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
+
+        {bothKnown && (
+          <>
+            {showForm ? (
+              <TeamForm
+                pre={homePre}
+                tournament={homeTour}
+                className="justify-self-center"
+              />
+            ) : (
+              <div />
+            )}
+            <div className="flex justify-center">
+              <TeamInfoDialog match={match} />
+            </div>
+            {showForm ? (
+              <TeamForm
+                pre={awayPre}
+                tournament={awayTour}
+                className="justify-self-center"
+              />
+            ) : (
+              <div />
+            )}
+          </>
+        )}
+      </div>
 
       {canPredict && (
         <PopularPicks

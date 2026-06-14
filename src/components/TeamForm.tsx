@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils"
  *  (latest on the right). The frozen pre-tournament snapshot (`pre`, up to 5
  *  games) is separated from the live in-tournament results (`tournament`) by a
  *  vertical divider. Renders nothing when there's no form on either side, so
- *  callers can drop it in unconditionally. Colours come from the theme tokens:
- *  win = primary green, loss = destructive red, draw = muted neutral. */
+ *  callers can drop it in unconditionally. Pills use soft tints over the card —
+ *  pale green win, pale red loss, neutral draw — with a near-ink letter. */
 type Outcome = "W" | "D" | "L"
 
 const PILL: Record<Outcome, string> = {
-  W: "bg-primary text-primary-foreground",
-  D: "bg-muted text-muted-foreground border border-border",
-  L: "bg-destructive text-destructive-foreground",
+  W: "bg-primary/20 text-foreground",
+  D: "bg-muted text-foreground",
+  L: "bg-destructive/20 text-foreground",
 }
 
 function pillsOf(form: string | null | undefined): Outcome[] {

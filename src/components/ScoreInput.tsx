@@ -31,7 +31,7 @@ export function ScoreInput({
       className={cn(
         // md:text-2xl is required, not redundant: the base Input class ends in
         // `md:text-sm`, which would otherwise shrink the score to text-sm at md+.
-        "h-14 w-16 text-center text-2xl font-bold tabular-nums md:text-2xl",
+        "h-12 w-12 text-center text-xl font-bold tabular-nums md:text-xl",
         muted && "bg-muted text-muted-foreground disabled:opacity-60"
       )}
     />

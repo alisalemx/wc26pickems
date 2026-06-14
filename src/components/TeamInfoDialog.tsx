@@ -153,11 +153,11 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
       <DialogTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="-my-1 size-7 text-muted-foreground"
-          aria-label="Team details"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs font-medium text-muted-foreground"
+          aria-label="Head-to-head"
         >
-          <Info className="size-4" />
+          <Info className="size-3.5" /> Head-to-head
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
