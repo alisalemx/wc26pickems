@@ -48,15 +48,15 @@ export function Leaderboard() {
           <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-7 px-1">#</TableHead>
+                <TableHead className="w-7 px-1 text-center">#</TableHead>
                 <TableHead>Player</TableHead>
                 <TableHead className="w-11 px-1 text-center tracking-normal">
-                  Exact
+                  Exct
                 </TableHead>
                 <TableHead className="w-11 px-1 text-center tracking-normal">
-                  Outc.
+                  Outc
                 </TableHead>
-                <TableHead className="w-11 px-1 text-right tracking-normal">
+                <TableHead className="w-11 px-1 text-center tracking-normal">
                   Pts
                 </TableHead>
               </TableRow>
@@ -69,7 +69,7 @@ export function Leaderboard() {
                     key={row.user_id}
                     className={cn(isMe && "bg-primary/10 border-l-2 border-l-primary")}
                   >
-                    <TableCell className="px-1 font-medium">
+                    <TableCell className="px-1 text-center font-medium">
                       {MEDALS[i] ?? i + 1}
                     </TableCell>
                     <TableCell>
@@ -93,7 +93,7 @@ export function Leaderboard() {
                     <TableCell className="px-1 text-center tabular-nums text-muted-foreground">
                       {row.outcome_count}
                     </TableCell>
-                    <TableCell className="px-1 text-right font-semibold tabular-nums">
+                    <TableCell className="px-1 text-center font-semibold tabular-nums">
                       {row.total_points}
                     </TableCell>
                   </TableRow>
