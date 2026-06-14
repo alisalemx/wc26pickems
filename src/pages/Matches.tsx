@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import {
@@ -57,6 +57,19 @@ export function Matches() {
     ([key]) => key === (selectedDay ?? defaultDay)
   )
   const current = dayIndex >= 0 ? days[dayIndex] : null
+
+  // Switching days should bring the day strip up flush beneath the app header,
+  // rather than retaining the previous scroll position. The DayHeader sticks at
+  // top-14 (the h-14 app header), so scroll the day-view top to that offset.
+  const dayViewRef = useRef<HTMLDivElement>(null)
+  function goToDay(key: string) {
+    setSelectedDay(key)
+    const el = dayViewRef.current
+    if (!el) return
+    const HEADER_OFFSET = 56 // h-14 app header
+    const top = window.scrollY + el.getBoundingClientRect().top - HEADER_OFFSET
+    window.scrollTo({ top: Math.max(0, top) })
+  }
 
   // Grouped list for the "all" view, with the stage filter applied.
   const grouped = useMemo(() => {
@@ -123,13 +136,13 @@ export function Matches() {
 
       {/* Day-by-day view */}
       {!isLoading && view === "day" && current && (
-        <div className="space-y-3">
+        <div ref={dayViewRef} className="space-y-3">
           <DayHeader
             heading={dayHeading(current[1][0].kickoff)}
             isToday={current[0] === todayKey}
             subtitle={`${current[1].length} match${current[1].length === 1 ? "" : "es"}`}
-            onPrev={() => setSelectedDay(days[dayIndex - 1][0])}
-            onNext={() => setSelectedDay(days[dayIndex + 1][0])}
+            onPrev={() => goToDay(days[dayIndex - 1][0])}
+            onNext={() => goToDay(days[dayIndex + 1][0])}
             prevDisabled={dayIndex <= 0}
             nextDisabled={dayIndex >= days.length - 1}
           />
@@ -139,7 +152,7 @@ export function Matches() {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setSelectedDay(days.find(([k]) => k >= todayKey)![0])
+                  goToDay(days.find(([k]) => k >= todayKey)![0])
                 }
               >
                 Jump to today
