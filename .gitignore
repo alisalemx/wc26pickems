@@ -21,6 +21,9 @@ dist-ssr
 # Advisor implementation plans (local working docs)
 plans/
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
