@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { StageBadge } from "./StageBadge"
+import { Whistle } from "./Whistle"
 import { ResultBadge } from "./ResultBadge"
 import { TeamDisplay } from "./TeamDisplay"
 import { PredictionCountdown } from "./PredictionCountdown"
@@ -128,7 +129,15 @@ export function MatchCard({
         >
           {locked ? (
             <>
-              <Lock className="size-3" /> {finished ? "Ended" : "Locked"}
+              {finished ? (
+                <>
+                  <Whistle className="size-[18px]" /> Ended
+                </>
+              ) : (
+                <>
+                  <Lock className="size-3" /> Locked
+                </>
+              )}
             </>
           ) : predictable ? (
             // Teams are set and kickoff is ahead — the live window to get a
