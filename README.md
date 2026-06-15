@@ -96,3 +96,15 @@ supabase/migrations/  schema + RLS + scoring views
 
 > Architecture details (scoring model, RLS anti-cheat, auth flow) live in
 > [`CLAUDE.md`](CLAUDE.md).
+
+## Data & credits
+
+Match fixtures, kickoff times, and live results come from
+[football-data.org](https://www.football-data.org), fetched via their free-tier
+API (a `FOOTBALL_DATA_TOKEN` is required — register for one
+[here](https://www.football-data.org/client/register)). The `sync-results`
+Netlify function polls `competitions/WC/matches` every 10 minutes during the
+tournament to keep results current.
+
+This is an unofficial, non-commercial project and is not affiliated with or
+endorsed by FIFA or football-data.org.
