@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FormPill } from "./TeamForm"
 import { flagEmoji } from "@/lib/flags"
 import { useTeamForm, useTournamentResults } from "@/hooks/queries"
@@ -82,6 +83,7 @@ function TeamPanel({
   tournament,
   honors,
   className,
+  headerClassName,
 }: {
   name: string | null
   code: string | null
@@ -89,10 +91,11 @@ function TeamPanel({
   tournament: TournamentResult[]
   honors: TeamHonor[]
   className?: string
+  headerClassName?: string
 }) {
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex items-center gap-2">
+    <div className={cn("space-y-6", className)}>
+      <div className={cn("flex items-center gap-2", headerClassName)}>
         <span className="text-3xl leading-none">{flagEmoji(code)}</span>
         <span className="font-semibold">{name ?? "TBD"}</span>
       </div>
@@ -168,8 +171,11 @@ export function TeamDetailDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Team details</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="flex items-center justify-center gap-2">
+            <span className="text-2xl leading-none">{flagEmoji(code)}</span>
+            {name ?? "Team"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
             {name ?? "Team"} — recent form, this tournament, and honours.
           </DialogDescription>
         </DialogHeader>
@@ -179,6 +185,7 @@ export function TeamDetailDialog({
           pre={form?.results ?? []}
           tournament={code ? tourByCode[code] ?? [] : []}
           honors={form?.honors ?? []}
+          headerClassName="hidden"
         />
       </DialogContent>
     </Dialog>
@@ -205,31 +212,59 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
           <Info className="size-3.5" /> Compare
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Team details</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>Comparison</DialogTitle>
+          <DialogDescription className="sr-only">
             {match.home_team ?? "Home"} vs {match.away_team ?? "Away"} — recent
             form, this tournament, and honours.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 sm:grid-cols-2 sm:gap-8">
-          <TeamPanel
-            name={match.home_team}
-            code={match.home_code}
-            pre={formFor(match.home_code)?.results ?? []}
-            tournament={match.home_code ? tourByCode[match.home_code] ?? [] : []}
-            honors={formFor(match.home_code)?.honors ?? []}
-          />
-          <TeamPanel
-            name={match.away_team}
-            code={match.away_code}
-            pre={formFor(match.away_code)?.results ?? []}
-            tournament={match.away_code ? tourByCode[match.away_code] ?? [] : []}
-            honors={formFor(match.away_code)?.honors ?? []}
-            className="border-t border-border pt-6 sm:border-t-0 sm:pt-0"
-          />
-        </div>
+        {(() => {
+          const homePanel = (
+            <TeamPanel
+              name={match.home_team}
+              code={match.home_code}
+              pre={formFor(match.home_code)?.results ?? []}
+              tournament={match.home_code ? tourByCode[match.home_code] ?? [] : []}
+              honors={formFor(match.home_code)?.honors ?? []}
+              headerClassName="hidden sm:flex"
+            />
+          )
+          const awayPanel = (
+            <TeamPanel
+              name={match.away_team}
+              code={match.away_code}
+              pre={formFor(match.away_code)?.results ?? []}
+              tournament={match.away_code ? tourByCode[match.away_code] ?? [] : []}
+              honors={formFor(match.away_code)?.honors ?? []}
+              headerClassName="hidden sm:flex"
+            />
+          )
+          return (
+            <>
+              {/* Mobile: switch between teams with a segmented control */}
+              <Tabs defaultValue="home" className="gap-4 sm:hidden">
+                <TabsList className="w-full">
+                  <TabsTrigger value="home">
+                    {flagEmoji(match.home_code)} {match.home_team ?? "Home"}
+                  </TabsTrigger>
+                  <TabsTrigger value="away">
+                    {flagEmoji(match.away_code)} {match.away_team ?? "Away"}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="home">{homePanel}</TabsContent>
+                <TabsContent value="away">{awayPanel}</TabsContent>
+              </Tabs>
+
+              {/* Desktop: both teams side by side */}
+              <div className="hidden gap-8 sm:grid sm:grid-cols-2">
+                {homePanel}
+                {awayPanel}
+              </div>
+            </>
+          )
+        })()}
       </DialogContent>
     </Dialog>
   )
