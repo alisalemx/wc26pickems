@@ -61,13 +61,19 @@ export function Matches() {
   // Switching days should bring the day strip up flush beneath the app header,
   // rather than retaining the previous scroll position. The DayHeader sticks at
   // top-14 (the h-14 app header), so scroll the day-view top to that offset.
+  // Only do this when the day strip is already pinned (the user has scrolled
+  // past the segmented controls); if they're still at the top with the controls
+  // visible, leave the scroll position alone.
   const dayViewRef = useRef<HTMLDivElement>(null)
   function goToDay(key: string) {
     setSelectedDay(key)
     const el = dayViewRef.current
     if (!el) return
     const HEADER_OFFSET = 56 // h-14 app header
-    const top = window.scrollY + el.getBoundingClientRect().top - HEADER_OFFSET
+    const rect = el.getBoundingClientRect()
+    // The day header is pinned once the day view has scrolled up to the offset.
+    if (rect.top > HEADER_OFFSET) return
+    const top = window.scrollY + rect.top - HEADER_OFFSET
     window.scrollTo({ top: Math.max(0, top) })
   }
 
@@ -137,7 +143,15 @@ export function Matches() {
 
       {/* Day-by-day view */}
       {!isLoading && view === "day" && current && (
-        <div ref={dayViewRef} className="space-y-3">
+        // min-height keeps the day view at least one viewport tall so a short
+        // day (e.g. knockout cards with undecided teams) still has room to
+        // scroll its header flush under the app header. Without it, switching
+        // to a short day shrinks the document and the browser clamps the
+        // scroll back to the top.
+        <div
+          ref={dayViewRef}
+          className="min-h-[calc(100dvh-3.5rem)] space-y-3"
+        >
           <DayHeader
             heading={dayHeading(current[1][0].kickoff)}
             isToday={current[0] === todayKey}
