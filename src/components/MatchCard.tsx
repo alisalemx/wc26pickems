@@ -351,7 +351,7 @@ function PopularPicks({
   return (
     <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
       <span className="text-xs text-muted-foreground">Popular picks</span>
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-2.5">
         {data.map((d) => {
           const key = `${d.home_pred}-${d.away_pred}`
           const active = key === selected
