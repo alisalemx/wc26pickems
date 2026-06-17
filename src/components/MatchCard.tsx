@@ -127,12 +127,22 @@ export function MatchCard({
           className="justify-self-start"
         />
 
-        {/* Absolute kickoff time, centered (in strong foreground ink). Hidden
-            while locked-but-live — the right slot then carries the status —
-            but shown again on ended cards so they read like upcoming ones. */}
-        <span className="justify-self-center font-medium tabular-nums text-foreground">
-          {(!locked || finished) && kickoffTime(match.kickoff)}
-        </span>
+        {/* Center slot: absolute kickoff time (in strong foreground ink) on
+            upcoming/ended cards. While locked-but-live the match is in progress,
+            so it carries an "Ongoing" label with a pulsing dot instead. */}
+        {locked && !finished ? (
+          <span className="flex items-center justify-self-center gap-1.5 font-medium text-green-600 dark:text-green-500">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+            </span>
+            Ongoing
+          </span>
+        ) : (
+          <span className="justify-self-center font-medium tabular-nums text-foreground">
+            {kickoffTime(match.kickoff)}
+          </span>
+        )}
 
         <span
           className={cn(
