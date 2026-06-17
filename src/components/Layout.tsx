@@ -22,12 +22,13 @@ type NavItem = {
   end?: boolean
 }
 
-// Matches and Groups are public; Leaderboard and Me only appear once signed in
-// (tapping Leaderboard while logged out still routes to /login via ProtectedRoute,
-// but we keep the bar uncluttered for visitors).
+// Matches and the Tournament view (group tables + knockout bracket) are public;
+// Leaderboard and Me only appear once signed in (tapping Leaderboard while logged
+// out still routes to /login via ProtectedRoute, but we keep the bar uncluttered
+// for visitors).
 const PUBLIC_NAV: NavItem[] = [
   { to: "/", label: "Matches", icon: CalendarDays, end: true },
-  { to: "/standings", label: "Groups", icon: ListChecks },
+  { to: "/standings", label: "Tournament", icon: ListChecks },
 ]
 const MEMBER_NAV: NavItem[] = [
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },

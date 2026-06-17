@@ -14,9 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { TeamDetailDialog } from "@/components/TeamInfoDialog"
+import { Bracket } from "@/components/Bracket"
 import type { MatchRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -100,7 +102,7 @@ function rankThirds(x: Standing, y: Standing): number {
   )
 }
 
-export function Standings() {
+function Groups() {
   const { data: matches, isLoading } = useMatches()
 
   const { groups, qualifyingThirds, thirdsComparable } = useMemo(() => {
@@ -216,5 +218,22 @@ export function Standings() {
       ))}
       </div>
     </div>
+  )
+}
+
+export function Standings() {
+  return (
+    <Tabs defaultValue="groups" className="gap-3">
+      <TabsList className="w-full">
+        <TabsTrigger value="groups">Groups</TabsTrigger>
+        <TabsTrigger value="bracket">Bracket</TabsTrigger>
+      </TabsList>
+      <TabsContent value="groups">
+        <Groups />
+      </TabsContent>
+      <TabsContent value="bracket">
+        <Bracket />
+      </TabsContent>
+    </Tabs>
   )
 }
