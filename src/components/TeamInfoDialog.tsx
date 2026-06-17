@@ -8,10 +8,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FormPill } from "./TeamForm"
+import { StageBadge } from "./StageBadge"
+import { TeamDisplay } from "./TeamDisplay"
 import { flagEmoji } from "@/lib/flags"
-import { useTeamForm, useTournamentResults } from "@/hooks/queries"
+import { shortDayHeading, kickoffTime } from "@/lib/format"
+import {
+  useTeamForm,
+  useTournamentResults,
+  useUpcomingMatches,
+} from "@/hooks/queries"
 import type { MatchRow, TeamFormMatch, TeamHonor } from "@/lib/types"
 import type { Outcome, TournamentResult } from "@/lib/form"
 import { cn } from "@/lib/utils"
@@ -53,6 +61,50 @@ function ResultRow({
   )
 }
 
+/** A read-only fixture card for the modal's Upcoming tab: date + kickoff, the
+ *  stage, and both teams either side of a "vs". No inputs / popular picks —
+ *  predicting still happens on the matches tab. */
+function UpcomingMatchCard({ match }: { match: MatchRow }) {
+  return (
+    <Card className="gap-2 px-4 py-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <StageBadge stage={match.stage} group={match.group_name} />
+        <span className="tabular-nums">
+          {shortDayHeading(match.kickoff)} · {kickoffTime(match.kickoff)}
+        </span>
+      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <TeamDisplay name={match.home_team} code={match.home_code} size="sm" />
+        <span className="px-1 text-xs font-medium text-muted-foreground">vs</span>
+        <TeamDisplay
+          name={match.away_team}
+          code={match.away_code}
+          size="sm"
+          align="right"
+        />
+      </div>
+    </Card>
+  )
+}
+
+/** The team's not-yet-played matches, shown read-only. */
+function UpcomingMatches({ code }: { code: string | null }) {
+  const upcomingByCode = useUpcomingMatches()
+  const matches = code ? upcomingByCode[code] ?? [] : []
+
+  if (matches.length === 0) {
+    return <p className="text-sm text-muted-foreground">No upcoming matches.</p>
+  }
+
+  return (
+    <div className="space-y-3">
+      {matches.map((m) => (
+        <UpcomingMatchCard key={m.id} match={m} />
+      ))}
+    </div>
+  )
+}
+
 function Section({
   title,
   empty,
@@ -76,30 +128,21 @@ function Section({
   )
 }
 
-function TeamPanel({
-  name,
-  code,
+/** The form/results/honours sections — shared by the tabbed single-team view
+ *  and the (tab-less) two-team comparison. */
+function FormSections({
   pre,
   tournament,
   honors,
   className,
-  headerClassName,
 }: {
-  name: string | null
-  code: string | null
   pre: TeamFormMatch[]
   tournament: TournamentResult[]
   honors: TeamHonor[]
   className?: string
-  headerClassName?: string
 }) {
   return (
     <div className={cn("space-y-6", className)}>
-      <div className={cn("flex items-center gap-2", headerClassName)}>
-        <span className="text-3xl leading-none">{flagEmoji(code)}</span>
-        <span className="font-semibold">{name ?? "TBD"}</span>
-      </div>
-
       <Section title="This tournament" empty={tournament.length === 0}>
         {[...tournament].reverse().map((r) => (
           <ResultRow
@@ -143,33 +186,78 @@ function TeamPanel({
   )
 }
 
-/** Small info-icon button that opens a modal with one team's recent form, its
- *  results so far in this tournament, and the major trophies it's won. Used in
- *  the group standings, where each row is a single team. */
-export function TeamDetailDialog({
+function TeamPanel({
   name,
   code,
+  pre,
+  tournament,
+  honors,
+  showUpcoming = false,
+  className,
+  headerClassName,
 }: {
   name: string | null
   code: string | null
+  pre: TeamFormMatch[]
+  tournament: TournamentResult[]
+  honors: TeamHonor[]
+  /** Show Form/Upcoming tabs. Off in the two-team comparison, which is already
+   *  busy enough side-by-side — there it renders just the form sections. */
+  showUpcoming?: boolean
+  className?: string
+  headerClassName?: string
+}) {
+  const sections = (
+    <FormSections pre={pre} tournament={tournament} honors={honors} />
+  )
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      <div className={cn("flex items-center gap-2", headerClassName)}>
+        <span className="text-3xl leading-none">{flagEmoji(code)}</span>
+        <span className="font-semibold">{name ?? "TBD"}</span>
+      </div>
+
+      {showUpcoming ? (
+        <Tabs defaultValue="upcoming" className="gap-4">
+          <TabsList className="w-full">
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="form">Form</TabsTrigger>
+          </TabsList>
+          <TabsContent value="upcoming">
+            <UpcomingMatches code={code} />
+          </TabsContent>
+          <TabsContent value="form">{sections}</TabsContent>
+        </Tabs>
+      ) : (
+        sections
+      )}
+    </div>
+  )
+}
+
+/** Modal with one team's recent form, results so far this tournament, upcoming
+ *  fixtures, and honours. Used in the group standings, where the whole row is
+ *  the trigger — so this is controlled (`open`/`onOpenChange`) with no built-in
+ *  trigger button; the row renders its own info-icon affordance. */
+export function TeamDetailDialog({
+  name,
+  code,
+  open,
+  onOpenChange,
+}: {
+  name: string | null
+  code: string | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
   const formByCode = useTeamForm().data
   const tourByCode = useTournamentResults()
   const form = code ? formByCode?.[code] : undefined
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6 text-muted-foreground"
-          aria-label={`${name ?? "Team"} details`}
-        >
-          <Info className="size-3.5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-center gap-2">
             <span className="text-2xl leading-none">{flagEmoji(code)}</span>
@@ -185,6 +273,7 @@ export function TeamDetailDialog({
           pre={form?.results ?? []}
           tournament={code ? tourByCode[code] ?? [] : []}
           honors={form?.honors ?? []}
+          showUpcoming
           headerClassName="hidden"
         />
       </DialogContent>

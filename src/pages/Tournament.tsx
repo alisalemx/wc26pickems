@@ -1,4 +1,5 @@
-import { useMemo, type CSSProperties } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
+import { Info } from "lucide-react"
 import { useMatches } from "@/hooks/queries"
 import {
   Card,
@@ -187,33 +188,17 @@ function Groups() {
               </TableHeader>
               <TableBody>
                 {g.rows.map((r, i) => (
-                  <TableRow
+                  <StandingRow
                     key={r.team}
-                    className={cn(
+                    r={r}
+                    highlight={cn(
                       i < 2 && "bg-primary/5",
                       i === 2 &&
                         thirdsComparable &&
                         qualifyingThirds.has(r.team) &&
                         "bg-amber-500/10"
                     )}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <TeamDisplay name={r.team} code={r.code} size="sm" />
-                        <TeamDetailDialog name={r.team} code={r.code} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums text-muted-foreground">
-                      {r.p}
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums text-muted-foreground">
-                      {r.gf - r.ga > 0 ? "+" : ""}
-                      {r.gf - r.ga}
-                    </TableCell>
-                    <TableCell className="text-center font-semibold tabular-nums">
-                      {r.pts}
-                    </TableCell>
-                  </TableRow>
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -222,6 +207,43 @@ function Groups() {
       ))}
       </div>
     </div>
+  )
+}
+
+/** One standings row. The whole row opens the team modal; the info icon stays
+ *  as a visual affordance. */
+function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <TableRow
+        onClick={() => setOpen(true)}
+        className={cn("cursor-pointer", highlight)}
+      >
+        <TableCell>
+          <div className="flex items-center gap-1">
+            <TeamDisplay name={r.team} code={r.code} size="sm" />
+            <Info className="size-3.5 text-muted-foreground" aria-hidden />
+          </div>
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-muted-foreground">
+          {r.p}
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-muted-foreground">
+          {r.gf - r.ga > 0 ? "+" : ""}
+          {r.gf - r.ga}
+        </TableCell>
+        <TableCell className="text-center font-semibold tabular-nums">
+          {r.pts}
+        </TableCell>
+      </TableRow>
+      <TeamDetailDialog
+        name={r.team}
+        code={r.code}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
   )
 }
 

@@ -24,6 +24,16 @@ export function dayHeading(iso: string): string {
   })
 }
 
+/** Like dayHeading but with an abbreviated weekday: "Wed, Jun 17". */
+export function shortDayHeading(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export function dayKey(iso: string): string {
   // Group by the viewer's local calendar day.
   const d = new Date(iso)

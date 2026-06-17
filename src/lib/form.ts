@@ -72,6 +72,27 @@ export function computeTournamentResults(
   return byCode
 }
 
+/** Each team's not-yet-played World Cup matches (kickoff still in the future),
+ *  keyed by team code, oldest -> newest by kickoff. Returns the full match rows
+ *  so the modal can reuse the same MatchCard as the matches tab. Knockout
+ *  fixtures whose teams aren't decided yet have null codes and simply don't
+ *  attach to any team until the bracket resolves. */
+export function computeUpcomingMatches(
+  matches: MatchRow[],
+  now: number = Date.now()
+): Record<string, MatchRow[]> {
+  const upcoming = matches
+    .filter((m) => new Date(m.kickoff).getTime() > now)
+    .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
+
+  const byCode: Record<string, MatchRow[]> = {}
+  for (const m of upcoming) {
+    if (m.home_code) (byCode[m.home_code] ??= []).push(m)
+    if (m.away_code) (byCode[m.away_code] ??= []).push(m)
+  }
+  return byCode
+}
+
 /** Each team's in-tournament W/D/L string (oldest -> newest), keyed by team
  *  code. Thin projection of computeTournamentResults for the form chips. */
 export function computeTournamentForm(

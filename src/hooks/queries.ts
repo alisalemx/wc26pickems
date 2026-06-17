@@ -5,7 +5,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
-import { computeTournamentForm, computeTournamentResults } from "@/lib/form"
+import {
+  computeTournamentForm,
+  computeTournamentResults,
+  computeUpcomingMatches,
+} from "@/lib/form"
 import type { TournamentResult } from "@/lib/form"
 import type {
   LeaderboardRow,
@@ -146,6 +150,13 @@ export function useTournamentForm(): Record<string, string> {
 export function useTournamentResults(): Record<string, TournamentResult[]> {
   const { data } = useMatches()
   return useMemo(() => computeTournamentResults(data ?? []), [data])
+}
+
+/** Each team's upcoming (not-yet-kicked-off) World Cup matches, derived from the
+ *  shared `matches` query and memoised. Keyed by team code. */
+export function useUpcomingMatches(): Record<string, MatchRow[]> {
+  const { data } = useMatches()
+  return useMemo(() => computeUpcomingMatches(data ?? []), [data])
 }
 
 interface RawRevealed {
