@@ -38,7 +38,7 @@ export function ScoreInput({
   )
 }
 
-/** The `home : away` score-entry pair shared by MatchCard and Admin. */
+/** The `home – away` score-entry pair shared by MatchCard and Admin. */
 export function ScorePair({
   home,
   away,
@@ -67,7 +67,7 @@ export function ScorePair({
         disabled={disabled}
         muted={muted}
       />
-      <span className="text-muted-foreground">:</span>
+      <span className="text-muted-foreground">–</span>
       <ScoreInput
         value={away}
         onChange={onAway}

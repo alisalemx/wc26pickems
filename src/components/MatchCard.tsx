@@ -189,7 +189,7 @@ export function MatchCard({
           // Visitor, match over: show the final score instead of empty inputs.
           <div className="flex flex-col items-center leading-none">
             <span className="text-2xl font-bold tabular-nums">
-              {match.home_score} : {match.away_score}
+              {match.home_score}–{match.away_score}
             </span>
             {match.duration === "PENALTY_SHOOTOUT" &&
               match.home_pens != null && (
@@ -236,7 +236,7 @@ export function MatchCard({
         <div className="flex items-center justify-center gap-2.5 px-4 pb-1 text-base text-muted-foreground">
           Result
           <span className="font-semibold tabular-nums text-foreground">
-            {match.home_score} : {match.away_score}
+            {match.home_score}–{match.away_score}
           </span>
           {match.duration === "PENALTY_SHOOTOUT" &&
             match.home_pens != null && (
