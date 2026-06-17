@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { isLocked, initials, formatCountdown, shortDate } from "./format"
+import { isLocked, initials, formatCountdown, shortDate, ordinal } from "./format"
 
 describe("isLocked", () => {
   const kickoff = "2026-07-01T18:00:00Z"
@@ -66,5 +66,27 @@ describe("initials", () => {
 describe("shortDate", () => {
   it("renders abbreviated month and numeric day", () => {
     expect(shortDate("2026-07-01T18:00:00Z")).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/)
+  })
+})
+
+describe("ordinal", () => {
+  it("uses st/nd/rd for 1/2/3", () => {
+    expect(ordinal(1)).toBe("1st")
+    expect(ordinal(2)).toBe("2nd")
+    expect(ordinal(3)).toBe("3rd")
+    expect(ordinal(4)).toBe("4th")
+  })
+
+  it("uses th for the 11/12/13 exception", () => {
+    expect(ordinal(11)).toBe("11th")
+    expect(ordinal(12)).toBe("12th")
+    expect(ordinal(13)).toBe("13th")
+  })
+
+  it("uses st/nd/rd again past the teens", () => {
+    expect(ordinal(21)).toBe("21st")
+    expect(ordinal(22)).toBe("22nd")
+    expect(ordinal(23)).toBe("23rd")
+    expect(ordinal(111)).toBe("111th")
   })
 })
