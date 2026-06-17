@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { Layout } from "@/components/Layout"
+import { ScrollToTop } from "@/components/ScrollToTop"
 import {
   ProtectedRoute,
   RequireUsername,
@@ -16,6 +17,7 @@ import { Admin } from "@/pages/Admin"
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
