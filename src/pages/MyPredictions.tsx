@@ -32,7 +32,7 @@ const TIER_GRADIENT = [
 ]
 
 export function MyPredictions() {
-  const { session, profile } = useAuth()
+  const { session } = useAuth()
   const userId = session?.user.id
   const { data: matches, isLoading } = useMatches()
   const { data: predictions } = useMyPredictions(userId)
@@ -100,11 +100,9 @@ export function MyPredictions() {
     <div className="space-y-4">
       <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardContent>
-          {profile && (
-            <div className="mb-3 text-center text-sm font-medium text-foreground">
-              @{profile.username}
-            </div>
-          )}
+          <div className="mb-3 text-center text-sm font-medium text-foreground">
+            Your rank
+          </div>
           {isLoading ? (
             <Skeleton className="h-16 w-full" />
           ) : (
