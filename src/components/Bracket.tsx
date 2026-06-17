@@ -293,10 +293,10 @@ function Node({
  *  teams/scores) as the sync resolves results. The third-place play-off is fed
  *  by the SF losers, so it sits outside the winners' tree and is shown on its
  *  own below. */
-export function Bracket({ mockMatches }: { mockMatches?: MatchRow[] } = {}) {
+export function Bracket() {
   const query = useMatches()
-  const matches = mockMatches ?? query.data
-  const isLoading = !mockMatches && query.isLoading
+  const matches = query.data
+  const isLoading = query.isLoading
   const [activeDepth, setActiveDepth] = useState(0)
 
   // Fit-to-width: measure the container and stretch the four inter-round gaps so

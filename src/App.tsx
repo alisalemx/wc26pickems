@@ -11,7 +11,6 @@ import { Matches } from "@/pages/Matches"
 import { Leaderboard } from "@/pages/Leaderboard"
 import { MyPredictions } from "@/pages/MyPredictions"
 import { Standings } from "@/pages/Standings"
-import { TempBracket } from "@/pages/TempBracket"
 import { Admin } from "@/pages/Admin"
 
 export default function App() {
@@ -31,8 +30,6 @@ export default function App() {
           <Route element={<RequireUsername />}>
             <Route index element={<Matches />} />
             <Route path="standings" element={<Standings />} />
-            {/* TEMP — remove with the TempBracket page when done. */}
-            <Route path="temp-bracket" element={<TempBracket />} />
             <Route element={<ProtectedRoute />}>
               <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="me" element={<MyPredictions />} />
