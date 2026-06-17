@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, type CSSProperties } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { useMatches, useMyPredictions } from "@/hooks/queries"
 import {
@@ -68,7 +68,7 @@ export function MyPredictions() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardHeader>
           <CardTitle>{profile ? `@${profile.username}` : "My"} predictions</CardTitle>
           <CardDescription>Your tournament at a glance.</CardDescription>
@@ -92,7 +92,7 @@ export function MyPredictions() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardHeader>
           <CardTitle className="text-base">Settled matches</CardTitle>
         </CardHeader>
@@ -102,7 +102,7 @@ export function MyPredictions() {
               No results scored yet. Check back after kickoff!
             </EmptyState>
           )}
-          {finishedWithPicks.map((m) => {
+          {finishedWithPicks.map((m, i) => {
             const p = predictions![m.id]
             const s = scorePrediction(
               m.stage,
@@ -114,7 +114,8 @@ export function MyPredictions() {
             return (
               <div
                 key={m.id}
-                className="flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm"
+                className="flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+                style={{ "--i": i } as CSSProperties}
               >
                 <div className="flex min-w-0 flex-col gap-1">
                   <StageBadge

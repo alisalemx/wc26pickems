@@ -134,7 +134,7 @@ export function Layout() {
                 )
               }
             >
-              <item.icon className="size-5" />
+              <item.icon className="size-5 transition-transform duration-[var(--duration-fast)] active:scale-[0.92]" />
               {item.label}
             </NavLink>
           ))}

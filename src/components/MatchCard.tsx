@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, type CSSProperties } from "react"
+import { motion, useReducedMotion } from "motion/react"
 import { ChevronDown, Lock, Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,8 @@ interface Props {
   ownUserId?: string
   onSave: (homePred: number, awayPred: number) => void
   saving?: boolean
+  /** Position in the list — drives the entrance stagger via the --i CSS var. */
+  index?: number
 }
 
 export function MatchCard({
@@ -37,8 +40,10 @@ export function MatchCard({
   ownUserId,
   onSave,
   saving,
+  index = 0,
 }: Props) {
   const signedIn = ownUserId != null
+  const reduceMotion = useReducedMotion()
   const locked = isLocked(match.kickoff)
   const finished = match.status === "FINISHED" && match.home_score != null
   const predictable =
@@ -107,7 +112,10 @@ export function MatchCard({
     (signedIn && locked)
 
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card
+      className="gap-0 overflow-hidden py-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in"
+      style={{ "--i": index } as CSSProperties}
+    >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-3 text-[13px] text-muted-foreground sm:text-xs">
         <StageBadge
           stage={match.stage}
@@ -241,19 +249,37 @@ export function MatchCard({
           {!predictable && !locked && "Awaiting teams"}
           {predictable &&
             (prediction ? (
-              <span className="flex items-center gap-1 text-primary">
+              <motion.span
+                key={`${prediction.home_pred}-${prediction.away_pred}`}
+                initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+                className="flex items-center gap-1 text-primary"
+              >
                 <Check className="size-3.5" /> Saved {prediction.home_pred}–
                 {prediction.away_pred}
-              </span>
+              </motion.span>
             ) : maxPoints(match.stage) > EXACT_BASE ? (
               // Only flag the points on knockout cards, where the stage
               // multiplier bumps them above the base — otherwise every group
               // match repeats the same "Worth up to 3 pts".
               `Worth up to ${maxPoints(match.stage)} pts`
             ) : null)}
-          {finished && own && (
-            <ResultBadge result={own.result} points={own.points} />
-          )}
+          {finished &&
+            own &&
+            (own.result === "EXACT" ? (
+              // Celebrate only the current user's exact hit — a rare, personal
+              // moment. Other people's exacts (RevealedPicks) stay calm.
+              <motion.span
+                initial={reduceMotion ? false : { scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.5, bounce: 0.35 }}
+              >
+                <ResultBadge result={own.result} points={own.points} />
+              </motion.span>
+            ) : (
+              <ResultBadge result={own.result} points={own.points} />
+            ))}
           {locked && !finished && prediction && (
             <span>
               Your pick {prediction.home_pred}–{prediction.away_pred}
@@ -278,15 +304,27 @@ export function MatchCard({
           >
             Picks
             <ChevronDown
-              className={cn("size-4 transition-transform", expanded && "rotate-180")}
+              className={cn(
+                "size-4 transition-transform duration-[var(--duration-base)] ease-in-out-quart",
+                expanded && "rotate-180"
+              )}
             />
           </Button>
         )}
       </div>
       )}
 
-      {expanded && signedIn && locked && (
-        <RevealedPicks match={match} ownUserId={ownUserId} />
+      {signedIn && locked && (
+        // Grid-rows 0fr→1fr collapse animates only the track (GPU-friendly).
+        // RevealedPicks stays gated on `expanded` so its query fires lazily.
+        <div
+          className="grid transition-[grid-template-rows] duration-[var(--duration-base)] ease-in-out-quart"
+          style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            {expanded && <RevealedPicks match={match} ownUserId={ownUserId} />}
+          </div>
+        </div>
       )}
     </Card>
   )
@@ -324,7 +362,7 @@ function PopularPicks({
               size="sm"
               variant={active ? "default" : "outline"}
               onClick={() => onPick(d.home_pred, d.away_pred)}
-              className="h-7 gap-1.5 px-2 text-xs"
+              className="h-7 gap-1.5 px-2 text-xs transition-transform duration-[var(--duration-fast)] active:scale-[0.96]"
             >
               <span className="font-semibold tabular-nums">
                 {d.home_pred}–{d.away_pred}

@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, type CSSProperties } from "react"
 import { useMatches } from "@/hooks/queries"
 import {
   Card,
@@ -166,8 +166,12 @@ function Groups() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-      {groups.map((g) => (
-        <Card key={g.name} className="gap-1.5">
+      {groups.map((g, i) => (
+        <Card
+          key={g.name}
+          className="gap-1.5 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+          style={{ "--i": i } as CSSProperties}
+        >
           <CardHeader className="pb-0">
             <CardTitle className="text-base">Group {g.name}</CardTitle>
           </CardHeader>

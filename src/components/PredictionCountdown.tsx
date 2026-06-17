@@ -43,7 +43,10 @@ export function PredictionCountdown({
         className
       )}
     >
-      <Clock aria-hidden className="mr-1 size-3" />
+      <Clock
+        aria-hidden
+        className={cn("mr-1 size-3", msLeft <= URGENT_MS && "countdown-pulse")}
+      />
       {segments.flatMap((seg, i) =>
         i === 0
           ? [<span key={`n${i}`}>{seg}</span>]

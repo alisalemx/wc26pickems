@@ -102,11 +102,12 @@ export function Matches() {
     )
   }
 
-  function renderCard(m: MatchRow) {
+  function renderCard(m: MatchRow, index: number) {
     return (
       <MatchCard
         key={m.id}
         match={m}
+        index={index}
         prediction={predictions?.[m.id]}
         ownUserId={userId}
         saving={upsert.isPending && upsert.variables?.matchId === m.id}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { motion, useReducedMotion } from "motion/react"
 import { useMatches } from "@/hooks/queries"
 import { Card } from "@/components/ui/card"
 import { ListSkeleton } from "@/components/ListSkeleton"
@@ -132,7 +133,10 @@ function MatchFull({ m }: { m: MatchRow }) {
     m.away_pens != null
 
   return (
-    <Card className="shrink-0 gap-0 py-0" style={{ width: FULL_W }}>
+    <Card
+      className="shrink-0 gap-0 py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic"
+      style={{ width: FULL_W }}
+    >
       <div className="flex items-center justify-between border-b border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         <span>{shortDate(m.kickoff)}</span>
         <span>{finished ? "FT" : kickoffTime(m.kickoff)}</span>
@@ -298,6 +302,7 @@ export function Bracket() {
   const matches = query.data
   const isLoading = query.isLoading
   const [activeDepth, setActiveDepth] = useState(0)
+  const reduceMotion = useReducedMotion()
 
   // Fit-to-width: measure the container and stretch the four inter-round gaps so
   // the fixed-size cards spread across the full width instead of huddling at
@@ -344,24 +349,41 @@ export function Bracket() {
   const third = byId.get(THIRD_ID)
 
   return (
-    <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out motion-reduce:animate-none">
+    <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-300 ease-out motion-reduce:animate-none">
+      {/* Round selector. The active "pill" is a single shared-layout element
+          (`layoutId`) that glides between rounds when you switch, riding over the
+          muted track; the label sits above it and the active button is raised so
+          the pill stays on top mid-slide. */}
       <div className="flex gap-1.5">
-        {ROUND_NAV.map(({ stage, depth }) => (
-          <button
-            key={stage}
-            type="button"
-            onClick={() => setActiveDepth(depth)}
-            aria-current={depth === activeDepth ? true : undefined}
-            className={cn(
-              "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition duration-150 active:scale-[0.97]",
-              depth === activeDepth
-                ? "border-ink bg-background text-foreground shadow-brutal-sm"
-                : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {STAGE_SHORT[stage]}
-          </button>
-        ))}
+        {ROUND_NAV.map(({ stage, depth }) => {
+          const active = depth === activeDepth
+          return (
+            <button
+              key={stage}
+              type="button"
+              onClick={() => setActiveDepth(depth)}
+              aria-current={active ? true : undefined}
+              className={cn(
+                "relative flex-1 rounded-md bg-muted px-3 py-1.5 text-sm font-medium transition-[color,transform] duration-[var(--duration-fast)] active:scale-[0.97]",
+                active ? "z-10 text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="bracket-round-active"
+                  aria-hidden
+                  className="absolute inset-0 rounded-md border border-ink bg-background shadow-brutal-sm"
+                  transition={
+                    reduceMotion
+                      ? { duration: 0 }
+                      : { type: "spring", duration: 0.4, bounce: 0.2 }
+                  }
+                />
+              )}
+              <span className="relative">{STAGE_SHORT[stage]}</span>
+            </button>
+          )
+        })}
       </div>
 
       <div ref={setWrap}>

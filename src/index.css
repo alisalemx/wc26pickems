@@ -6,6 +6,14 @@
   color-scheme: light dark;
   --radius: 0.25rem;
 
+  /* Motion durations (course guidance — keep UI < 300ms; exits ~20% faster).
+     Plain custom properties (not @theme) so they're never tree-shaken; consumed
+     via duration-[var(--duration-*)] utilities. Theme-independent. */
+  --duration-fast: 130ms;  /* micro: chip press, badge pop */
+  --duration-base: 240ms;  /* standard: content entrance, collapse */
+  --duration-slow: 280ms;  /* modals/drawers */
+  --duration-exit: 160ms;  /* exits ~20% faster */
+
   /* Polished neo-brutalist light theme: warm paper, near-black ink, vivid green.
      Two-tier borders: --border is a soft hairline (rows, separators),
      --ink is the strong structural outline (cards, buttons, inputs). */
@@ -132,6 +140,14 @@
   --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
   --shadow-brutal: 3px 3px 0 0 var(--shadow-color);
   --shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
+
+  /* Easing tokens live in @theme so Tailwind generates ease-* utilities from
+     the --ease-* namespace (ease-out-cubic, ease-out-quint, ease-in-out-quart).
+     Durations have no such namespace, so they live in :root below and are
+     referenced via duration-[var(--duration-*)]. Hover/color stays on `ease`. */
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);     /* livelier card entrance */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1); /* collapse / on-screen morph */
 }
 
 /* "Ultramode" sign-in CTA, à la Claude Code's Ultracode slider: a soft green
@@ -141,6 +157,17 @@
 @keyframes play-flow {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
+}
+
+/* Countdown urgency: a soft pulse on the clock icon in the final minutes before
+   kickoff. Opacity only, slow, infinite — the one legitimate constant-motion
+   exception, and gated to the urgent window so it runs on few cards at once. */
+@keyframes countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.countdown-pulse {
+  animation: countdown-pulse 1.6s ease-in-out infinite;
 }
 
 .play-cta {
@@ -198,5 +225,32 @@
   }
   h1, h2, h3 {
     letter-spacing: -0.015em;
+  }
+}
+
+@layer utilities {
+  /* List entrance stagger: callers set the row index inline via --i; the
+     cascade is capped so the last card in a long list never lags.
+     `backwards` fill-mode is essential — it holds the animation's opacity-0
+     start frame during the delay, otherwise the element renders fully visible
+     while waiting and then snaps to 0 to fade in (a flicker). */
+  .stagger-in {
+    animation-delay: calc(min(var(--i, 0), 6) * 45ms);
+    animation-fill-mode: backwards;
+  }
+}
+
+/* Comprehensive reduced-motion backstop for all CSS-driven motion. The 0.01ms
+   form (rather than `none`) preserves transitionend/animationend events so
+   nothing gets stuck. Framer Motion is JS-driven and bypasses this — it is
+   handled separately via useReducedMotion() in the components that use it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
