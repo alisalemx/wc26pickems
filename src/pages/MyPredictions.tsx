@@ -101,7 +101,7 @@ export function MyPredictions() {
       <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardContent>
           {profile && (
-            <div className="mb-3 text-center text-sm font-medium text-muted-foreground">
+            <div className="mb-3 text-center text-sm font-medium text-foreground">
               @{profile.username}
             </div>
           )}
