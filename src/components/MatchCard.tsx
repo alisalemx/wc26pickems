@@ -128,15 +128,16 @@ export function MatchCard({
         />
 
         {/* Absolute kickoff time, centered (in strong foreground ink). Hidden
-            once locked — the right slot then carries the status instead. */}
+            while locked-but-live — the right slot then carries the status —
+            but shown again on ended cards so they read like upcoming ones. */}
         <span className="justify-self-center font-medium tabular-nums text-foreground">
-          {!locked && kickoffTime(match.kickoff)}
+          {(!locked || finished) && kickoffTime(match.kickoff)}
         </span>
 
         <span
           className={cn(
             "flex items-center justify-self-end gap-1",
-            finished && "text-primary"
+            finished && "text-muted-foreground"
           )}
         >
           {locked ? (
@@ -194,7 +195,7 @@ export function MatchCard({
         </div>
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
 
-        {bothKnown && (
+        {bothKnown && !finished && (
           <>
             {showForm ? (
               <TeamForm
@@ -221,6 +222,21 @@ export function MatchCard({
         )}
       </div>
 
+      {signedIn && finished && (
+        <div className="flex items-center justify-center gap-2.5 px-4 pb-1 text-base text-muted-foreground">
+          Result
+          <span className="font-semibold tabular-nums text-foreground">
+            {match.home_score} : {match.away_score}
+          </span>
+          {match.duration === "PENALTY_SHOOTOUT" &&
+            match.home_pens != null && (
+              <span className="font-semibold tabular-nums text-foreground">
+                (pens {match.home_pens}–{match.away_pens})
+              </span>
+            )}
+        </div>
+      )}
+
       {canPredict && (
         <PopularPicks
           matchId={match.id}
@@ -230,21 +246,6 @@ export function MatchCard({
             setAway(String(a))
           }}
         />
-      )}
-
-      {signedIn && finished && (
-        <div className="flex items-center justify-center gap-2 px-4 pb-1 text-sm">
-          <span className="text-muted-foreground">Result</span>
-          <span className="font-semibold tabular-nums">
-            {match.home_score} : {match.away_score}
-          </span>
-          {match.duration === "PENALTY_SHOOTOUT" &&
-            match.home_pens != null && (
-              <span className="text-xs text-muted-foreground">
-                (pens {match.home_pens}–{match.away_pens})
-              </span>
-            )}
-        </div>
       )}
 
       {hasFooter && (
@@ -291,33 +292,35 @@ export function MatchCard({
           )}
         </div>
 
-        {canPredict && (
-          <Button
-            size="sm"
-            disabled={!dirty || saving}
-            onClick={() => onSave(Number(home), Number(away))}
-          >
-            {prediction ? "Update" : "Save"}
-          </Button>
-        )}
-        {signedIn && locked && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setEverExpanded(true)
-              setExpanded((v) => !v)
-            }}
-          >
-            Picks
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform duration-[var(--duration-base)] ease-in-out-quart",
-                expanded && "rotate-180"
-              )}
-            />
-          </Button>
-        )}
+        <div>
+          {canPredict && (
+            <Button
+              size="sm"
+              disabled={!dirty || saving}
+              onClick={() => onSave(Number(home), Number(away))}
+            >
+              {prediction ? "Update" : "Save"}
+            </Button>
+          )}
+          {signedIn && locked && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setEverExpanded(true)
+                setExpanded((v) => !v)
+              }}
+            >
+              Picks
+              <ChevronDown
+                className={cn(
+                  "size-4 transition-transform duration-[var(--duration-base)] ease-in-out-quart",
+                  expanded && "rotate-180"
+                )}
+              />
+            </Button>
+          )}
+        </div>
       </div>
       )}
 

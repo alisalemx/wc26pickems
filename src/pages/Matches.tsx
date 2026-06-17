@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { dayHeading, dayKey } from "@/lib/format"
+import { dayHeading, dayKey, isLocked } from "@/lib/format"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
 const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
@@ -26,6 +26,20 @@ const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
 ]
 
 type View = "day" | "all"
+
+/** Centered category label with hairline rules either side — used inside a day
+ *  to mark where the not-yet-played matches start. */
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <div className="h-px flex-1 bg-border" />
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  )
+}
 
 export function Matches() {
   const { session } = useAuth()
@@ -122,6 +136,30 @@ export function Matches() {
     )
   }
 
+  // Within a day, order matches ended → locked (kicked off, no result yet) →
+  // upcoming. Ended and locked sit unlabeled under the day header; a single
+  // centered "Upcoming" divider marks where the not-yet-played ones begin —
+  // shown only when something precedes them, so a fully-upcoming day stays
+  // clean (the day header already labels it).
+  function renderDayMatches(list: MatchRow[]) {
+    const isEnded = (m: MatchRow) =>
+      m.status === "FINISHED" && m.home_score != null
+    const ended = list.filter(isEnded)
+    const locked = list.filter((m) => !isEnded(m) && isLocked(m.kickoff))
+    const upcoming = list.filter((m) => !isEnded(m) && !isLocked(m.kickoff))
+    const played = [...ended, ...locked]
+    let i = 0
+    return (
+      <>
+        {played.map((m) => renderCard(m, i++))}
+        {played.length > 0 && upcoming.length > 0 && (
+          <SectionDivider label="Upcoming" />
+        )}
+        {upcoming.map((m) => renderCard(m, i++))}
+      </>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <Tabs value={view} onValueChange={(v) => setView(v as View)}>
@@ -174,7 +212,7 @@ export function Matches() {
               </Button>
             </div>
           )}
-          {current[1].map(renderCard)}
+          {renderDayMatches(current[1])}
         </div>
       )}
 
@@ -205,7 +243,7 @@ export function Matches() {
                 heading={dayHeading(dayMatches[0].kickoff)}
                 isToday={day === todayKey}
               />
-              {dayMatches.map(renderCard)}
+              {renderDayMatches(dayMatches)}
             </section>
           ))}
         </div>
