@@ -67,6 +67,10 @@ export function MatchCard({
   const [home, setHome] = useState(prediction ? String(prediction.home_pred) : "")
   const [away, setAway] = useState(prediction ? String(prediction.away_pred) : "")
   const [expanded, setExpanded] = useState(false)
+  // Once opened, keep RevealedPicks mounted so the grid-rows collapse has
+  // content to animate shrinking — gating it on `expanded` alone unmounts the
+  // body instantly and the close looks like a jump cut. Still lazy on first open.
+  const [everExpanded, setEverExpanded] = useState(false)
 
   // The prediction arrives asynchronously (and can change after a save). Sync
   // the inputs during render when the stored value changes — React's
@@ -300,7 +304,10 @@ export function MatchCard({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => {
+              setEverExpanded(true)
+              setExpanded((v) => !v)
+            }}
           >
             Picks
             <ChevronDown
@@ -316,13 +323,14 @@ export function MatchCard({
 
       {signedIn && locked && (
         // Grid-rows 0fr→1fr collapse animates only the track (GPU-friendly).
-        // RevealedPicks stays gated on `expanded` so its query fires lazily.
+        // RevealedPicks mounts on first open (lazy query) and then stays mounted
+        // so collapsing animates the track shrinking instead of vanishing.
         <div
           className="grid transition-[grid-template-rows] duration-[var(--duration-base)] ease-in-out-quart"
           style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
         >
           <div className="overflow-hidden">
-            {expanded && <RevealedPicks match={match} ownUserId={ownUserId} />}
+            {everExpanded && <RevealedPicks match={match} ownUserId={ownUserId} />}
           </div>
         </div>
       )}
@@ -394,8 +402,11 @@ function RevealedPicks({
   const finished = match.status === "FINISHED" && match.home_score != null
 
   return (
-    <div className="bg-muted/30 px-4 py-3">
-      <Separator className="mb-3" />
+    <div className="bg-muted/30">
+      {/* Separator sits at the very top edge so it lands on the white→muted
+          boundary rather than floating inside the muted block. */}
+      <Separator />
+      <div className="px-4 py-3">
       {isLoading && (
         <p className="text-xs text-muted-foreground">Loading picks…</p>
       )}
@@ -438,6 +449,7 @@ function RevealedPicks({
           )
         })}
       </ul>
+      </div>
     </div>
   )
 }
