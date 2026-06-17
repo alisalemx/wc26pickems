@@ -225,7 +225,7 @@ function Groups() {
   )
 }
 
-export function Standings() {
+export function Tournament() {
   return (
     <Tabs defaultValue="groups" className="gap-3">
       <TabsList className="w-full">

@@ -10,7 +10,7 @@ import { Welcome } from "@/pages/Welcome"
 import { Matches } from "@/pages/Matches"
 import { Leaderboard } from "@/pages/Leaderboard"
 import { MyPredictions } from "@/pages/MyPredictions"
-import { Standings } from "@/pages/Standings"
+import { Tournament } from "@/pages/Tournament"
 import { Admin } from "@/pages/Admin"
 
 export default function App() {
@@ -22,14 +22,14 @@ export default function App() {
           {/* Session but no chosen handle yet — Google OAuth users land here. */}
           <Route path="/welcome" element={<Welcome />} />
         </Route>
-        {/* The shell is public. Matches and Groups (standings) are viewable by
+        {/* The shell is public. Matches and the Tournament view are viewable by
             anyone; predicting, the leaderboard and Me require a session.
             RequireUsername lets anonymous visitors through, but still funnels a
             signed-in user to /welcome until they've chosen a handle. */}
         <Route element={<Layout />}>
           <Route element={<RequireUsername />}>
             <Route index element={<Matches />} />
-            <Route path="standings" element={<Standings />} />
+            <Route path="tournament" element={<Tournament />} />
             <Route element={<ProtectedRoute />}>
               <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="me" element={<MyPredictions />} />
@@ -39,6 +39,11 @@ export default function App() {
             </Route>
           </Route>
         </Route>
+        {/* Old /standings links → the renamed Tournament page. */}
+        <Route
+          path="/standings"
+          element={<Navigate to="/tournament" replace />}
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -3,9 +3,9 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
   CalendarDays,
+  Network,
   Trophy,
   User,
-  ListChecks,
   Shield,
   LogOut,
   type LucideIcon,
@@ -28,7 +28,7 @@ type NavItem = {
 // for visitors).
 const PUBLIC_NAV: NavItem[] = [
   { to: "/", label: "Matches", icon: CalendarDays, end: true },
-  { to: "/standings", label: "Tournament", icon: ListChecks },
+  { to: "/tournament", label: "Tournament", icon: Network },
 ]
 const MEMBER_NAV: NavItem[] = [
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
