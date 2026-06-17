@@ -7,6 +7,14 @@ export function kickoffTime(iso: string): string {
   })
 }
 
+/** Compact kickoff date for tight layouts (e.g. bracket cards): "Jun 17". */
+export function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export function dayHeading(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString(undefined, {

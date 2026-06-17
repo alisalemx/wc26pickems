@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { isLocked, initials, formatCountdown } from "./format"
+import { isLocked, initials, formatCountdown, shortDate } from "./format"
 
 describe("isLocked", () => {
   const kickoff = "2026-07-01T18:00:00Z"
@@ -60,5 +60,11 @@ describe("initials", () => {
 
   it("underscore-separated parts → first char of each part uppercased", () => {
     expect(initials("foo_bar")).toBe("FB")
+  })
+})
+
+describe("shortDate", () => {
+  it("renders abbreviated month and numeric day", () => {
+    expect(shortDate("2026-07-01T18:00:00Z")).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/)
   })
 })
