@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { ChevronDown, Lock, Check } from "lucide-react"
+import { ChevronDown, Lock, CheckCircle2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -271,7 +271,7 @@ export function MatchCard({
                 transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
                 className="flex items-center gap-1 text-primary"
               >
-                <Check className="size-3.5" /> Saved {prediction.home_pred}–
+                <CheckCircle2 className="size-3.5" /> Saved {prediction.home_pred}–
                 {prediction.away_pred}
               </motion.span>
             ) : maxPoints(match.stage) > EXACT_BASE ? (
