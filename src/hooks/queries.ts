@@ -12,6 +12,7 @@ import {
 } from "@/lib/form"
 import type { TournamentResult } from "@/lib/form"
 import type {
+  GroupStandingRow,
   LeaderboardRow,
   MatchRow,
   PredictionDistributionRow,
@@ -31,6 +32,27 @@ export function useMatches() {
         .order("id", { ascending: true })
       if (error) throw error
       return data as MatchRow[]
+    },
+    refetchInterval: 60_000,
+  })
+}
+
+/** Official group standings synced from football-data (see 0013_standings.sql).
+ *  We render football-data's `position` order because it applies FIFA's
+ *  fair-play tiebreaker we can't compute from match results alone. Publicly
+ *  readable and polled like matches; the Groups tab falls back to a client-side
+ *  table when this is empty (before the first sync, or offline in dev). */
+export function useStandings() {
+  return useQuery({
+    queryKey: ["standings"],
+    queryFn: async (): Promise<GroupStandingRow[]> => {
+      const { data, error } = await supabase
+        .from("standings")
+        .select("*")
+        .order("group_name", { ascending: true })
+        .order("position", { ascending: true })
+      if (error) throw error
+      return data as GroupStandingRow[]
     },
     refetchInterval: 60_000,
   })

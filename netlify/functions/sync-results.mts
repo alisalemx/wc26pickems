@@ -45,6 +45,23 @@ interface ApiMatch {
   }
 }
 
+interface ApiStandingsTable {
+  stage: string
+  type: string
+  group: string | null
+  table: {
+    position: number
+    team: { id: number; name: string | null; tla: string | null }
+    playedGames: number
+    won: number
+    draw: number
+    lost: number
+    points: number
+    goalsFor: number
+    goalsAgainst: number
+  }[]
+}
+
 export default async () => {
   const now = new Date()
   // Date guard: skip API calls entirely outside the tournament window.
@@ -168,8 +185,53 @@ export default async () => {
     if (!error) updated++
   }
 
+  // Official group standings. football-data applies FIFA's fair-play tiebreaker
+  // (and drawing of lots) that we can't compute from match results, so we store
+  // its ordering verbatim and render that. Best-effort: a failure here leaves the
+  // match results above intact, and the Groups tab falls back to a client table.
+  let standings = 0
+  try {
+    const sres = await fetch(
+      "https://api.football-data.org/v4/competitions/WC/standings",
+      { headers: { "X-Auth-Token": token } }
+    )
+    if (sres.ok) {
+      const { standings: tables } = (await sres.json()) as {
+        standings: ApiStandingsTable[]
+      }
+      const now = new Date().toISOString()
+      const upserts = tables
+        .filter((t) => t.type === "TOTAL")
+        .flatMap((t) =>
+          t.table.map((r) => ({
+            fd_team_id: r.team.id,
+            group_name: (t.group ?? "").replace(/^(GROUP_|Group )/, ""),
+            position: r.position,
+            team_code: r.team.tla ?? null,
+            team_name: r.team.name ?? null,
+            played: r.playedGames ?? 0,
+            won: r.won ?? 0,
+            drawn: r.draw ?? 0,
+            lost: r.lost ?? 0,
+            gf: r.goalsFor ?? 0,
+            ga: r.goalsAgainst ?? 0,
+            points: r.points ?? 0,
+            updated_at: now,
+          }))
+        )
+      if (upserts.length) {
+        const { error } = await db
+          .from("standings")
+          .upsert(upserts, { onConflict: "fd_team_id" })
+        if (!error) standings = upserts.length
+      }
+    }
+  } catch {
+    // Standings are layered on top of match results; never fail the sync for them.
+  }
+
   return new Response(
-    JSON.stringify({ received: matches.length, updated, unlinked }),
+    JSON.stringify({ received: matches.length, updated, unlinked, standings }),
     { status: 200, headers: { "content-type": "application/json" } }
   )
 }

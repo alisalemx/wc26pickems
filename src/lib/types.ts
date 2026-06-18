@@ -109,6 +109,27 @@ export interface TeamFormRow {
   updated_at: string
 }
 
+/** One team's row in the official group standings, synced from football-data's
+ *  /standings endpoint into the `standings` table (see 0013_standings.sql).
+ *  `position` is football-data's authoritative rank, which applies FIFA's
+ *  fair-play tiebreaker we can't compute ourselves. Keyed on the stable
+ *  football-data team id; `team_code` is the TLA used for flags. */
+export interface GroupStandingRow {
+  fd_team_id: number
+  group_name: string
+  position: number
+  team_code: string | null
+  team_name: string | null
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  gf: number
+  ga: number
+  points: number
+  updated_at: string
+}
+
 /** One scoreline and how many players predicted it for a match — anonymous
  *  aggregate from the `prediction_distributions` RPC (no user identity).
  *  `predictors` is the match's total predictor count: the RPC truncates to the

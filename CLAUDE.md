@@ -132,6 +132,34 @@ honours are static (re-run `seed-team-form` only to correct the committed JSON
 files) and the in-tournament half is derived live from `matches`. The form
 pill (`FormPill`) is exported from `TeamForm` and reused in both dialogs.
 
+### Group standings & best thirds (`0013_standings.sql`, `src/lib/standings.ts`)
+The Tournament page's Groups tab renders **football-data's official group order**.
+We can't reproduce FIFA's full ranking from match results alone: once teams are
+level on points / goal difference / goals / head-to-head, FIFA breaks ties on
+**fair-play (disciplinary) points** then a **drawing of lots** — and we store no
+card data. football-data's `/competitions/WC/standings` endpoint already applies
+that whole chain, so the sync function (which also fetches it) upserts each team's
+`position` + stats into the public, service-role-written `standings` table
+(mirrors `matches`/`team_form`), read client-side via `useStandings`
+(`["standings"]`, polled 60s). The Groups tab maps those rows to its table in
+`position` order. Two football-data quirks the table handles: its standings count
+**in-progress matches** (a live result shows before the matches feed flips to
+FINISHED), and it labels some teams with a different TLA than the matches feed
+(Uruguay `URU` vs `URY` — both map in `flags.ts`); the table keys on the stable
+`fd_team_id`.
+
+`src/lib/standings.ts` (`computeGroup`, unit-tested in `standings.test.ts`) is the
+**fallback** orderer used only before the first standings sync (and offline dev).
+It implements the FIFA criteria we *can* compute — points → GD → goals →
+**head-to-head** (a recursive mini-table among only the tied teams) → name (the
+stand-in for the uncomputable fair-play / lots). `rankThirds` ranks the 12
+third-placed teams (best 8 advance to the R32) by points → GD → goals → name; no
+head-to-head since thirds sit in different groups, and it runs on whichever source
+is active. The amber best-thirds highlight only shows when every group has played
+the same number of games (`thirdsComparable`), so the ranking is on equal footing.
+The Bracket tab does **not** use any of this — it fills knockout slots from the
+fixture list.
+
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:
 when set, the sync function skips the result fields (status/scores/pens/duration)
@@ -163,7 +191,7 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. Skips result fields for rows with `result_locked = true` (see admin result locks above).
+- `netlify/functions/sync-results.mts` — runs every 10 min (cron `*/10 * * * *`), guarded to the tournament window. Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. Skips result fields for rows with `result_locked = true` (see admin result locks above). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
 - `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
