@@ -84,8 +84,9 @@ export default async () => {
   })
 
   // This function is reachable over HTTP at /.netlify/functions/sync-results, so
-  // throttle upstream calls to protect the football-data.org quota. The 10-min
-  // cron never trips this; rapid manual/abusive hits return early without a fetch.
+  // throttle upstream calls to protect the football-data.org quota. The 2-min
+  // cron clears this 60s window so every scheduled run fetches (≈1 req/min, well
+  // under the free tier); only rapid manual/abusive hits return early.
   const COOLDOWN_MS = 60_000
   const { data: lastRows } = await db
     .from("matches")
@@ -251,5 +252,5 @@ export default async () => {
 }
 
 export const config: Config = {
-  schedule: "*/10 * * * *",
+  schedule: "*/2 * * * *",
 }
