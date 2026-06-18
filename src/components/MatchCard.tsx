@@ -183,13 +183,13 @@ export function MatchCard({
             ) : prediction || finished ? (
               // Locked/finished: drop the disabled boxes and show text instead —
               // your prediction above the actual result (once it's in). Labels
-              // are left-aligned so "Result" sits under "Prediction" with the
+              // are left-aligned so "Result" sits under "Pick" with the
               // scores in their own column; the shootout score tucks under the
               // result score it decided (column 2), not the label.
               <div className="grid grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-1 leading-none">
                 {prediction && (
                   <>
-                    <span className="text-sm text-muted-foreground">Prediction</span>
+                    <span className="text-sm text-muted-foreground">Pick</span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {prediction.home_pred}–{prediction.away_pred}
                     </span>
