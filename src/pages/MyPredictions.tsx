@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { useLeaderboard, useMatches, useMyPredictions } from "@/hooks/queries"
 import {
@@ -17,8 +17,20 @@ import { flagEmoji } from "@/lib/flags"
 import { isLocked, ordinal } from "@/lib/format"
 import { scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
+import { SegmentedControl } from "@/components/SegmentedControl"
+import type { ResultType } from "@/lib/types"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
+
+// Settled-match filters in the Settled section. "all" plus the three
+// ResultType buckets scorePrediction can return.
+type ResultFilter = "all" | ResultType
+const FILTERS: { value: ResultFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "OUTCOME", label: "Outcome" },
+  { value: "EXACT", label: "Exact" },
+  { value: "MISS", label: "Miss" },
+]
 // Metal fill matched to each medal emoji, defined in index.css (`.rank-metal-*`):
 // a static base gradient (deep → bright → deep, sampled from Apple Color Emoji)
 // under a moving sheen streak, both clipped to the rank text so "1st Place" reads
@@ -83,6 +95,8 @@ export function MyPredictions() {
     return { made, predictable, points, exact, finished }
   }, [matches, predictions])
 
+  const [filter, setFilter] = useState<ResultFilter>("all")
+
   const finishedWithPicks = useMemo(() => {
     if (!matches || !predictions) return []
     return matches
@@ -93,7 +107,33 @@ export function MyPredictions() {
           predictions[m.id]
       )
       .sort((a, b) => +new Date(b.kickoff) - +new Date(a.kickoff))
+      .map((m) => {
+        const p = predictions[m.id]
+        const scored = scorePrediction(
+          m.stage,
+          p.home_pred,
+          p.away_pred,
+          m.home_score!,
+          m.away_score!
+        )
+        return { m, p, scored }
+      })
   }, [matches, predictions])
+
+  // Counts per bucket for the filter labels (computed once, not per-render).
+  const counts = useMemo(() => {
+    const c = { all: finishedWithPicks.length, EXACT: 0, OUTCOME: 0, MISS: 0 }
+    for (const { scored } of finishedWithPicks) c[scored.result]++
+    return c
+  }, [finishedWithPicks])
+
+  const filtered = useMemo(
+    () =>
+      filter === "all"
+        ? finishedWithPicks
+        : finishedWithPicks.filter(({ scored }) => scored.result === filter),
+    [finishedWithPicks, filter]
+  )
 
   return (
     <div className="space-y-4">
@@ -147,25 +187,41 @@ export function MyPredictions() {
         </CardContent>
       </Card>
 
-      <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
+      <Card className="gap-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardHeader>
           <CardTitle className="text-base">Settled matches</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
+          {finishedWithPicks.length > 0 && (
+            <SegmentedControl
+              layoutId="me-filter-active"
+              value={filter}
+              onChange={setFilter}
+              options={FILTERS.map((f) => ({
+                value: f.value,
+                label: (
+                  <>
+                    {f.label}
+                    <span className="ml-1 text-xs tabular-nums opacity-60">
+                      {counts[f.value]}
+                    </span>
+                  </>
+                ),
+              }))}
+            />
+          )}
           {finishedWithPicks.length === 0 && (
             <EmptyState className="py-6">
               No results scored yet. Check back after kickoff!
             </EmptyState>
           )}
-          {finishedWithPicks.map((m, i) => {
-            const p = predictions![m.id]
-            const s = scorePrediction(
-              m.stage,
-              p.home_pred,
-              p.away_pred,
-              m.home_score!,
-              m.away_score!
-            )
+          {finishedWithPicks.length > 0 && filtered.length === 0 && (
+            <EmptyState className="py-6">
+              No {FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}{" "}
+              results yet.
+            </EmptyState>
+          )}
+          {filtered.map(({ m, p, scored: s }, i) => {
             return (
               <div
                 key={m.id}
