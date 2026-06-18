@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { cn } from "@/lib/utils"
 
@@ -24,6 +24,18 @@ export function SegmentedControl<T extends string | number>({
   className?: string
 }) {
   const reduceMotion = useReducedMotion()
+  // The pill is a layout-projected (`layoutId`) element, so Motion animates ANY
+  // change to its layout box — including when content above it loads in (e.g. the
+  // `/me` rank card swaps a skeleton for taller real content) and pushes the whole
+  // control downward, which made the pill "fall from the top" on load. So only
+  // glide on a real user switch: arm the spring from the click handler and disarm
+  // it once the glide completes. Every other render — mount, data-load reflow,
+  // count-label updates — keeps `glide` false and snaps the pill instantly.
+  const [glide, setGlide] = useState(false)
+  const select = (next: T) => {
+    if (next !== value && !reduceMotion) setGlide(true)
+    onChange(next)
+  }
   return (
     <div className={cn("flex gap-1.5", className)}>
       {options.map((o) => {
@@ -32,7 +44,7 @@ export function SegmentedControl<T extends string | number>({
           <button
             key={String(o.value)}
             type="button"
-            onClick={() => onChange(o.value)}
+            onClick={() => select(o.value)}
             aria-current={active ? true : undefined}
             className={cn(
               "relative flex-1 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium transition-[color,transform] duration-[var(--duration-fast)] active:scale-[0.97]",
@@ -47,10 +59,11 @@ export function SegmentedControl<T extends string | number>({
                 aria-hidden
                 className="absolute inset-0 rounded-md border border-ink bg-background shadow-brutal-sm"
                 transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", duration: 0.4, bounce: 0.2 }
+                  glide
+                    ? { type: "spring", duration: 0.4, bounce: 0.2 }
+                    : { duration: 0 }
                 }
+                onLayoutAnimationComplete={() => setGlide(false)}
               />
             )}
             <span className="relative">{o.label}</span>
