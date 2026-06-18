@@ -219,3 +219,11 @@ Login, Welcome (`/welcome`).
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
+
+## Commit conventions
+
+- **Never put a `Claude-Session:` line (or any `https://claude.ai/code/session_…`
+  URL / session link) in a commit message.** Those links are private to the
+  authoring session and must not be committed. A `Co-Authored-By: Claude …`
+  trailer is fine; the session URL is not. Strip any such line before
+  committing.
