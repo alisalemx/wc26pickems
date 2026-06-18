@@ -153,8 +153,21 @@ export default async () => {
     const ft = m.score?.fullTime ?? { home: null, away: null }
     const pens = m.score?.penalties ?? { home: null, away: null }
 
+    // football-data flips a match to FINISHED at the whistle a beat before the
+    // score is entered upstream, so it briefly reports a finished match with a
+    // null fullTime. Don't mirror that half-synced snapshot: hold the row's
+    // current result (status + scores) until a real score lands on a later sync,
+    // so scoring, form, and the standings gate never see a finished match with
+    // null scores — and a feed that flaps back to scoreless can't null out a
+    // result we already recorded. A real 0-0 arrives as 0/0, not null, so
+    // nothing legitimate is held back.
+    const finishedButScoreless =
+      m.status === "FINISHED" && (ft.home == null || ft.away == null)
+
     // Fixture metadata is always reconciled. Result fields (status, scores,
-    // pens, duration) are skipped when an admin has locked the row.
+    // pens, duration) are skipped when an admin has locked the row, or while the
+    // result is still half-synced — leaving the prior status in place until the
+    // score is in.
     const fixtureFields = {
       fd_id: m.id,
       kickoff: m.utcDate,
@@ -167,16 +180,17 @@ export default async () => {
       away_code: m.awayTeam?.tla ?? null,
       updated_at: new Date().toISOString(),
     }
-    const resultFields = lockedIds.has(ourId)
-      ? {}
-      : {
-          status: m.status,
-          home_score: ft.home,
-          away_score: ft.away,
-          home_pens: pens.home ?? null,
-          away_pens: pens.away ?? null,
-          duration: m.score?.duration ?? "REGULAR",
-        }
+    const resultFields =
+      lockedIds.has(ourId) || finishedButScoreless
+        ? {}
+        : {
+            status: m.status,
+            home_score: ft.home,
+            away_score: ft.away,
+            home_pens: pens.home ?? null,
+            away_pens: pens.away ?? null,
+            duration: m.score?.duration ?? "REGULAR",
+          }
 
     const { error } = await db
       .from("matches")
