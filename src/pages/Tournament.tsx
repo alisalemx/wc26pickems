@@ -53,8 +53,8 @@ function groupsFromStandings(
 }
 
 function Groups() {
-  const { data: matches, isLoading } = useMatches()
-  const { data: standings } = useStandings()
+  const { data: matches, isLoading: matchesLoading } = useMatches()
+  const { data: standings, isLoading: standingsLoading } = useStandings()
 
   const { groups, qualifyingThirds, thirdsComparable } = useMemo(() => {
     // Fixtures grouped — used for the comparability gate below, and as the
@@ -102,7 +102,14 @@ function Groups() {
     return { groups, qualifyingThirds, thirdsComparable }
   }, [matches, standings])
 
-  if (isLoading) {
+  // Wait for the official standings before first paint, not just for matches.
+  // The matches query is usually warm (shared with the Matches page) while
+  // standings is cold, so rendering on matches alone would flash the client-side
+  // fallback order and then snap to football-data's official order a beat later
+  // (the two disagree on tiebreakers and on counting in-progress matches). Gating
+  // on isLoading only affects the very first load — background 60s refetches keep
+  // their previous data, so this never re-flashes the skeleton.
+  if (matchesLoading || standingsLoading) {
     return (
       <ListSkeleton
         count={4}
