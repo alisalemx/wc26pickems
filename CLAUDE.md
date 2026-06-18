@@ -155,8 +155,12 @@ It implements the FIFA criteria we *can* compute — points → GD → goals →
 stand-in for the uncomputable fair-play / lots). `rankThirds` ranks the 12
 third-placed teams (best 8 advance to the R32) by points → GD → goals → name; no
 head-to-head since thirds sit in different groups, and it runs on whichever source
-is active. The amber best-thirds highlight only shows when every group has played
+is active. The amber best-thirds highlight only shows when every team has played
 the same number of games (`thirdsComparable`), so the ranking is on equal footing.
+That gate reads the `p` (played) column of the same rows the table renders — the
+official `standings` when synced — rather than recounting the `matches` feed, so it
+always agrees with the visible P column and a result that's briefly missing from
+our `matches` rows mid-sync can't desync one group's count and flicker the band off.
 The Bracket tab does **not** use any of this — it fills knockout slots from the
 fixture list.
 

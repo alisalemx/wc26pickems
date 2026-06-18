@@ -57,20 +57,13 @@ function Groups() {
   const { data: standings, isLoading: standingsLoading } = useStandings()
 
   const { groups, qualifyingThirds, thirdsComparable } = useMemo(() => {
-    // Fixtures grouped — used for the comparability gate below, and as the
-    // fallback table source until the standings table is first synced.
+    // Fixtures grouped — the fallback table source until the standings table is
+    // first synced (and offline dev).
     const byGroup = new Map<string, MatchRow[]>()
-    const finishedByGroup = new Map<string, number>()
     for (const m of matches ?? []) {
       if (m.stage !== "GROUP" || !m.group_name) continue
       if (!byGroup.has(m.group_name)) byGroup.set(m.group_name, [])
       byGroup.get(m.group_name)!.push(m)
-      if (m.status === "FINISHED" && m.home_score != null) {
-        finishedByGroup.set(
-          m.group_name,
-          (finishedByGroup.get(m.group_name) ?? 0) + 1
-        )
-      }
     }
 
     // Prefer football-data's official order (it applies the fair-play tiebreaker
@@ -91,13 +84,17 @@ function Groups() {
       thirds.slice(0, 8).map((r) => r.code ?? r.team)
     )
 
-    // Comparable only when every group has played the same number of games (and
+    // Comparable only when every team has played the same number of games (and
     // at least one): then the thirds are ranked on equal footing. While a round
     // is mid-flight the counts differ, so the highlight hides until groups level
-    // out again (it re-appears live as the final matchday completes).
-    const counts = [...byGroup.keys()].map((name) => finishedByGroup.get(name) ?? 0)
+    // out again (it re-appears live as the final matchday completes). Derived
+    // from the same rows the table renders — the official standings when synced —
+    // so the gate always agrees with the visible P column, and a single result
+    // that's briefly missing from our matches feed mid-sync can't desync one
+    // group's count and flicker the whole band off.
+    const played = groups.flatMap((g) => g.rows.map((r) => r.p))
     const thirdsComparable =
-      counts.length > 0 && counts[0] > 0 && counts.every((c) => c === counts[0])
+      played.length > 0 && played[0] > 0 && played.every((p) => p === played[0])
 
     return { groups, qualifyingThirds, thirdsComparable }
   }, [matches, standings])
