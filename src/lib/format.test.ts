@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest"
 import {
   isLocked,
   isLive,
-  MAX_LIVE_MS,
+  MAX_LIVE_MS_GROUP,
+  MAX_LIVE_MS_BRACKET,
   initials,
   formatCountdown,
   shortDate,
@@ -31,28 +32,44 @@ describe("isLive", () => {
   const kickoffMs = new Date(kickoff).getTime()
 
   it("is not live before kickoff", () => {
-    expect(isLive(kickoff, "TIMED", kickoffMs - 1)).toBe(false)
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs - 1)).toBe(false)
   })
 
   it("is live once kickoff passes and no final result is in", () => {
-    expect(isLive(kickoff, "IN_PLAY", kickoffMs + 60_000)).toBe(true)
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + 60_000)).toBe(true)
   })
 
   it("is live right at kickoff even before the feed flips to IN_PLAY", () => {
-    expect(isLive(kickoff, "TIMED", kickoffMs)).toBe(true)
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs)).toBe(true)
   })
 
   it("is never live once FINISHED, even within the window", () => {
-    expect(isLive(kickoff, "FINISHED", kickoffMs + 60_000)).toBe(false)
+    expect(isLive(kickoff, "FINISHED", "GROUP", kickoffMs + 60_000)).toBe(false)
   })
 
-  it("stops being live past the window when stuck unfinished (the bug)", () => {
+  it("stops being live past the group window when stuck unfinished (the bug)", () => {
     // A feed left stuck at IN_PLAY hours after full time must not pulse forever.
-    expect(isLive(kickoff, "IN_PLAY", kickoffMs + MAX_LIVE_MS + 1)).toBe(false)
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + MAX_LIVE_MS_GROUP + 1)).toBe(
+      false
+    )
   })
 
-  it("is live at exactly the window edge", () => {
-    expect(isLive(kickoff, "IN_PLAY", kickoffMs + MAX_LIVE_MS)).toBe(true)
+  it("is live at exactly the group window edge", () => {
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + MAX_LIVE_MS_GROUP)).toBe(true)
+  })
+
+  it("gives knockout games a longer window for extra time and penalties", () => {
+    // Past the group window but within the bracket window: a group game is no
+    // longer live, but a knockout game still is.
+    const t = kickoffMs + MAX_LIVE_MS_GROUP + 60_000
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", t)).toBe(false)
+    expect(isLive(kickoff, "IN_PLAY", "FINAL", t)).toBe(true)
+  })
+
+  it("stops being live past the bracket window", () => {
+    expect(isLive(kickoff, "IN_PLAY", "R32", kickoffMs + MAX_LIVE_MS_BRACKET + 1)).toBe(
+      false
+    )
   })
 })
 

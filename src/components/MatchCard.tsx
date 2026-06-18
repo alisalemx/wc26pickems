@@ -49,7 +49,7 @@ export function MatchCard({
   const finished = match.status === "FINISHED" && match.home_score != null
   // Pulse LIVE only within a plausible match window — a feed left stuck at
   // IN_PLAY past full time should fall back to the locked state, not pulse forever.
-  const live = isLive(match.kickoff, match.status)
+  const live = isLive(match.kickoff, match.status, match.stage)
   const predictable =
     !locked && match.home_team != null && match.away_team != null
   // Anonymous visitors can see the match but can't enter or save a prediction.
