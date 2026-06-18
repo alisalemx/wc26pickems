@@ -111,7 +111,6 @@ export function MatchCard({
     (!predictable && !locked) ||
     (predictable && (prediction != null || maxPoints(match.stage) > EXACT_BASE)) ||
     (finished && own != null) ||
-    (locked && !finished && prediction != null) ||
     canPredict ||
     (signedIn && locked)
 
@@ -174,33 +173,73 @@ export function MatchCard({
         <TeamDisplay name={match.home_team} code={match.home_code} stack />
         <div className="flex justify-center">
           {signedIn ? (
-            // Signed in: the boxes hold (or capture) your prediction.
-            <ScorePair
-            home={home}
-            away={away}
-            onHome={setHome}
-            onAway={setAway}
-            homeLabel={`${match.home_team ?? "Home"} predicted goals`}
-            awayLabel={`${match.away_team ?? "Away"} predicted goals`}
-            disabled={!canPredict}
-            muted={!canPredict}
-          />
-        ) : finished ? (
-          // Visitor, match over: show the final score instead of empty inputs.
-          <div className="flex flex-col items-center leading-none">
-            <span className="text-2xl font-bold tabular-nums">
-              {match.home_score}–{match.away_score}
+            canPredict ? (
+              // Editable: the boxes hold (or capture) your prediction.
+              <ScorePair
+                home={home}
+                away={away}
+                onHome={setHome}
+                onAway={setAway}
+                homeLabel={`${match.home_team ?? "Home"} predicted goals`}
+                awayLabel={`${match.away_team ?? "Away"} predicted goals`}
+                disabled={!canPredict}
+                muted={!canPredict}
+              />
+            ) : prediction || finished ? (
+              // Locked/finished: drop the disabled boxes and show text instead —
+              // your prediction above the actual result (once it's in). Labels
+              // are left-aligned so "Result" sits under "Prediction" with the
+              // scores in their own column; the shootout score tucks under the
+              // result score it decided (column 2), not the label.
+              <div className="grid grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-1 leading-none">
+                {prediction && (
+                  <>
+                    <span className="text-sm text-muted-foreground">Prediction</span>
+                    <span className="text-base font-bold tabular-nums text-foreground">
+                      {prediction.home_pred}–{prediction.away_pred}
+                    </span>
+                  </>
+                )}
+                {finished && (
+                  <>
+                    <span className="text-sm text-muted-foreground">Result</span>
+                    <span className="text-base font-bold tabular-nums text-foreground">
+                      {match.home_score}–{match.away_score}
+                    </span>
+                  </>
+                )}
+                {finished &&
+                  match.duration === "PENALTY_SHOOTOUT" &&
+                  match.home_pens != null && (
+                    <span className="col-start-2 text-[10px] text-muted-foreground">
+                      pens {match.home_pens}–{match.away_pens}
+                    </span>
+                  )}
+              </div>
+            ) : (
+              // Signed in, no pick, match not started (e.g. TBD knockout slot).
+              <span className="px-3 text-sm font-medium text-muted-foreground">
+                vs
+              </span>
+            )
+          ) : finished ? (
+            // Visitor, match over: show the final score instead of empty inputs.
+            <div className="flex flex-col items-center leading-none">
+              <span className="text-2xl font-bold tabular-nums">
+                {match.home_score}–{match.away_score}
+              </span>
+              {match.duration === "PENALTY_SHOOTOUT" &&
+                match.home_pens != null && (
+                  <span className="mt-1 text-[10px] text-muted-foreground">
+                    pens {match.home_pens}–{match.away_pens}
+                  </span>
+                )}
+            </div>
+          ) : (
+            // Visitor, upcoming match: nothing to show yet.
+            <span className="px-3 text-sm font-medium text-muted-foreground">
+              vs
             </span>
-            {match.duration === "PENALTY_SHOOTOUT" &&
-              match.home_pens != null && (
-                <span className="mt-1 text-[10px] text-muted-foreground">
-                  pens {match.home_pens}–{match.away_pens}
-                </span>
-              )}
-          </div>
-        ) : (
-          // Visitor, upcoming match: nothing to show yet.
-            <span className="px-3 text-sm font-medium text-muted-foreground">vs</span>
           )}
         </div>
         <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
@@ -231,21 +270,6 @@ export function MatchCard({
           </>
         )}
       </div>
-
-      {signedIn && finished && (
-        <div className="flex items-center justify-center gap-2.5 px-4 pb-1 text-base text-muted-foreground">
-          Result
-          <span className="font-semibold tabular-nums text-foreground">
-            {match.home_score}–{match.away_score}
-          </span>
-          {match.duration === "PENALTY_SHOOTOUT" &&
-            match.home_pens != null && (
-              <span className="font-semibold tabular-nums text-foreground">
-                (pens {match.home_pens}–{match.away_pens})
-              </span>
-            )}
-        </div>
-      )}
 
       {canPredict && (
         <PopularPicks
@@ -295,11 +319,6 @@ export function MatchCard({
             ) : (
               <ResultBadge result={own.result} points={own.points} />
             ))}
-          {locked && !finished && prediction && (
-            <span>
-              Your pick {prediction.home_pred}–{prediction.away_pred}
-            </span>
-          )}
         </div>
 
         <div>
