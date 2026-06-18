@@ -45,11 +45,50 @@ hairline for table rows, separators, and inner boxes; `--ink` (`border-ink`) is 
 strong structural outline reserved for cards, buttons, inputs, alerts, and dialogs.
 Offset shadows use the translucent `--shadow-brutal`/`--shadow-brutal-sm` tokens.
 Shared, restyle-once UI atoms live in `src/components/` (not `ui/`):
-`TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell` —
-prefer these over re-inlining the pattern so a design change lands everywhere.
+`TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell`,
+`SegmentedControl` — prefer these over re-inlining the pattern so a design change
+lands everywhere. Type is Space Grotesk (`@fontsource-variable/space-grotesk`,
+`--font-sans`); headings get a slight negative letter-spacing (`@layer base`).
 
 **The database is the source of truth for scoring and anti-cheat — not the
 client.** This is the central design principle; the React app is a thin view layer.
+
+### Motion & animation
+Invoke the **`/web-animation-design` skill** before adding or changing any
+animation, and follow its guidance rather than reaching for ad-hoc
+durations/easings.
+
+Two layers, both honoring `prefers-reduced-motion`:
+- **CSS / `tw-animate-css`** (`animate-in fade-in-0 slide-in-from-bottom-*`,
+  `zoom-in-95`, etc.) for entrances, exits, and the dialog/tabs transitions —
+  the default for one-shot reveals.
+- **`motion`** (Framer Motion's successor, imported from `motion/react`) for
+  JS-driven *shared-layout* animation — the sliding `layoutId` pill in
+  `SegmentedControl`, animated tab/route content, and the leaderboard. These
+  bypass the CSS reduced-motion backstop, so each such component must gate its
+  own motion with `useReducedMotion()`.
+
+Tokens (do not hardcode timings — use these):
+- **Durations** live in `:root` as plain custom properties (so they're never
+  tree-shaken) and are consumed via `duration-[var(--duration-*)]`:
+  `--duration-fast` 130ms (micro: chip press, badge pop), `--duration-base` 240ms
+  (entrances, collapse), `--duration-slow` 280ms (modals/drawers), `--duration-exit`
+  160ms. Keep UI motion under ~300ms and make exits ~20% faster than entrances.
+- **Easings** live in `@theme` (so Tailwind generates `ease-*` utilities from the
+  `--ease-*` namespace): `ease-out-cubic` (general), `ease-out-quint` (livelier
+  card entrance), `ease-in-out-quart` (collapse / on-screen morph). Hover and
+  color transitions stay on plain `ease`.
+
+Bespoke keyframes (all in `src/index.css`, each scoped to a single element class):
+`play-flow` (the "Ultramode" flowing-gradient sign-in CTA, `.play-cta`),
+`countdown-pulse` (clock icon in the final minutes before kickoff), and
+`rank-pop` + `rank-sheen` with the `rank-metal-*` gradients (the viewer's own
+rank reveal on `/me` — a scale-in with overshoot plus a slow medal-sheen sweep).
+Infinite/constant motion is used sparingly and only on one element at a time by
+design. List entrances stagger via the `.stagger-in` utility: the caller sets the
+row index inline as `--i`, and the cascade is capped (≤6 steps × 45ms) so long
+lists don't lag. `backwards` fill-mode holds the start frame during the delay to
+avoid a visible-then-snap flicker.
 
 ### Scoring (computed live in SQL, never stored)
 `supabase/migrations/0001_init.sql` defines:
@@ -215,6 +254,7 @@ Login, Welcome (`/welcome`).
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
 - **Use `border-ink` (not plain `border`) for a card/control's structural outline.** Plain `border` resolves to the faint hairline `--border` token; the strong outline is the separate `--ink` token. The two are intentionally different (see the design-system note above).
 - **The sticky `DayHeader` offset (`top-14`) tracks the `h-14` app header in `Layout.tsx`.** If you change the header height, update `DayHeader`'s `top-*` to match or the day strip will misalign.
+- **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
