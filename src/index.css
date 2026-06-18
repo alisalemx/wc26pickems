@@ -213,6 +213,63 @@
   }
 }
 
+/* The user's own rank reveal on /me (MyPredictions). Two touches, both only ever
+   on a single element — the viewer's own rank — so they stay calm personal
+   accents (same justification as the countdown pulse):
+   1. .rank-pop   — a celebratory scale-in with a slight overshoot, landing just
+                    after the card has slid up.
+   2. .rank-sheen — a slow highlight that travels across the metal gradient like
+                    light moving over a real medal. The metal classes below stack
+                    two text-clipped background layers — a moving white streak
+                    (layer 1, animated here) over the static base gradient
+                    (layer 2) — so the resting look is unchanged and the letters
+                    never thin out as the streak passes. */
+@keyframes rank-pop {
+  0%   { opacity: 0; transform: scale(0.82); }
+  55%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.rank-pop {
+  animation: rank-pop calc(var(--duration-base) * 1.5)
+    cubic-bezier(0.23, 1, 0.32, 1) 120ms both;
+}
+
+@keyframes rank-sheen {
+  0%   { background-position: -150% 0, 0 0; }
+  100% { background-position: 250% 0, 0 0; }
+}
+.rank-sheen {
+  animation: rank-sheen 4.5s cubic-bezier(0.77, 0, 0.175, 1) infinite;
+}
+
+/* Gold/silver/bronze fills sampled from Apple Color Emoji so each "Nth Place"
+   reads as the same metal as its medal. Layer 1 is the moving sheen streak
+   (transparent-edged, so the base shows through it); layer 2 is the opaque base
+   gradient at full size, so the text is always fully filled. Both are clipped to
+   the glyphs by the element's bg-clip-text. The base position never animates;
+   only the sheen sweeps (see .rank-sheen). 4th place and below get no metal class
+   → neutral foreground. */
+.rank-metal {
+  background-repeat: no-repeat;
+  background-size: 200% 100%, 100% 100%;
+  background-position: -150% 0, 0 0;
+}
+.rank-metal-gold {
+  background-image:
+    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.7) 50%, transparent 60%),
+    linear-gradient(135deg, #d39e08, #f8dd7a, #d39e08);
+}
+.rank-metal-silver {
+  background-image:
+    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.85) 50%, transparent 60%),
+    linear-gradient(135deg, #8a8a8a, #dadada, #8a8a8a);
+}
+.rank-metal-bronze {
+  background-image:
+    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.55) 50%, transparent 60%),
+    linear-gradient(135deg, #8c3807, #d8812d, #8c3807);
+}
+
 @layer base {
   * {
     border-color: var(--border);

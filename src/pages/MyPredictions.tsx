@@ -19,16 +19,15 @@ import { scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
-// Gradient fill matched to each medal emoji, sampled from Apple Color Emoji.
-// Stops run deep → bright → deep on a diagonal so the rank text catches a
-// metallic sheen across the middle (like the medal) while the letter edges stay
-// dark enough to read. Clipped to the text so "1st Place" reads as the same
-// metal as its medal. 4th place and below fall back to neutral foreground (no
-// gradient). Indexed by position - 1.
+// Metal fill matched to each medal emoji, defined in index.css (`.rank-metal-*`):
+// a static base gradient (deep → bright → deep, sampled from Apple Color Emoji)
+// under a moving sheen streak, both clipped to the rank text so "1st Place" reads
+// as the same metal as its medal. 4th place and below fall back to neutral
+// foreground (no class). Indexed by position - 1.
 const TIER_GRADIENT = [
-  "bg-[linear-gradient(135deg,#d39e08,#f8dd7a,#d39e08)]", // 🥇 gold
-  "bg-[linear-gradient(135deg,#8a8a8a,#dadada,#8a8a8a)]", // 🥈 silver
-  "bg-[linear-gradient(135deg,#8c3807,#d8812d,#8c3807)]", // 🥉 bronze
+  "rank-metal rank-metal-gold", // 🥇 gold
+  "rank-metal rank-metal-silver", // 🥈 silver
+  "rank-metal rank-metal-bronze", // 🥉 bronze
 ]
 
 export function MyPredictions() {
@@ -100,7 +99,7 @@ export function MyPredictions() {
     <div className="space-y-4">
       <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
         <CardContent>
-          <div className="mb-3 text-center text-sm font-medium text-foreground">
+          <div className="mb-1.5 text-center text-sm font-medium text-foreground">
             Your rank
           </div>
           {isLoading ? (
@@ -109,7 +108,7 @@ export function MyPredictions() {
             <>
               {rank && (
                 <div className="mb-4 text-center">
-                  <div className="flex items-center justify-center gap-1 leading-none">
+                  <div className="rank-pop flex items-center justify-center gap-1 leading-none">
                     {MEDALS[rank.position - 1] && (
                       <span className="text-3xl" aria-hidden="true">
                         {MEDALS[rank.position - 1]}
@@ -119,7 +118,7 @@ export function MyPredictions() {
                       className={cn(
                         "text-3xl font-semibold tabular-nums",
                         rankGradient
-                          ? "bg-clip-text text-transparent [-webkit-background-clip:text]"
+                          ? "bg-clip-text text-transparent [-webkit-background-clip:text] rank-sheen"
                           : "text-foreground",
                         rankGradient
                       )}
