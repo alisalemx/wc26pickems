@@ -46,6 +46,33 @@ export function isLocked(iso: string, now: number = Date.now()): boolean {
   return new Date(iso).getTime() <= now
 }
 
+/** Longest plausible wall-clock span from kickoff to a final result, used to
+ *  bound the LIVE label (see `isLive`). Group games end at 90' (no extra time or
+ *  penalties), so they're shorter than knockout/bracket games. Both budgets:
+ *  90' + halftime + generous stoppage, and for the bracket also extra time and
+ *  penalties — plus slack for the 10-min sync cadence. */
+export const MAX_LIVE_MS_GROUP = 2.5 * 60 * 60 * 1000 // ~90'+HT+stoppage+slack
+export const MAX_LIVE_MS_BRACKET = 3.5 * 60 * 60 * 1000 // + extra time + penalties
+
+/** Whether a match should pulse "LIVE". A match is live once kickoff has passed
+ *  and until we record a FINISHED result — we only sync the final score, so the
+ *  card can't show a live scoreline, just the label. Critically this is bounded
+ *  by a per-stage window: the upstream feed occasionally leaves a finished match
+ *  stuck at IN_PLAY (never flipping to FINISHED), which would otherwise pulse
+ *  LIVE forever. Group games use a shorter window than the bracket, which can run
+ *  to extra time and penalties. Past the window we stop claiming it's live. */
+export function isLive(
+  kickoff: string,
+  status: string,
+  stage: string,
+  now: number = Date.now()
+): boolean {
+  if (status === "FINISHED") return false
+  const start = new Date(kickoff).getTime()
+  const window = stage === "GROUP" ? MAX_LIVE_MS_GROUP : MAX_LIVE_MS_BRACKET
+  return start <= now && now - start <= window
+}
+
 /** Time remaining until `iso`, measured from `now` (ms since epoch), as a
  *  colon clock counting down to the second. Powers the live countdown on match
  *  cards. Returns null once the deadline has passed — the caller renders a

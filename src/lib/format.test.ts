@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest"
-import { isLocked, initials, formatCountdown, shortDate, ordinal } from "./format"
+import {
+  isLocked,
+  isLive,
+  MAX_LIVE_MS_GROUP,
+  MAX_LIVE_MS_BRACKET,
+  initials,
+  formatCountdown,
+  shortDate,
+  ordinal,
+} from "./format"
 
 describe("isLocked", () => {
   const kickoff = "2026-07-01T18:00:00Z"
@@ -15,6 +24,52 @@ describe("isLocked", () => {
 
   it("returns true after kickoff", () => {
     expect(isLocked(kickoff, kickoffMs + 60_000)).toBe(true)
+  })
+})
+
+describe("isLive", () => {
+  const kickoff = "2026-07-01T18:00:00Z"
+  const kickoffMs = new Date(kickoff).getTime()
+
+  it("is not live before kickoff", () => {
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs - 1)).toBe(false)
+  })
+
+  it("is live once kickoff passes and no final result is in", () => {
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + 60_000)).toBe(true)
+  })
+
+  it("is live right at kickoff even before the feed flips to IN_PLAY", () => {
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs)).toBe(true)
+  })
+
+  it("is never live once FINISHED, even within the window", () => {
+    expect(isLive(kickoff, "FINISHED", "GROUP", kickoffMs + 60_000)).toBe(false)
+  })
+
+  it("stops being live past the group window when stuck unfinished (the bug)", () => {
+    // A feed left stuck at IN_PLAY hours after full time must not pulse forever.
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + MAX_LIVE_MS_GROUP + 1)).toBe(
+      false
+    )
+  })
+
+  it("is live at exactly the group window edge", () => {
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + MAX_LIVE_MS_GROUP)).toBe(true)
+  })
+
+  it("gives knockout games a longer window for extra time and penalties", () => {
+    // Past the group window but within the bracket window: a group game is no
+    // longer live, but a knockout game still is.
+    const t = kickoffMs + MAX_LIVE_MS_GROUP + 60_000
+    expect(isLive(kickoff, "IN_PLAY", "GROUP", t)).toBe(false)
+    expect(isLive(kickoff, "IN_PLAY", "FINAL", t)).toBe(true)
+  })
+
+  it("stops being live past the bracket window", () => {
+    expect(isLive(kickoff, "IN_PLAY", "R32", kickoffMs + MAX_LIVE_MS_BRACKET + 1)).toBe(
+      false
+    )
   })
 })
 

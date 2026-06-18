@@ -13,7 +13,7 @@ import { PredictionCountdown } from "./PredictionCountdown"
 import { TeamForm } from "./TeamForm"
 import { TeamInfoDialog } from "./TeamInfoDialog"
 import { ScorePair } from "./ScoreInput"
-import { kickoffTime, isLocked } from "@/lib/format"
+import { kickoffTime, isLocked, isLive } from "@/lib/format"
 import { liveScoreUrl } from "@/lib/links"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import {
@@ -47,6 +47,9 @@ export function MatchCard({
   const reduceMotion = useReducedMotion()
   const locked = isLocked(match.kickoff)
   const finished = match.status === "FINISHED" && match.home_score != null
+  // Pulse LIVE only within a plausible match window — a feed left stuck at
+  // IN_PLAY past full time should fall back to the locked state, not pulse forever.
+  const live = isLive(match.kickoff, match.status, match.stage)
   const predictable =
     !locked && match.home_team != null && match.away_team != null
   // Anonymous visitors can see the match but can't enter or save a prediction.
@@ -128,9 +131,10 @@ export function MatchCard({
         />
 
         {/* Center slot: absolute kickoff time (in strong foreground ink) on
-            upcoming/ended cards. While locked-but-live the match is in progress,
-            so it carries a pulsing "LIVE" label linking out to live scores. */}
-        {locked && !finished ? (
+            upcoming/ended cards. While the match is in progress (kickoff passed,
+            no final result yet, within the live window) it carries a pulsing
+            "LIVE" label linking out to live scores. */}
+        {live ? (
           <LiveLabel match={match} />
         ) : (
           <span className="justify-self-center font-medium tabular-nums text-foreground">
