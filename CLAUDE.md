@@ -224,6 +224,5 @@ Login, Welcome (`/welcome`).
 
 - **Never put a `Claude-Session:` line (or any `https://claude.ai/code/session_…`
   URL / session link) in a commit message.** Those links are private to the
-  authoring session and must not be committed. A `Co-Authored-By: Claude …`
-  trailer is fine; the session URL is not. Strip any such line before
+  authoring session and must not be committed. Strip any such line before
   committing.
