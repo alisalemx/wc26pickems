@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest"
-import { isLocked, initials, formatCountdown, shortDate, ordinal } from "./format"
+import {
+  isLocked,
+  isLive,
+  MAX_LIVE_MS,
+  initials,
+  formatCountdown,
+  shortDate,
+  ordinal,
+} from "./format"
 
 describe("isLocked", () => {
   const kickoff = "2026-07-01T18:00:00Z"
@@ -15,6 +23,36 @@ describe("isLocked", () => {
 
   it("returns true after kickoff", () => {
     expect(isLocked(kickoff, kickoffMs + 60_000)).toBe(true)
+  })
+})
+
+describe("isLive", () => {
+  const kickoff = "2026-07-01T18:00:00Z"
+  const kickoffMs = new Date(kickoff).getTime()
+
+  it("is not live before kickoff", () => {
+    expect(isLive(kickoff, "TIMED", kickoffMs - 1)).toBe(false)
+  })
+
+  it("is live once kickoff passes and no final result is in", () => {
+    expect(isLive(kickoff, "IN_PLAY", kickoffMs + 60_000)).toBe(true)
+  })
+
+  it("is live right at kickoff even before the feed flips to IN_PLAY", () => {
+    expect(isLive(kickoff, "TIMED", kickoffMs)).toBe(true)
+  })
+
+  it("is never live once FINISHED, even within the window", () => {
+    expect(isLive(kickoff, "FINISHED", kickoffMs + 60_000)).toBe(false)
+  })
+
+  it("stops being live past the window when stuck unfinished (the bug)", () => {
+    // A feed left stuck at IN_PLAY hours after full time must not pulse forever.
+    expect(isLive(kickoff, "IN_PLAY", kickoffMs + MAX_LIVE_MS + 1)).toBe(false)
+  })
+
+  it("is live at exactly the window edge", () => {
+    expect(isLive(kickoff, "IN_PLAY", kickoffMs + MAX_LIVE_MS)).toBe(true)
   })
 })
 

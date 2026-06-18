@@ -46,6 +46,27 @@ export function isLocked(iso: string, now: number = Date.now()): boolean {
   return new Date(iso).getTime() <= now
 }
 
+/** Longest plausible wall-clock span from kickoff to a final result: 90' +
+ *  halftime + generous stoppage, plus extra time and penalties for knockouts,
+ *  plus slack for the 10-min sync cadence. Comfortably over 3 hours. */
+export const MAX_LIVE_MS = 3.5 * 60 * 60 * 1000
+
+/** Whether a match should pulse "LIVE". A match is live once kickoff has passed
+ *  and until we record a FINISHED result — we only sync the final score, so the
+ *  card can't show a live scoreline, just the label. Critically this is bounded
+ *  by `MAX_LIVE_MS`: the upstream feed occasionally leaves a finished match
+ *  stuck at IN_PLAY (never flipping to FINISHED), which would otherwise pulse
+ *  LIVE forever. Past the window we stop claiming it's live regardless of status. */
+export function isLive(
+  kickoff: string,
+  status: string,
+  now: number = Date.now()
+): boolean {
+  if (status === "FINISHED") return false
+  const start = new Date(kickoff).getTime()
+  return start <= now && now - start <= MAX_LIVE_MS
+}
+
 /** Time remaining until `iso`, measured from `now` (ms since epoch), as a
  *  colon clock counting down to the second. Powers the live countdown on match
  *  cards. Returns null once the deadline has passed — the caller renders a
