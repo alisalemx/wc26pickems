@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { ChevronDown, Lock, CheckCircle2 } from "lucide-react"
+import { ChevronDown, Lock, CheckCircle2, ArrowUpRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import { TeamForm } from "./TeamForm"
 import { TeamInfoDialog } from "./TeamInfoDialog"
 import { ScorePair } from "./ScoreInput"
 import { kickoffTime, isLocked } from "@/lib/format"
+import { liveScoreUrl } from "@/lib/links"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import {
   useRevealedPredictions,
@@ -128,15 +129,9 @@ export function MatchCard({
 
         {/* Center slot: absolute kickoff time (in strong foreground ink) on
             upcoming/ended cards. While locked-but-live the match is in progress,
-            so it carries an "Ongoing" label with a pulsing dot instead. */}
+            so it carries a pulsing "LIVE" label linking out to live scores. */}
         {locked && !finished ? (
-          <span className="flex items-center justify-self-center gap-1.5 font-medium text-green-600 dark:text-green-500">
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
-            </span>
-            Ongoing
-          </span>
+          <LiveLabel match={match} />
         ) : (
           <span className="justify-self-center font-medium tabular-nums text-foreground">
             {kickoffTime(match.kickoff)}
@@ -367,6 +362,52 @@ export function MatchCard({
         </div>
       )}
     </Card>
+  )
+}
+
+/** Center label for a match in progress. We only sync the final result (after
+ *  full-time), so the card can't show a live score mid-match — instead it pulses
+ *  "Live" and links out to a live-score search for the minute-by-minute. Falls
+ *  back to a plain status label if the teams aren't resolved yet (TBD slots). */
+function LiveLabel({ match }: { match: MatchRow }) {
+  // The dot and the arrow flank "LIVE" in equal-width boxes so the word stays
+  // centered in the card — without matched widths the wider arrow would drag it
+  // off-center. The fallback's right box is an empty spacer balancing the dot.
+  const flank = "flex w-4 items-center justify-center"
+  const dot = (
+    <span className={flank}>
+      <span className="relative flex size-1.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+      </span>
+    </span>
+  )
+  const base =
+    "flex items-center justify-self-center gap-0.5 font-medium text-green-600 dark:text-green-500"
+
+  if (!match.home_team || !match.away_team) {
+    return (
+      <span className={base}>
+        {dot}
+        LIVE
+        <span className={flank} aria-hidden />
+      </span>
+    )
+  }
+
+  return (
+    <a
+      href={liveScoreUrl(match.home_team, match.away_team)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(base, "underline-offset-4 hover:underline")}
+    >
+      {dot}
+      LIVE
+      <span className={flank}>
+        <ArrowUpRight className="size-3.5" />
+      </span>
+    </a>
   )
 }
 
