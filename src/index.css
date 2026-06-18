@@ -225,13 +225,20 @@
                     (layer 2) — so the resting look is unchanged and the letters
                     never thin out as the streak passes. */
 @keyframes rank-pop {
-  0%   { opacity: 0; transform: scale(0.82); }
-  55%  { opacity: 1; transform: scale(1.05); }
+  /* Burst in: ease-out so the glyph jumps toward its destination and is fully
+     opaque before the peak. */
+  0%   { opacity: 0; transform: scale(0.9);
+         animation-timing-function: var(--ease-out-cubic); }
+  /* Overshoot peak. */
+  60%  { opacity: 1; transform: scale(1.06);
+         animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1); }
+  /* Settle: the return from the overshoot is on-screen movement, so ease-in-out
+     decelerates into rest instead of snapping. */
   100% { opacity: 1; transform: scale(1); }
 }
 .rank-pop {
-  animation: rank-pop calc(var(--duration-base) * 1.5)
-    cubic-bezier(0.23, 1, 0.32, 1) 120ms both;
+  animation: rank-pop calc(var(--duration-base) * 1.25) 120ms both;
+  will-change: transform;
 }
 
 @keyframes rank-sheen {
