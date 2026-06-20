@@ -47,7 +47,7 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => select(o.value)}
             aria-current={active ? true : undefined}
             className={cn(
-              "relative flex-1 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium transition-[color,transform] duration-[var(--duration-fast)] active:scale-[0.97]",
+              "relative flex-1 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium transition-[color,background-color] duration-[var(--duration-fast)] active:bg-foreground/10",
               active
                 ? "z-10 text-foreground"
                 : "text-muted-foreground hover:text-foreground"

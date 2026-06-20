@@ -10,15 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-primary-foreground bg-primary text-primary-foreground shadow-brutal-sm hover:bg-primary/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+          "border border-primary-foreground bg-primary text-primary-foreground shadow-brutal-sm hover:bg-primary/90 active:bg-primary/80",
         destructive:
-          "border border-ink bg-destructive text-destructive-foreground shadow-brutal-sm hover:bg-destructive/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+          "border border-ink bg-destructive text-destructive-foreground shadow-brutal-sm hover:bg-destructive/90 active:bg-destructive/80",
         outline:
-          "border border-ink bg-background shadow-brutal-sm hover:bg-accent hover:text-accent-foreground active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+          "border border-ink bg-background shadow-brutal-sm hover:bg-accent hover:text-accent-foreground active:bg-accent-pressed active:text-accent-foreground",
         secondary:
-          "border border-ink bg-secondary text-secondary-foreground shadow-brutal-sm hover:bg-accent hover:text-accent-foreground active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
-        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-ink bg-secondary text-secondary-foreground shadow-brutal-sm hover:bg-accent hover:text-accent-foreground active:bg-accent-pressed active:text-accent-foreground",
+        ghost:
+          "text-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent-pressed active:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline active:bg-foreground/10 rounded-sm",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

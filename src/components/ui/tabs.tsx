@@ -77,7 +77,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       value={value}
       className={cn(
-        "text-muted-foreground data-[state=active]:text-foreground data-[state=active]:z-10 focus-visible:ring-ring/50 focus-visible:outline-ring relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,transform] duration-[var(--duration-fast)] focus-visible:ring-[3px] focus-visible:outline-1 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "text-muted-foreground data-[state=active]:text-foreground data-[state=active]:z-10 focus-visible:ring-ring/50 focus-visible:outline-ring relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,background-color] duration-[var(--duration-fast)] focus-visible:ring-[3px] focus-visible:outline-1 active:bg-foreground/10 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

@@ -111,7 +111,7 @@ export function Layout() {
             href="https://www.football-data.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
+            className="rounded-sm -mx-1 px-1 text-primary underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10"
           >
             football-data.org
           </a>
@@ -127,14 +127,14 @@ export function Layout() {
               end={"end" in item ? item.end : false}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors",
+                  "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors active:bg-foreground/10",
                   isActive
                     ? "font-semibold text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
-              <item.icon className="size-5 transition-transform duration-[var(--duration-fast)] active:scale-[0.92]" />
+              <item.icon className="size-5" />
               {item.label}
             </NavLink>
           ))}

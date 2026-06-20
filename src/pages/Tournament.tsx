@@ -181,7 +181,7 @@ function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
     <>
       <TableRow
         onClick={() => setOpen(true)}
-        className={cn("cursor-pointer", highlight)}
+        className={cn("cursor-pointer active:bg-foreground/10", highlight)}
       >
         <TableCell>
           <div className="flex items-center gap-1">

@@ -35,7 +35,7 @@ const EXAMPLE_MULT = STAGE_MULTIPLIER.R32
 export function ScoringGuide() {
   return (
     <Dialog>
-      <DialogTrigger className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline">
+      <DialogTrigger className="flex shrink-0 items-center gap-1 rounded-sm -mx-1 px-1 text-xs font-medium text-primary underline-offset-2 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10">
         <Info className="size-3.5" aria-hidden /> Scoring system
       </DialogTrigger>
       <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 gap-4 overflow-y-auto">

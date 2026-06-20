@@ -404,7 +404,10 @@ function LiveLabel({ match }: { match: MatchRow }) {
       href={liveScoreUrl(match.home_team, match.away_team)}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn(base, "underline-offset-4 hover:underline")}
+      className={cn(
+        base,
+        "-mx-1 rounded-sm px-1 underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10"
+      )}
     >
       {dot}
       LIVE
@@ -447,7 +450,7 @@ function PopularPicks({
               size="sm"
               variant={active ? "default" : "outline"}
               onClick={() => onPick(d.home_pred, d.away_pred)}
-              className="h-7 gap-1.5 px-2 text-xs transition-transform duration-[var(--duration-fast)] active:scale-[0.96]"
+              className="h-7 gap-1.5 px-2 text-xs"
             >
               <span className="font-semibold tabular-nums">
                 {d.home_pred}–{d.away_pred}

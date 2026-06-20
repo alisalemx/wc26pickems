@@ -44,6 +44,27 @@ offset shadows. Borders are **two-tier**: `--border` (`border-*` utilities) is a
 hairline for table rows, separators, and inner boxes; `--ink` (`border-ink`) is the
 strong structural outline reserved for cards, buttons, inputs, alerts, and dialogs.
 Offset shadows use the translucent `--shadow-brutal`/`--shadow-brutal-sm` tokens.
+
+**Pressed states are a uniform convention: every interactive element settles on a
+subtle background tint while held (`:active`) — no scale or translate — and the
+tint matches the element rather than being a blanket green.** Three tiers:
+- **Filled colour buttons** deepen their own fill: `default` →
+  `active:bg-primary/80`, `destructive` → `active:bg-destructive/80`.
+- **Accent buttons** (`outline`/`secondary`/`ghost`, whose hover is the green
+  `--accent`) deepen to `--accent-pressed` (the `bg-accent-pressed` utility — one
+  step past `--accent`, darker in light / lighter in dark so press reads distinct
+  from hover).
+- **Neutral chrome** (tabs, segmented control, nav items, the dialog close, text
+  links, clickable table rows) presses to the adaptive `active:bg-foreground/10` —
+  a hueless ink tint that darkens on light and lightens on dark, so it can never
+  read as an out-of-place green.
+
+The **`Switch`** is the one outlier: it darkens via `active:brightness-95` so the
+press doesn't paint over its on/off state colour. Tinted text links pad the
+highlight with `rounded-sm -mx-1 px-1` so it doesn't hug the glyphs. All are CSS
+`transition`s, so the global `prefers-reduced-motion` backstop neutralizes their
+timing automatically (no per-element gating needed).
+
 Shared, restyle-once UI atoms live in `src/components/` (not `ui/`):
 `TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell`,
 `SegmentedControl`, `StageBadge` — prefer these over re-inlining the pattern so a
