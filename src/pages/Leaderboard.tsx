@@ -4,20 +4,21 @@ import { useLeaderboard } from "@/hooks/queries"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
+import { ScoringGuide } from "@/components/ScoringGuide"
 import { cn } from "@/lib/utils"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
 
 // Shared grid template — mirrors the old table-fixed columns (rank, player,
 // exact, outcome, points). Kept identical between header and rows so they align.
-const COLS = "grid grid-cols-[1.75rem_1fr_2.75rem_2.75rem_2.75rem] items-center gap-1"
+const COLS =
+  "grid grid-cols-[1.75rem_1fr_2.75rem_2.75rem_2.75rem] items-center gap-1"
 
 export function Leaderboard() {
   const { session } = useAuth()
@@ -26,22 +27,19 @@ export function Leaderboard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-2 text-base">
           <span>🏆</span> Leaderboard
         </CardTitle>
-        <CardDescription className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <Badge variant="gold">+3</Badge> exact score
-          <span className="text-muted-foreground/40">·</span>
-          <Badge variant="default">+1</Badge> correct outcome
-          <span className="text-muted-foreground/40">·</span>
-          <span className="font-semibold text-foreground">up to ×4</span> in the
-          knockouts
-        </CardDescription>
+        <ScoringGuide />
       </CardHeader>
       <CardContent className="px-2 sm:px-5">
         {isLoading ? (
-          <ListSkeleton count={5} className="space-y-2" itemClassName="h-10 w-full" />
+          <ListSkeleton
+            count={5}
+            className="space-y-2"
+            itemClassName="h-10 w-full"
+          />
         ) : data?.length === 0 ? (
           <EmptyState className="py-8">No players yet.</EmptyState>
         ) : (
@@ -55,8 +53,16 @@ export function Leaderboard() {
             >
               <span className="text-center">#</span>
               <span>Player</span>
-              <span className="text-center tracking-normal">Exct</span>
-              <span className="text-center tracking-normal">Outc</span>
+              <span className="flex justify-center">
+                <Badge variant="gold" className="px-1 py-0 text-[10px]">
+                  Exct
+                </Badge>
+              </span>
+              <span className="flex justify-center">
+                <Badge variant="default" className="px-1 py-0 text-[10px]">
+                  Outc
+                </Badge>
+              </span>
               <span className="text-center tracking-normal">Pts</span>
             </div>
 
@@ -72,8 +78,15 @@ export function Leaderboard() {
                     reduceMotion
                       ? { duration: 0 }
                       : {
-                          layout: { type: "spring", duration: 0.5, bounce: 0.15 },
-                          opacity: { duration: 0.18, delay: Math.min(i, 8) * 0.03 },
+                          layout: {
+                            type: "spring",
+                            duration: 0.5,
+                            bounce: 0.15,
+                          },
+                          opacity: {
+                            duration: 0.18,
+                            delay: Math.min(i, 8) * 0.03,
+                          },
                           y: { duration: 0.18, delay: Math.min(i, 8) * 0.03 },
                         }
                   }
