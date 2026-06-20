@@ -39,7 +39,7 @@ export function Leaderboard() {
           knockouts
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 sm:px-5">
         {isLoading ? (
           <ListSkeleton count={5} className="space-y-2" itemClassName="h-10 w-full" />
         ) : data?.length === 0 ? (
