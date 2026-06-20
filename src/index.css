@@ -277,15 +277,45 @@
     linear-gradient(135deg, #8c3807, #d8812d, #8c3807);
 }
 
+/* A slow white glint sweeping across the Final stage tag: layer 1 (the streak)
+   travels while layer 2 (the base gold) holds, so light appears to move over the
+   metal — the same idea as the 1st-place medal's .rank-sheen. Constant but slow
+   and on a single small element, per the motion budget; background-position is
+   paint-only (like .play-cta), and most of the cycle the streak sits off-screen
+   so it reads as an occasional glint, not a marquee. */
+@keyframes final-sheen {
+  0%   { background-position: -150% 0, 0 0; }
+  100% { background-position: 250% 0, 0 0; }
+}
+
 /* The Final's stage tag. Every other round wears the same flat secondary badge;
    the championship match gets a deep, lustrous gold gradient with light, slightly
    embossed text — the inverse of the flat pale gold + dark text "exact score"
    badge, so the two never read as the same thing. Both background and color
-   override the gold badge variant; this is the only stage that gets it. */
+   override the gold badge variant; this is the only stage that gets it.
+
+   Two stacked background layers (topmost first): a travelling white sheen streak
+   over the base gold fill. background-origin is the border box so the no-repeat
+   gradient covers the badge's 1px border ring too — otherwise the gold variant's
+   flat bg-gold colour shows through it as a pale rim. The resting
+   background-position parks the streak off the left edge, so under reduced motion
+   (animation off) it's just the clean static gold. */
 .stage-final {
-  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  background-image:
+    linear-gradient(100deg, transparent 35%, rgb(255 255 255 / 0.5) 50%, transparent 65%),
+    linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  background-origin: border-box;
+  background-repeat: no-repeat;
+  background-size: 200% 100%, 100% 100%;
+  background-position: -150% 0, 0 0;
   color: oklch(0.98 0.02 95);
   text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
+  animation: final-sheen 5s var(--ease-in-out-quart) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-final {
+    animation: none;
+  }
 }
 
 @layer base {

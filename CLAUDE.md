@@ -46,9 +46,21 @@ strong structural outline reserved for cards, buttons, inputs, alerts, and dialo
 Offset shadows use the translucent `--shadow-brutal`/`--shadow-brutal-sm` tokens.
 Shared, restyle-once UI atoms live in `src/components/` (not `ui/`):
 `TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell`,
-`SegmentedControl` — prefer these over re-inlining the pattern so a design change
-lands everywhere. Type is Space Grotesk (`@fontsource-variable/space-grotesk`,
-`--font-sans`); headings get a slight negative letter-spacing (`@layer base`).
+`SegmentedControl`, `StageBadge` — prefer these over re-inlining the pattern so a
+design change lands everywhere. Type is Space Grotesk
+(`@fontsource-variable/space-grotesk`, `--font-sans`); headings get a slight
+negative letter-spacing (`@layer base`).
+
+`StageBadge` renders a match's stage as **one flat `secondary` tag for every
+round** (with the `×N` multiplier appended for knockout stages); the **Final
+alone** is set apart, via the `.stage-final` treatment in `src/index.css` — a
+deep gold gradient with light, embossed text (the inverse of the flat pale-gold
++ dark-text `gold` badge, so it never reads as the same chip), plus a slow gold
+sheen sweep (the `final-sheen` keyframe). Note `.stage-final` uses
+`background-origin: border-box` so the no-repeat gradient covers the badge's 1px
+border ring — without it the `gold` variant's flat `bg-gold` shows through as a
+pale rim. If you reintroduce a per-stage colour distinction, keep the Final the
+only special one.
 
 **The database is the source of truth for scoring and anti-cheat — not the
 client.** This is the central design principle; the React app is a thin view layer.
@@ -81,9 +93,10 @@ Tokens (do not hardcode timings — use these):
 
 Bespoke keyframes (all in `src/index.css`, each scoped to a single element class):
 `play-flow` (the "Ultramode" flowing-gradient sign-in CTA, `.play-cta`),
-`countdown-pulse` (clock icon in the final minutes before kickoff), and
+`countdown-pulse` (clock icon in the final minutes before kickoff),
 `rank-pop` + `rank-sheen` with the `rank-metal-*` gradients (the viewer's own
-rank reveal on `/me` — a scale-in with overshoot plus a slow medal-sheen sweep).
+rank reveal on `/me` — a scale-in with overshoot plus a slow medal-sheen sweep),
+and `final-sheen` (a slow gold-sheen sweep over the Final stage tag, `.stage-final`).
 Infinite/constant motion is used sparingly and only on one element at a time by
 design. List entrances stagger via the `.stagger-in` utility: the caller sets the
 row index inline as `--i`, and the cascade is capped (≤6 steps × 45ms) so long
@@ -101,6 +114,13 @@ reflect on the leaderboard instantly. `src/lib/scoring.ts` is a **mirror of this
 SQL for client-side display labels only** ("worth up to N pts") — its
 `STAGE_MULTIPLIER` and `scorePrediction()` must be kept in sync with the SQL
 functions, but never become the actual score.
+
+The Leaderboard's `ScoringGuide` modal (the green **"Scoring system"** link,
+`src/components/ScoringGuide.tsx`) explains the rules to players — a per-match
+legend, the stage-multiplier table, and a penalty-shootout worked example
+(Brazil 1–1 Argentina, decided on penalties) showing how only the 90'+ET score
+counts. All point values derive from the `scoring.ts` constants, so it tracks
+any change there automatically.
 
 ### Anti-cheat via Row Level Security (`0001_init.sql`)
 Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
