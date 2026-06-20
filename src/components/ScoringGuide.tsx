@@ -16,7 +16,6 @@ import {
   STAGE_MULTIPLIER,
 } from "@/lib/scoring"
 import type { MatchStage } from "@/lib/types"
-import { cn } from "@/lib/utils"
 
 // Stages in tournament order. Mirrors the SQL stage_multiplier(); display only.
 const STAGE_ORDER: MatchStage[] = [
@@ -112,15 +111,8 @@ export function ScoringGuide() {
                             ? "Group stage"
                             : STAGE_LABEL[stage]}
                         </td>
-                        <td className="px-3 py-2 text-center">
-                          <span
-                            className={cn(
-                              "font-semibold tabular-nums",
-                              mult >= 3 && "text-gold-foreground"
-                            )}
-                          >
-                            ×{mult}
-                          </span>
+                        <td className="px-3 py-2 text-center font-semibold tabular-nums">
+                          ×{mult}
                         </td>
                         <td className="px-3 py-2 text-center font-semibold tabular-nums">
                           {EXACT_BASE * mult}
@@ -148,7 +140,9 @@ export function ScoringGuide() {
             <div className="space-y-4 pt-1">
               <div className="rounded-md border border-ink bg-muted/40 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <Badge variant="outline">Final</Badge>
+                  <Badge variant="gold" className="stage-final">
+                    Final
+                  </Badge>
                   <span className="text-[10px] text-muted-foreground">
                     ×{KO_MULT} point multiplier applied
                   </span>

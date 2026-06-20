@@ -277,6 +277,17 @@
     linear-gradient(135deg, #8c3807, #d8812d, #8c3807);
 }
 
+/* The Final's stage tag. Every other round wears the same flat secondary badge;
+   the championship match gets a deep, lustrous gold gradient with light, slightly
+   embossed text — the inverse of the flat pale gold + dark text "exact score"
+   badge, so the two never read as the same thing. Both background and color
+   override the gold badge variant; this is the only stage that gets it. */
+.stage-final {
+  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  color: oklch(0.98 0.02 95);
+  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
+}
+
 @layer base {
   * {
     border-color: var(--border);
