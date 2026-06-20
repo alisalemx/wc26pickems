@@ -37,7 +37,7 @@ export function ScoringGuide() {
       <DialogTrigger className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline">
         <Info className="size-3.5" aria-hidden /> Scoring system
       </DialogTrigger>
-      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 gap-6 overflow-y-auto">
+      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 gap-4 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Scoring system</DialogTitle>
           <DialogDescription className="sr-only">
@@ -72,9 +72,14 @@ export function ScoringGuide() {
 
           {/* Stage multipliers */}
           <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-              Multipliers
-            </h3>
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                Point multipliers
+              </h3>
+              <p>
+                Later rounds are worth more points, up to ×4 in the Final.
+              </p>
+            </div>
             <div className="overflow-hidden rounded-md border border-ink">
               <table className="w-full text-sm">
                 <thead>
@@ -130,13 +135,15 @@ export function ScoringGuide() {
 
           {/* Knockout stage / penalty shootouts */}
           <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-              Scoring in case of penalties
-            </h3>
-            <p>
-              Only the score after 90 minutes and extra time counts toward your
-              prediction; a penalty shootout does not. For example:
-            </p>
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                Scoring in case of penalties
+              </h3>
+              <p>
+                Only the score after 90 minutes and extra time counts toward
+                your prediction; a penalty shootout does not. For example:
+              </p>
+            </div>
             <div className="space-y-4 pt-1">
               <div className="rounded-md border border-ink bg-muted/40 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
