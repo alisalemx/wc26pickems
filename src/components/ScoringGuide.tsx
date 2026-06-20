@@ -28,8 +28,9 @@ const STAGE_ORDER: MatchStage[] = [
   "FINAL",
 ]
 
-// Multiplier used in the penalty-shootout worked example (the Final).
-const KO_MULT = STAGE_MULTIPLIER.FINAL
+// Multiplier used in the penalty-shootout worked example (Round of 32, ×1 —
+// kept simple so the points are the base values, not scaled).
+const EXAMPLE_MULT = STAGE_MULTIPLIER.R32
 
 export function ScoringGuide() {
   return (
@@ -140,39 +141,34 @@ export function ScoringGuide() {
                 Scoring in case of penalties
               </h3>
               <p>
-                Only the score after 90 minutes and extra time counts toward
-                your prediction; a penalty shootout does not. For example:
+                Penalty shootouts do not count towards a prediction; only the
+                score after 90 minutes and extra time does. For example:
               </p>
             </div>
             <div className="space-y-4 pt-1">
               <div className="rounded-md border border-ink bg-muted/40 p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <Badge variant="gold" className="stage-final">
-                    Final
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground">
-                    ×{KO_MULT} point multiplier applied
-                  </span>
+                <div className="mb-2 flex items-center justify-center gap-2">
+                  <Badge variant="secondary">{STAGE_LABEL.R32}</Badge>
                 </div>
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
                   <span className="flex items-center gap-2 font-medium text-foreground">
                     <span className="text-xl leading-none">
-                      {flagEmoji("BRA")}
+                      {flagEmoji("ARG")}
                     </span>
-                    Brazil
+                    Argentina
                   </span>
                   <span className="text-base font-semibold tabular-nums text-foreground">
                     1-1
                   </span>
                   <span className="flex items-center justify-end gap-2 font-medium text-foreground">
-                    Argentina
+                    Brazil
                     <span className="text-xl leading-none">
-                      {flagEmoji("ARG")}
+                      {flagEmoji("BRA")}
                     </span>
                   </span>
                 </div>
                 <p className="mt-1.5 text-center text-xs">
-                  Argentina won on penalties
+                  Argentina won 4-2 on penalties
                 </p>
               </div>
               <ul className="space-y-1.5 text-xs">
@@ -184,9 +180,11 @@ export function ScoringGuide() {
                     1-1
                   </span>
                   <Badge variant="gold" className="w-9">
-                    +{EXACT_BASE * KO_MULT}
+                    +{EXACT_BASE * EXAMPLE_MULT}
                   </Badge>
-                  <span className="font-medium text-foreground">Exact</span>
+                  <span className="font-medium text-foreground">
+                    Exact score
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-16 font-medium text-foreground">
@@ -196,16 +194,18 @@ export function ScoringGuide() {
                     2-2
                   </span>
                   <Badge variant="default" className="w-9">
-                    +{OUTCOME_BASE * KO_MULT}
+                    +{OUTCOME_BASE * EXAMPLE_MULT}
                   </Badge>
-                  <span className="font-medium text-foreground">Outcome</span>
+                  <span className="font-medium text-foreground">
+                    Right outcome
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-16 font-medium text-foreground">
                     Player 3
                   </span>
                   <span className="w-12 rounded border border-border py-0.5 text-center font-medium tabular-nums text-foreground">
-                    1-2
+                    2-1
                   </span>
                   <Badge variant="secondary" className="w-9">
                     0
