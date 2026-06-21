@@ -2,6 +2,7 @@ import type { Config } from "@netlify/functions"
 import { createClient } from "@supabase/supabase-js"
 import { linkMatches, canonicalTla } from "../lib/link-matches.mts"
 import type { ApiMatchLite } from "../lib/link-matches.mts"
+import { isSyncAuthorized } from "../lib/sync-auth.mts"
 
 type Stage = "GROUP" | "R32" | "R16" | "QF" | "SF" | "THIRD" | "FINAL"
 
@@ -65,7 +66,16 @@ interface ApiStandingsTable {
   }[]
 }
 
-export default async () => {
+export default async (req: Request) => {
+  // Auth gate, before any env read, DB query, or upstream fetch: this function
+  // is publicly reachable at /.netlify/functions/sync-results, so reject anyone
+  // who is neither Netlify's scheduler (recognized by the next_run body it
+  // sends) nor an admin holding SYNC_SECRET. The cron needs no secret, so this
+  // never takes the schedule offline. See isSyncAuthorized for the trade-offs.
+  if (!(await isSyncAuthorized(req, process.env.SYNC_SECRET))) {
+    return new Response("unauthorized", { status: 401 })
+  }
+
   const now = new Date()
   // Date guard: skip API calls entirely outside the tournament window.
   if (
@@ -101,11 +111,11 @@ export default async () => {
   }
   const ourRows = rows ?? []
 
-  // Throttle upstream calls to protect the football-data.org quota. This
-  // function is reachable over HTTP at /.netlify/functions/sync-results; the
-  // 2-min cron clears this 60s window so every scheduled run fetches (≈1
-  // req/min, well under the free tier), while rapid manual/abusive hits return
-  // early.
+  // Throttle upstream calls to protect the football-data.org quota. The 2-min
+  // cron clears this 60s window so every scheduled run fetches (≈1 req/min, well
+  // under the free tier), while a closely-spaced authorized hit (an admin
+  // force-sync, or a crafted call that slipped past the gate) returns early.
+  // (Anonymous abuse is already 401'd above, before this DB read.)
   const COOLDOWN_MS = 60_000
   const lastSync = ourRows.reduce((max, r) => {
     const t = r.updated_at ? new Date(r.updated_at).getTime() : 0
