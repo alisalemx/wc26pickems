@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions"
 import { createClient } from "@supabase/supabase-js"
-import { linkMatches } from "../lib/link-matches.mts"
+import { linkMatches, canonicalTla } from "../lib/link-matches.mts"
 import type { ApiMatchLite } from "../lib/link-matches.mts"
 
 type Stage = "GROUP" | "R32" | "R16" | "QF" | "SF" | "THIRD" | "FINAL"
@@ -209,8 +209,11 @@ export default async () => {
       matchday: m.matchday ?? null,
       home_team: m.homeTeam?.name ?? null,
       away_team: m.awayTeam?.name ?? null,
-      home_code: m.homeTeam?.tla ?? null,
-      away_code: m.awayTeam?.tla ?? null,
+      // Pin the code to one canonical TLA so a team football-data serves under
+      // two codes (Uruguay URU/URY) doesn't flip our stored value every sync and
+      // make the team_form / in-tournament joins blink out (see canonicalTla).
+      home_code: canonicalTla(m.homeTeam?.tla ?? null),
+      away_code: canonicalTla(m.awayTeam?.tla ?? null),
       updated_at: new Date().toISOString(),
     }
     const resultFields =
@@ -263,7 +266,7 @@ export default async () => {
               fd_team_id: r.team.id,
               group_name: (t.group ?? "").replace(/^(GROUP_|Group )/, ""),
               position: r.position,
-              team_code: r.team.tla ?? null,
+              team_code: canonicalTla(r.team.tla ?? null),
               team_name: r.team.name ?? null,
               played: r.playedGames ?? 0,
               won: r.won ?? 0,

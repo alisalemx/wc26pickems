@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { linkMatches } from "./link-matches.mts"
+import { linkMatches, canonicalTla } from "./link-matches.mts"
 import type { SeedRow, ApiMatchLite } from "./link-matches.mts"
 
 // Helper: assert the no-double-claim invariant — each row id appears at most once
@@ -152,5 +152,21 @@ describe("linkMatches", () => {
     expect(map.get(8001)).toBe(1) // Uruguay linked via the URY→URU alias (pass 2)
     expect(map.get(8003)).toBe(3) // exact-code match (pass 2)
     assertNoClaim(map)
+  })
+})
+
+describe("canonicalTla", () => {
+  it("pins football-data's inconsistent Uruguay TLA to one canonical code", () => {
+    // The matches feed flips URU/URY across responses; both must collapse to the
+    // single code (URU) that standings, the seed, and team_form use, so the sync
+    // stores a stable value and the form/results joins never blink out.
+    expect(canonicalTla("URY")).toBe("URU")
+    expect(canonicalTla("URU")).toBe("URU")
+  })
+
+  it("leaves codes without an alias, and null, untouched", () => {
+    expect(canonicalTla("ESP")).toBe("ESP")
+    expect(canonicalTla("BRA")).toBe("BRA")
+    expect(canonicalTla(null)).toBe(null)
   })
 })

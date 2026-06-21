@@ -15,12 +15,17 @@ export interface ApiMatchLite {
   awayTla: string | null
 }
 
-// A few teams appear under a different three-letter code across football-data
-// feeds (e.g. Uruguay is URY in standings but URU in matches). Canonicalize
-// codes before comparing so a known alias can't block an otherwise-clear
-// pass-2 link.
+// football-data serves a few teams under inconsistent three-letter codes:
+// Uruguay comes back as URU on some responses (and in the standings feed) but
+// URY on others (the matches feed), flipping every few minutes on the free
+// tier's cache. We standardize on one canonical TLA — URU, the code the
+// standings feed, the seed (teams.ts), and team_form all use — and pin every
+// stored code to it. This one map drives both jobs: collapsing aliases here so a
+// code variance can't block an otherwise-clear pass-2 link, and (re-exported)
+// the sync normalizing the code it writes to matches/standings, so the team_form
+// join never blinks out when the matches feed flips. Add an entry per such team.
 const TLA_ALIASES: Record<string, string> = { URY: "URU" }
-function canonTla(tla: string | null): string | null {
+export function canonicalTla(tla: string | null): string | null {
   if (tla == null) return null
   return TLA_ALIASES[tla] ?? tla
 }
@@ -110,8 +115,8 @@ export function linkMatches(rows: SeedRow[], api: ApiMatchLite[]): Map<number, n
       return (
         row.home_code != null &&
         row.away_code != null &&
-        canonTla(row.home_code) === canonTla(m.homeTla) &&
-        canonTla(row.away_code) === canonTla(m.awayTla)
+        canonicalTla(row.home_code) === canonicalTla(m.homeTla) &&
+        canonicalTla(row.away_code) === canonicalTla(m.awayTla)
       )
     })
 
