@@ -59,6 +59,7 @@ export function Admin() {
       </Alert>
 
       <Input
+        aria-label="Search matches by team, group letter, or match number"
         placeholder="Search by team, group letter, or match #"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -135,6 +136,24 @@ function AdminRow({
   const [away, setAway] = useState(
     match.away_score != null ? String(match.away_score) : ""
   )
+
+  // The synced result can change under us (the 60s poll / scheduled sync).
+  // Adopt the new value during render, but only when the admin isn't mid-edit
+  // (the inputs still match what we last synced), so a refetch can't silently
+  // wipe an unsaved correction or let a stale value overwrite a synced result.
+  const incomingHome = match.home_score != null ? String(match.home_score) : ""
+  const incomingAway = match.away_score != null ? String(match.away_score) : ""
+  const [syncedHome, setSyncedHome] = useState(incomingHome)
+  const [syncedAway, setSyncedAway] = useState(incomingAway)
+  if (incomingHome !== syncedHome || incomingAway !== syncedAway) {
+    if (home === syncedHome && away === syncedAway) {
+      setHome(incomingHome)
+      setAway(incomingAway)
+    }
+    setSyncedHome(incomingHome)
+    setSyncedAway(incomingAway)
+  }
+
   const num = (s: string) => (s === "" ? null : Number(s))
 
   return (

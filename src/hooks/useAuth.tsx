@@ -12,6 +12,7 @@ import type { Profile } from "@/lib/types"
 interface AuthState {
   session: Session | null
   profile: Profile | null
+  profileError: boolean
   loading: boolean
   signInWithGoogle: () => Promise<void>
   setUsername: (username: string) => Promise<void>
@@ -25,26 +26,45 @@ const AuthContext = createContext<AuthState | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [profileError, setProfileError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   async function loadProfile(userId: string) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle()
-    setProfile((data as Profile) ?? null)
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle()
+      if (error) throw error
+      setProfile((data as Profile) ?? null)
+      setProfileError(false)
+    } catch (err) {
+      // Surface the failure instead of swallowing it: a network error here used
+      // to leave a signed-in user on a perpetual skeleton with no recovery.
+      // Keep any already-loaded profile and flag the error so the UI can retry.
+      console.error("Failed to load profile", err)
+      setProfileError(true)
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      if (data.session) {
-        loadProfile(data.session.user.id).finally(() => setLoading(false))
-      } else {
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session)
+        if (data.session) {
+          loadProfile(data.session.user.id).finally(() => setLoading(false))
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        // Corrupt local storage / SDK error: degrade to logged-out rather than
+        // hang on the loading skeleton forever.
+        console.error("getSession failed", err)
         setLoading(false)
-      }
-    })
+      })
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess)
@@ -93,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         profile,
+        profileError,
         loading,
         signInWithGoogle,
         setUsername,

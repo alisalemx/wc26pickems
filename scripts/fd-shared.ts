@@ -37,6 +37,7 @@ export function mapApiStage(apiStage: string): Stage {
     case "FINAL":
       return "FINAL"
     default:
-      return "GROUP"
+      // Fail loud rather than silently mapping an unknown stage to GROUP (×1).
+      throw new Error(`Unknown football-data stage: ${apiStage}`)
   }
 }

@@ -131,4 +131,26 @@ describe("linkMatches", () => {
     expect(map.get(7004)).toBe(4) // pass 3 — unique day
     assertNoClaim(map)
   })
+
+  it("case 8: URU/URY alias lets pass 2 link Uruguay when pass 3 can't recover", () => {
+    // Three simultaneous GROUP matches, so pass 1 (exact instant) can't split
+    // them. Uruguay is seeded URU but the feed reports URY, and a second match
+    // has unknowable (null) codes. Without the alias, Uruguay fails pass 2 and
+    // falls to pass 3 alongside that null-code match (2 rows + 2 api for the
+    // day) — which links neither. The URY→URU alias resolves Uruguay in pass 2.
+    const rows: SeedRow[] = [
+      { id: 1, fd_id: null, stage: "GROUP", kickoff: "2026-06-26T18:00:00Z", home_code: "URU", away_code: "ESP" },
+      { id: 2, fd_id: null, stage: "GROUP", kickoff: "2026-06-26T18:00:00Z", home_code: null, away_code: null },
+      { id: 3, fd_id: null, stage: "GROUP", kickoff: "2026-06-26T18:00:00Z", home_code: "BRA", away_code: "ARG" },
+    ]
+    const api: ApiMatchLite[] = [
+      { fdId: 8001, stage: "GROUP", utcDate: "2026-06-26T18:00:00Z", homeTla: "URY", awayTla: "ESP" },
+      { fdId: 8002, stage: "GROUP", utcDate: "2026-06-26T18:00:00Z", homeTla: "GER", awayTla: "FRA" },
+      { fdId: 8003, stage: "GROUP", utcDate: "2026-06-26T18:00:00Z", homeTla: "BRA", awayTla: "ARG" },
+    ]
+    const map = linkMatches(rows, api)
+    expect(map.get(8001)).toBe(1) // Uruguay linked via the URY→URU alias (pass 2)
+    expect(map.get(8003)).toBe(3) // exact-code match (pass 2)
+    assertNoClaim(map)
+  })
 })

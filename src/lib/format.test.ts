@@ -4,7 +4,6 @@ import {
   isLive,
   MAX_LIVE_MS_GROUP,
   MAX_LIVE_MS_BRACKET,
-  initials,
   formatCountdown,
   shortDate,
   ordinal,
@@ -105,16 +104,6 @@ describe("formatCountdown", () => {
 
   it("truncates sub-second remainders toward the lower unit", () => {
     expect(formatCountdown(kickoff, at(1_999))).toBe("0:01")
-  })
-})
-
-describe("initials", () => {
-  it("single handle with no separators → first two chars uppercased", () => {
-    expect(initials("alisalem")).toBe("AL")
-  })
-
-  it("underscore-separated parts → first char of each part uppercased", () => {
-    expect(initials("foo_bar")).toBe("FB")
   })
 })
 

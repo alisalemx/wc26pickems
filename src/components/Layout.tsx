@@ -82,8 +82,14 @@ export function Layout() {
                 size="icon"
                 aria-label="Sign out"
                 onClick={async () => {
-                  await signOut()
-                  navigate("/")
+                  try {
+                    await signOut()
+                    navigate("/")
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : "Sign out failed"
+                    )
+                  }
                 }}
               >
                 <LogOut className="size-4" />

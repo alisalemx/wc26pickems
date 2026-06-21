@@ -73,6 +73,19 @@ const db = createClient(url, key, { auth: { persistSession: false } })
 // not actually qualify) so team_form mirrors the committed JSON exactly. Codes
 // are 3-letter uppercase, safe to inline unquoted in the PostgREST `in` list.
 const codes = rows.map((r) => r.code)
+// Codes are inlined unquoted into the PostgREST `in` list below, so verify each
+// is a bare 3-letter uppercase TLA first — a stray space/quote/paren in a JSON
+// key would otherwise break or inject into the filter. Bail on an empty list
+// too, since `not in ()` would match (and delete) every row.
+const badCodes = codes.filter((c) => !/^[A-Z]{3}$/.test(c))
+if (badCodes.length > 0) {
+  console.error(`Invalid team codes (expected ^[A-Z]{3}$): ${badCodes.join(", ")}`)
+  process.exit(1)
+}
+if (codes.length === 0) {
+  console.error("No team codes in the dataset; aborting to avoid wiping team_form.")
+  process.exit(1)
+}
 const { error: delErr } = await db
   .from("team_form")
   .delete()

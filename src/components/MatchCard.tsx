@@ -46,7 +46,10 @@ export function MatchCard({
   const signedIn = ownUserId != null
   const reduceMotion = useReducedMotion()
   const locked = isLocked(match.kickoff)
-  const finished = match.status === "FINISHED" && match.home_score != null
+  const finished =
+    match.status === "FINISHED" &&
+    match.home_score != null &&
+    match.away_score != null
   // Pulse LIVE only within a plausible match window — a feed left stuck at
   // IN_PLAY past full time should fall back to the locked state, not pulse forever.
   const live = isLive(match.kickoff, match.status, match.stage)
@@ -78,15 +81,20 @@ export function MatchCard({
 
   // The prediction arrives asynchronously (and can change after a save). Sync
   // the inputs during render when the stored value changes — React's
-  // recommended alternative to a setState-in-effect.
-  const predKey = prediction
-    ? `${prediction.home_pred}-${prediction.away_pred}`
-    : ""
-  const [syncedKey, setSyncedKey] = useState(predKey)
-  if (prediction && predKey !== syncedKey) {
-    setSyncedKey(predKey)
-    setHome(String(prediction.home_pred))
-    setAway(String(prediction.away_pred))
+  // recommended alternative to a setState-in-effect. Adopt the new value only
+  // when the user isn't mid-edit (the inputs still match what we last synced),
+  // so an incoming refetch can't clobber an in-progress edit.
+  const incomingHome = prediction ? String(prediction.home_pred) : ""
+  const incomingAway = prediction ? String(prediction.away_pred) : ""
+  const [syncedHome, setSyncedHome] = useState(incomingHome)
+  const [syncedAway, setSyncedAway] = useState(incomingAway)
+  if (incomingHome !== syncedHome || incomingAway !== syncedAway) {
+    if (home === syncedHome && away === syncedAway) {
+      setHome(incomingHome)
+      setAway(incomingAway)
+    }
+    setSyncedHome(incomingHome)
+    setSyncedAway(incomingAway)
   }
 
   const dirty =
@@ -334,6 +342,8 @@ export function MatchCard({
             <Button
               size="sm"
               variant="ghost"
+              aria-expanded={expanded}
+              aria-controls={`picks-${match.id}`}
               onClick={() => {
                 setEverExpanded(true)
                 setExpanded((v) => !v)
@@ -357,6 +367,7 @@ export function MatchCard({
         // RevealedPicks mounts on first open (lazy query) and then stays mounted
         // so collapsing animates the track shrinking instead of vanishing.
         <div
+          id={`picks-${match.id}`}
           className="grid transition-[grid-template-rows] duration-[var(--duration-base)] ease-in-out-quart"
           style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
         >
@@ -479,7 +490,10 @@ function RevealedPicks({
   ownUserId?: string
 }) {
   const { data, isLoading } = useRevealedPredictions(match.id, true)
-  const finished = match.status === "FINISHED" && match.home_score != null
+  const finished =
+    match.status === "FINISHED" &&
+    match.home_score != null &&
+    match.away_score != null
 
   return (
     <div className="bg-muted/30">

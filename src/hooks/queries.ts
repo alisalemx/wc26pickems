@@ -137,6 +137,9 @@ export function usePredictionDistribution(matchId: number, enabled: boolean) {
     },
     select: (rows) => rows.filter((r) => r.match_id === matchId),
     staleTime: 60_000,
+    // Crowd sentiment shifts as other players predict, so poll like the other
+    // live feeds. All PopularPicks share one query key → one RPC per 60s.
+    refetchInterval: 60_000,
   })
 }
 

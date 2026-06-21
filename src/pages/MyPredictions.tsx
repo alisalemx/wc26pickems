@@ -75,11 +75,13 @@ export function MyPredictions() {
     let finished = 0
     for (const m of matches) {
       const teamsKnown = m.home_team != null && m.away_team != null
-      if (teamsKnown && !isLocked(m.kickoff)) predictable++
       const p = predictions[m.id]
+      // "Still to predict" = open matches the user hasn't picked yet, so don't
+      // count ones they've already predicted.
+      if (teamsKnown && !isLocked(m.kickoff) && !p) predictable++
       if (!p) continue
       made++
-      if (m.status === "FINISHED" && m.home_score != null) {
+      if (m.status === "FINISHED" && m.home_score != null && m.away_score != null) {
         finished++
         const s = scorePrediction(
           m.stage,
@@ -104,6 +106,7 @@ export function MyPredictions() {
         (m) =>
           m.status === "FINISHED" &&
           m.home_score != null &&
+          m.away_score != null &&
           predictions[m.id]
       )
       .sort((a, b) => +new Date(b.kickoff) - +new Date(a.kickoff))

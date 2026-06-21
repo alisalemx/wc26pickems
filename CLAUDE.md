@@ -261,9 +261,11 @@ name) rendered as `@handle` everywhere.
   (`username_format` check + `profiles_username_key`), not just in the form.
 - Google OAuth carries no username metadata, so `handle_new_user()` assigns an
   email-derived fallback handle with `username_chosen = false`, and
-  `RequireUsername` holds the user at `/welcome` until they pick one. (The
-  trigger still honors a `username` in signup metadata and sets
-  `username_chosen = true` if present, but no current sign-in path supplies it.)
+  `RequireUsername` holds the user at `/welcome` until they pick one. (Migration
+  `0014` dropped the old trusted-metadata branch, so the trigger now always
+  assigns the unchosen fallback regardless of any `username` in signup metadata
+  — closing the latent self-provisioning path if email/password is ever
+  re-enabled at the auth provider.)
 - `set_username(name)` is a `SECURITY DEFINER` RPC (granted to `authenticated`)
   that validates format + uniqueness, updates the caller's own handle, and flips
   `username_chosen` — the single path for choosing/changing a handle (avoids

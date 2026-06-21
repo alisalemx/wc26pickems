@@ -48,8 +48,14 @@ async function fromApi(): Promise<MatchUpsert[]> {
   const sorted = [...data.matches].sort(
     (a, b) => +new Date(a.utcDate) - +new Date(b.utcDate)
   )
+  // Knockout ids start after the last group id, derived from the actual group
+  // count rather than a hardcoded 72, so a different group total can't make a
+  // group id collide with a knockout id under onConflict:"id".
+  const groupCount = sorted.filter(
+    (m) => mapApiStage(m.stage) === "GROUP"
+  ).length
   let groupId = 0
-  let koId = 72
+  let koId = groupCount
   return sorted.map((m): MatchUpsert => {
     const stage = mapApiStage(m.stage)
     const id = stage === "GROUP" ? ++groupId : ++koId
@@ -94,6 +100,27 @@ async function main() {
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     { auth: { persistSession: false } }
   )
+
+  // Guard against the destructive footgun: the committed JSON carries
+  // fd_id:null, status:"TIMED", illustrative kickoffs and null knockout teams,
+  // so re-running the default (JSON) seed after the sync has populated real
+  // fd_ids/results would clobber them. Refuse if the table already shows signs
+  // of a completed sync, unless explicitly forced.
+  if (source !== "api" && !process.env.SEED_FORCE) {
+    const { count, error: probeErr } = await db
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .not("fd_id", "is", null)
+    if (probeErr) throw probeErr
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        `Refusing to seed from JSON: ${count} match row(s) already have a ` +
+          `football-data id, so a real sync has run and this static seed would ` +
+          `overwrite fd_id/status/kickoff/results. Use SEED_SOURCE=api to ` +
+          `reseed from the live schedule, or SEED_FORCE=1 to override.`
+      )
+    }
+  }
 
   const { error } = await db
     .from("matches")

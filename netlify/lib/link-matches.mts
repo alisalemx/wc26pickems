@@ -15,6 +15,16 @@ export interface ApiMatchLite {
   awayTla: string | null
 }
 
+// A few teams appear under a different three-letter code across football-data
+// feeds (e.g. Uruguay is URY in standings but URU in matches). Canonicalize
+// codes before comparing so a known alias can't block an otherwise-clear
+// pass-2 link.
+const TLA_ALIASES: Record<string, string> = { URY: "URU" }
+function canonTla(tla: string | null): string | null {
+  if (tla == null) return null
+  return TLA_ALIASES[tla] ?? tla
+}
+
 /** Returns fd_id -> our matches.id. Links only when unambiguous; an API
  *  match that cannot be safely linked is simply absent from the map. */
 export function linkMatches(rows: SeedRow[], api: ApiMatchLite[]): Map<number, number> {
@@ -100,8 +110,8 @@ export function linkMatches(rows: SeedRow[], api: ApiMatchLite[]): Map<number, n
       return (
         row.home_code != null &&
         row.away_code != null &&
-        row.home_code === m.homeTla &&
-        row.away_code === m.awayTla
+        canonTla(row.home_code) === canonTla(m.homeTla) &&
+        canonTla(row.away_code) === canonTla(m.awayTla)
       )
     })
 

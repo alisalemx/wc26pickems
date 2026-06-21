@@ -180,7 +180,16 @@ function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
   return (
     <>
       <TableRow
+        role="button"
+        tabIndex={0}
+        aria-label={`View ${r.team} details`}
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
         className={cn("cursor-pointer active:bg-foreground/10", highlight)}
       >
         <TableCell>

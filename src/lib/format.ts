@@ -108,14 +108,3 @@ export function ordinal(n: number): string {
       return `${n}th`
   }
 }
-
-export function initials(name: string): string {
-  const parts = name.split(/[\s_]+/).filter(Boolean)
-  // Usernames are single handles (no spaces): take their first two characters.
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return parts
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
-}

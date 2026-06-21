@@ -24,7 +24,10 @@ function mapStage(apiStage: string): Stage {
     case "FINAL":
       return "FINAL"
     default:
-      return "GROUP"
+      // Fail loud rather than silently scoring an unknown stage at the GROUP
+      // (×1) multiplier — a wrong multiplier corrupts the leaderboard
+      // undetected, whereas a thrown error stops the sync visibly.
+      throw new Error(`Unknown football-data stage: ${apiStage}`)
   }
 }
 
@@ -83,20 +86,31 @@ export default async () => {
     auth: { persistSession: false },
   })
 
-  // This function is reachable over HTTP at /.netlify/functions/sync-results, so
-  // throttle upstream calls to protect the football-data.org quota. The 2-min
-  // cron clears this 60s window so every scheduled run fetches (≈1 req/min, well
-  // under the free tier); only rapid manual/abusive hits return early.
-  const COOLDOWN_MS = 60_000
-  const { data: lastRows } = await db
+  // Load our rows once, up front. This single query drives the link/update
+  // below, supplies the cooldown timestamp, and carries the prior results we
+  // hold on to when the feed is half-synced or regressing. Confirming the DB is
+  // healthy before spending a football-data request also means a Supabase
+  // outage can't slip the cooldown open and burn quota every run.
+  const { data: rows, error: loadErr } = await db
     .from("matches")
-    .select("updated_at")
-    .not("updated_at", "is", null)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-  const lastSync = lastRows?.[0]?.updated_at
-    ? new Date(lastRows[0].updated_at).getTime()
-    : 0
+    .select(
+      "id, fd_id, stage, kickoff, home_code, away_code, result_locked, status, home_score, away_score, updated_at"
+    )
+  if (loadErr) {
+    return new Response(`db load error: ${loadErr.message}`, { status: 500 })
+  }
+  const ourRows = rows ?? []
+
+  // Throttle upstream calls to protect the football-data.org quota. This
+  // function is reachable over HTTP at /.netlify/functions/sync-results; the
+  // 2-min cron clears this 60s window so every scheduled run fetches (≈1
+  // req/min, well under the free tier), while rapid manual/abusive hits return
+  // early.
+  const COOLDOWN_MS = 60_000
+  const lastSync = ourRows.reduce((max, r) => {
+    const t = r.updated_at ? new Date(r.updated_at).getTime() : 0
+    return t > max ? t : max
+  }, 0)
   if (now.getTime() - lastSync < COOLDOWN_MS) {
     return new Response(JSON.stringify({ skipped: "recently synced" }), {
       status: 200,
@@ -104,31 +118,40 @@ export default async () => {
     })
   }
 
-  const res = await fetch(
-    "https://api.football-data.org/v4/competitions/WC/matches",
-    { headers: { "X-Auth-Token": token } }
+  // Index rows by id so the update loop can compare against the result we
+  // already hold (see the hold logic below).
+  const rowById = new Map<number, (typeof ourRows)[number]>(
+    ourRows.map((r) => [r.id as number, r])
   )
-  if (!res.ok) {
-    return new Response(`football-data error ${res.status}`, { status: 502 })
-  }
-  const { matches } = (await res.json()) as { matches: ApiMatch[] }
-
-  // Load our rows once so we can link by fd_id, or by (stage + kickoff day)
-  // for rows seeded statically that don't yet have an fd_id.
-  const { data: rows, error: loadErr } = await db
-    .from("matches")
-    .select("id, fd_id, stage, kickoff, home_code, away_code, result_locked")
-  if (loadErr) {
-    return new Response(`db load error: ${loadErr.message}`, { status: 500 })
-  }
 
   // Build a set of row ids whose results have been manually locked by an admin.
   // The sync skips result fields for these rows but keeps updating fixture metadata.
   const lockedIds = new Set<number>(
-    (rows ?? [])
-      .filter((r) => r.result_locked)
-      .map((r) => r.id as number)
+    ourRows.filter((r) => r.result_locked).map((r) => r.id as number)
   )
+
+  // Fetch the official fixtures. Bound the request so a stalled upstream (a TCP
+  // hang, not a 5xx) can't pin the function open until Netlify's timeout; treat
+  // an abort / network failure as a soft 502.
+  const res = await fetch(
+    "https://api.football-data.org/v4/competitions/WC/matches",
+    { headers: { "X-Auth-Token": token }, signal: AbortSignal.timeout(8000) }
+  ).catch(() => null)
+  if (!res) {
+    return new Response("football-data fetch failed", { status: 502 })
+  }
+  if (!res.ok) {
+    return new Response(`football-data error ${res.status}`, { status: 502 })
+  }
+  const body = (await res.json().catch(() => null)) as {
+    matches?: ApiMatch[]
+  } | null
+  const matches = body?.matches
+  if (!Array.isArray(matches)) {
+    return new Response("football-data returned no matches array", {
+      status: 502,
+    })
+  }
 
   const apiLite: ApiMatchLite[] = matches.map((m) => ({
     fdId: m.id,
@@ -138,9 +161,10 @@ export default async () => {
     awayTla: m.awayTeam?.tla ?? null,
   }))
 
-  const links = linkMatches(rows ?? [], apiLite)
+  const links = linkMatches(ourRows, apiLite)
 
   let updated = 0
+  let failed = 0
   let unlinked = 0
 
   for (const m of matches) {
@@ -154,21 +178,29 @@ export default async () => {
     const ft = m.score?.fullTime ?? { home: null, away: null }
     const pens = m.score?.penalties ?? { home: null, away: null }
 
-    // football-data flips a match to FINISHED at the whistle a beat before the
-    // score is entered upstream, so it briefly reports a finished match with a
-    // null fullTime. Don't mirror that half-synced snapshot: hold the row's
-    // current result (status + scores) until a real score lands on a later sync,
-    // so scoring, form, and the standings gate never see a finished match with
-    // null scores — and a feed that flaps back to scoreless can't null out a
-    // result we already recorded. A real 0-0 arrives as 0/0, not null, so
-    // nothing legitimate is held back.
+    // Hold the result we already have (skip result fields, still reconcile
+    // fixture metadata) when:
+    //  - an admin locked the row;
+    //  - the feed reports FINISHED but the score hasn't landed yet — it flips to
+    //    FINISHED a beat before the score is entered upstream, briefly reporting
+    //    a finished match with a null fullTime (a real 0-0 arrives as 0/0, not
+    //    null, so nothing legitimate is held back); or
+    //  - the feed regresses a match we already recorded as finished back to a
+    //    non-finished status, which would otherwise null out a real result and
+    //    zero its leaderboard contribution until the feed corrects.
+    // Holding keeps scoring, form, and the standings gate from ever seeing a
+    // finished match with null scores.
+    const cur = rowById.get(ourId)
+    const haveRecordedFinal =
+      cur?.status === "FINISHED" &&
+      cur.home_score != null &&
+      cur.away_score != null
     const finishedButScoreless =
       m.status === "FINISHED" && (ft.home == null || ft.away == null)
+    const regressing = m.status !== "FINISHED" && haveRecordedFinal
+    const holdResult =
+      lockedIds.has(ourId) || finishedButScoreless || regressing
 
-    // Fixture metadata is always reconciled. Result fields (status, scores,
-    // pens, duration) are skipped when an admin has locked the row, or while the
-    // result is still half-synced — leaving the prior status in place until the
-    // score is in.
     const fixtureFields = {
       fd_id: m.id,
       kickoff: m.utcDate,
@@ -182,7 +214,7 @@ export default async () => {
       updated_at: new Date().toISOString(),
     }
     const resultFields =
-      lockedIds.has(ourId) || finishedButScoreless
+      holdResult
         ? {}
         : {
             status: m.status,
@@ -197,7 +229,12 @@ export default async () => {
       .from("matches")
       .update({ ...fixtureFields, ...resultFields })
       .eq("id", ourId)
-    if (!error) updated++
+    if (error) {
+      failed++
+      console.error(`match ${ourId} update failed:`, error.message)
+    } else {
+      updated++
+    }
   }
 
   // Official group standings. football-data applies FIFA's fair-play tiebreaker
@@ -208,7 +245,7 @@ export default async () => {
   try {
     const sres = await fetch(
       "https://api.football-data.org/v4/competitions/WC/standings",
-      { headers: { "X-Auth-Token": token } }
+      { headers: { "X-Auth-Token": token }, signal: AbortSignal.timeout(8000) }
     )
     if (sres.ok) {
       const { standings: tables } = (await sres.json()) as {
@@ -218,21 +255,25 @@ export default async () => {
       const upserts = tables
         .filter((t) => t.type === "TOTAL")
         .flatMap((t) =>
-          t.table.map((r) => ({
-            fd_team_id: r.team.id,
-            group_name: (t.group ?? "").replace(/^(GROUP_|Group )/, ""),
-            position: r.position,
-            team_code: r.team.tla ?? null,
-            team_name: r.team.name ?? null,
-            played: r.playedGames ?? 0,
-            won: r.won ?? 0,
-            drawn: r.draw ?? 0,
-            lost: r.lost ?? 0,
-            gf: r.goalsFor ?? 0,
-            ga: r.goalsAgainst ?? 0,
-            points: r.points ?? 0,
-            updated_at: now,
-          }))
+          t.table
+            // Drop a team row missing core stats so a flaky/partial response
+            // can't overwrite a good row with zeros.
+            .filter((r) => r.playedGames != null && r.points != null)
+            .map((r) => ({
+              fd_team_id: r.team.id,
+              group_name: (t.group ?? "").replace(/^(GROUP_|Group )/, ""),
+              position: r.position,
+              team_code: r.team.tla ?? null,
+              team_name: r.team.name ?? null,
+              played: r.playedGames ?? 0,
+              won: r.won ?? 0,
+              drawn: r.draw ?? 0,
+              lost: r.lost ?? 0,
+              gf: r.goalsFor ?? 0,
+              ga: r.goalsAgainst ?? 0,
+              points: r.points ?? 0,
+              updated_at: now,
+            }))
         )
       if (upserts.length) {
         const { error } = await db
@@ -246,7 +287,7 @@ export default async () => {
   }
 
   return new Response(
-    JSON.stringify({ received: matches.length, updated, unlinked, standings }),
+    JSON.stringify({ received: matches.length, updated, failed, unlinked, standings }),
     { status: 200, headers: { "content-type": "application/json" } }
   )
 }
