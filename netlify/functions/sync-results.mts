@@ -73,7 +73,22 @@ export default async (req: Request) => {
   // sends) nor an admin holding SYNC_SECRET. The cron needs no secret, so this
   // never takes the schedule offline. See isSyncAuthorized for the trade-offs.
   if (!(await isSyncAuthorized(req, process.env.SYNC_SECRET))) {
-    return new Response("unauthorized", { status: 401 })
+    // TEMP diagnostic (remove once the force-sync 401 is resolved): expose only
+    // booleans/lengths about the secret — never the value — so we can tell a
+    // Netlify env problem (configured=no) from a value typo (lengths differ).
+    const cfg = process.env.SYNC_SECRET ?? ""
+    const auth = req.headers.get("authorization") ?? ""
+    const presented = auth.startsWith("Bearer ")
+      ? auth.slice("Bearer ".length)
+      : req.headers.get("x-sync-key") ?? ""
+    return new Response("unauthorized", {
+      status: 401,
+      headers: {
+        "x-debug-secret-configured": cfg ? "yes" : "no",
+        "x-debug-cfg-len": String(cfg.length),
+        "x-debug-presented-len": String(presented.length),
+      },
+    })
   }
 
   const now = new Date()
