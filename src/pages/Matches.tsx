@@ -22,8 +22,34 @@ const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
   { value: "R16", label: "R16", stages: ["R16"] },
   { value: "QF", label: "QF", stages: ["QF"] },
   { value: "SF", label: "SF", stages: ["SF"] },
-  { value: "FINAL", label: "Final", stages: ["SF", "THIRD", "FINAL"] },
+  { value: "FINAL", label: "Final", stages: ["THIRD", "FINAL"] },
 ]
+
+/** Each match stage → the FILTERS tab that surfaces it. THIRD and FINAL both live
+ *  under the "Final" tab. */
+const STAGE_TO_FILTER: Record<MatchStage, string> = {
+  GROUP: "GROUP",
+  R32: "R32",
+  R16: "R16",
+  QF: "QF",
+  SF: "SF",
+  THIRD: "FINAL",
+  FINAL: "FINAL",
+}
+
+/** Filter tab for the stage the tournament is currently in: the stage of the
+ *  earliest match not yet finished — i.e. the one being played or up next.
+ *  Defaults to "ALL" before any fixtures load and to the last stage ("Final")
+ *  once every match is done. */
+function currentStageFilter(matches: MatchRow[] | undefined): string {
+  if (!matches || matches.length === 0) return "ALL"
+  let next: MatchRow | null = null
+  for (const m of matches) {
+    if (m.status === "FINISHED" || m.status === "CANCELLED") continue
+    if (!next || m.kickoff < next.kickoff) next = m
+  }
+  return STAGE_TO_FILTER[next?.stage ?? "FINAL"]
+}
 
 type View = "day" | "all"
 
@@ -48,7 +74,13 @@ export function Matches() {
   const { data: predictions } = useMyPredictions(userId)
   const upsert = useUpsertPrediction(userId)
   const [view, setView] = useState<View>("day")
-  const [filter, setFilter] = useState("ALL")
+  // The stage filter defaults to whatever stage the tournament is currently in,
+  // but a user's explicit pick (`chosenFilter`) wins. Derived rather than stored
+  // so the default tracks the live matches query without an effect (same pattern
+  // as the Tournament tabs).
+  const [chosenFilter, setChosenFilter] = useState<string | null>(null)
+  const stageFilter = useMemo(() => currentStageFilter(matches), [matches])
+  const filter = chosenFilter ?? stageFilter
 
   const todayKey = dayKey(new Date().toISOString())
 
@@ -219,7 +251,7 @@ export function Matches() {
       {/* All-matches view */}
       {!isLoading && view === "all" && days.length > 0 && (
         <div className="space-y-4">
-          <Tabs value={filter} onValueChange={setFilter}>
+          <Tabs value={filter} onValueChange={setChosenFilter}>
             <TabsList className="flex w-full">
               {FILTERS.map((f) => (
                 <TabsTrigger key={f.value} value={f.value} className="flex-1">

@@ -219,9 +219,52 @@ function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
   )
 }
 
+/** Whether the tournament has progressed into the knockout stage. True once any
+ *  knockout match has kicked off, or once every group match has finished — so the
+ *  Bracket becomes the default view the moment the group stage concludes, even in
+ *  the day-or-two gap before the Round of 32 kicks off. (The all-group-finished
+ *  clause also makes a postponed knockout fixture harmless: a kicked-off knockout
+ *  match isn't required.) */
+function reachedKnockout(matches: MatchRow[]): boolean {
+  const now = Date.now()
+  let sawGroup = false
+  let allGroupFinished = true
+  for (const m of matches) {
+    if (m.stage === "GROUP") {
+      sawGroup = true
+      if (m.status !== "FINISHED") allGroupFinished = false
+    } else if (new Date(m.kickoff).getTime() <= now) {
+      return true
+    }
+  }
+  return sawGroup && allGroupFinished
+}
+
 export function Tournament() {
+  const { data: matches } = useMatches()
+  // The tab is derived, not stored: a user's explicit pick (`chosen`) wins, but
+  // until they choose one we default from tournament state — Bracket once the
+  // knockout stage is under way, Groups otherwise. Controlled (not `defaultValue`)
+  // so the default reacts to the async matches query; deriving during render (no
+  // effect) means the warm-cache case (the matches query is usually already
+  // populated from the Matches page) lands on the right tab with no flicker.
+  const [chosen, setChosen] = useState<string | null>(null)
+  const tab =
+    chosen ??
+    (matches ? (reachedKnockout(matches) ? "bracket" : "groups") : undefined)
+
+  if (tab === undefined) {
+    return (
+      <ListSkeleton
+        count={4}
+        className="grid gap-3 sm:grid-cols-2"
+        itemClassName="h-48 w-full"
+      />
+    )
+  }
+
   return (
-    <Tabs defaultValue="groups" className="gap-3">
+    <Tabs value={tab} onValueChange={setChosen} className="gap-3">
       <TabsList className="w-full">
         <TabsTrigger value="groups">Groups</TabsTrigger>
         <TabsTrigger value="bracket">Bracket</TabsTrigger>
