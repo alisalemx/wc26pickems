@@ -30,6 +30,8 @@ To run the scheduled sync function locally: `netlify functions:invoke sync-resul
 
 Env vars live in `.env` (copy from `.env.example`). `VITE_*` are public/client;
 `SUPABASE_SERVICE_ROLE_KEY` and `FOOTBALL_DATA_TOKEN` are server-only (functions + seed scripts).
+`SYNC_SECRET` (server-only, optional) authorizes manual HTTP force-syncs of the
+sync function; the Netlify cron runs without it (see "Sync auth gate").
 
 ## Architecture
 
@@ -148,11 +150,32 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
 - Predictions can only be inserted/updated while `kickoff > now()` (locks at kickoff).
 - You can read others' predictions for a match only after its kickoff (`read predictions after lock`); your own are always visible.
 - `matches` updates restricted to admins (`is_admin()`); `profiles.is_admin` is protected by a column-level grant so users can't self-escalate.
-- The sync function uses the service role key, which bypasses RLS.
+- The sync function uses the service role key, which bypasses RLS — so its
+  public HTTP endpoint is locked down separately (see "Sync auth gate" below).
 - The `matches` table is **publicly readable** (`0004_public_matches.sql` grants
   `select` to `anon`) so fixtures and standings render for logged-out visitors.
   `predictions`, `scored_predictions`, and `leaderboard` are deliberately **not**
   granted to `anon` — predicting and the leaderboard still require a session.
+
+### Sync auth gate (`netlify/lib/sync-auth.mts`)
+The sync function is publicly reachable over HTTP at
+`/.netlify/functions/sync-results` (Netlify serves scheduled functions at their
+URL despite the docs' claim otherwise — a bare `GET` used to run it), and it
+holds the service role key, so it must not be open to anyone. `isSyncAuthorized`
+(a pure, unit-tested helper) gates the handler **before any env read, DB query,
+or upstream fetch**: a caller is allowed only if it's **Netlify's scheduler**
+— recognized by the `next_run` timestamp Netlify puts in the JSON body of every
+scheduled invocation — **or** it presents the shared `SYNC_SECRET` as a bearer
+token (`Authorization: Bearer …`, or the `X-Sync-Key` header, constant-time
+compared). Everything else gets `401`. The scheduler path needs no secret, so
+the 2-min cron keeps running even before `SYNC_SECRET` is configured (and never
+breaks if it's rotated/removed); the manual force-sync now **requires** the
+bearer token. Caveat: the repo is public, so the `next_run` shape is
+discoverable and a crafted POST can still reach the body — but that's bounded by
+the 60s cooldown (can't exceed the football-data quota or alter results) so the
+residual is cost amplification, not a data risk. To close it fully, move
+scheduling to a secret-carrying trigger (GitHub Actions / Supabase pg_cron) and
+drop the `next_run` branch so every caller must hold the secret.
 
 ### Popular picks (`0007`–`0010`)
 The match list shows the crowd's most-predicted scorelines per upcoming match
@@ -280,7 +303,7 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 2 min (cron `*/2 * * * *`), guarded to the tournament window and throttled to ≈1 fetch/min by the 60s cooldown (so it stays well under football-data's free-tier rate limit). Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Holds a row's prior result (skips result fields) while the API reports a match `FINISHED` without a score yet, so scoring/form/standings never see a finished match with null scores. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. That same module exports `canonicalTla`, which the sync runs every stored team code through (`matches.home_code`/`away_code`, `standings.team_code`) to pin football-data's inconsistent TLAs to one canonical value (Uruguay `URU`/`URY` → `URU`) — otherwise a code that flip-flops across responses would oscillate in our `matches` table and make the `team_form`/in-tournament joins blink out. Skips result fields for rows with `result_locked = true` (see admin result locks above). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
+- `netlify/functions/sync-results.mts` — runs every 2 min (cron `*/2 * * * *`), auth-gated so only Netlify's scheduler or an admin bearer token can invoke its public HTTP endpoint (see "Sync auth gate"), guarded to the tournament window and throttled to ≈1 fetch/min by the 60s cooldown (so it stays well under football-data's free-tier rate limit). Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Holds a row's prior result (skips result fields) while the API reports a match `FINISHED` without a score yet, so scoring/form/standings never see a finished match with null scores. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. That same module exports `canonicalTla`, which the sync runs every stored team code through (`matches.home_code`/`away_code`, `standings.team_code`) to pin football-data's inconsistent TLAs to one canonical value (Uruguay `URU`/`URY` → `URU`) — otherwise a code that flip-flops across responses would oscillate in our `matches` table and make the `team_form`/in-tournament joins blink out. Skips result fields for rows with `result_locked = true` (see admin result locks above). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
 - `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
