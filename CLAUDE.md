@@ -224,9 +224,12 @@ that whole chain, so the sync function (which also fetches it) upserts each team
 (`["standings"]`, polled 60s). The Groups tab maps those rows to its table in
 `position` order. Two football-data quirks the table handles: its standings count
 **in-progress matches** (a live result shows before the matches feed flips to
-FINISHED), and it labels some teams with a different TLA than the matches feed
-(Uruguay `URU` vs `URY` — both map in `flags.ts`); the table keys on the stable
-`fd_team_id`.
+FINISHED), and it serves a few teams under an **inconsistent TLA** — Uruguay
+comes back as `URU` or `URY` depending on both the feed and the individual
+response (the free tier flip-flops it every couple of minutes). The sync pins
+every code it stores to one canonical TLA (`URU`) via `canonicalTla` (see "Data
+flow"), so `matches`/`standings`/`team_form` always agree; the table also keys on
+the stable `fd_team_id`, and both codes map in `flags.ts`.
 
 `src/lib/standings.ts` (`computeGroup`, unit-tested in `standings.test.ts`) is the
 **fallback** orderer used only before the first standings sync (and offline dev).
@@ -277,7 +280,7 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 2 min (cron `*/2 * * * *`), guarded to the tournament window and throttled to ≈1 fetch/min by the 60s cooldown (so it stays well under football-data's free-tier rate limit). Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Holds a row's prior result (skips result fields) while the API reports a match `FINISHED` without a score yet, so scoring/form/standings never see a finished match with null scores. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. Skips result fields for rows with `result_locked = true` (see admin result locks above). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
+- `netlify/functions/sync-results.mts` — runs every 2 min (cron `*/2 * * * *`), guarded to the tournament window and throttled to ≈1 fetch/min by the 60s cooldown (so it stays well under football-data's free-tier rate limit). Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Holds a row's prior result (skips result fields) while the API reports a match `FINISHED` without a score yet, so scoring/form/standings never see a finished match with null scores. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. That same module exports `canonicalTla`, which the sync runs every stored team code through (`matches.home_code`/`away_code`, `standings.team_code`) to pin football-data's inconsistent TLAs to one canonical value (Uruguay `URU`/`URY` → `URU`) — otherwise a code that flip-flops across responses would oscillate in our `matches` table and make the `team_form`/in-tournament joins blink out. Skips result fields for rows with `result_locked = true` (see admin result locks above). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
 - `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
 - `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
@@ -300,7 +303,7 @@ Login, Welcome (`/welcome`).
 - **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
-- **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
+- **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. Because football-data serves some teams under inconsistent TLAs (Uruguay `URU`/`URY`, flip-flopping across responses), the sync canonicalizes every stored code via `canonicalTla` (`netlify/lib/link-matches.mts`) — so `team_form.code` must use that **canonical** value (Uruguay = `URU`, matching `teams.ts`/`standings`). If a team's form silently disappears, suspect a new such split: add the alias to `canonicalTla` (one entry fixes both linking and the stored-code pinning) — **don't** flip the `team_form` key, which only moves the breakage. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
 
 ## Commit conventions
