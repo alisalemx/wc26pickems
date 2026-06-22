@@ -109,7 +109,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 px-3 pb-6 pt-3 sm:px-4">
+      <main className="flex-1 px-3 pb-24 pt-3 sm:px-4">
         <Outlet />
         <footer className="mt-8 text-center text-xs text-muted-foreground">
           Match data provided by{" "}
@@ -124,32 +124,34 @@ export function Layout() {
         </footer>
       </main>
 
-      {/* Pinned with `sticky` (not `fixed`) so the bar lives in the normal scroll
-          flow as the last flex child of the app-shell column. `fixed` is anchored
-          to the viewport, which mobile browsers handle unreliably — it intermittently
-          detaches and floats mid-page during iOS scroll (URL-bar show/hide) or when
-          an ancestor briefly gets a `transform` from an entrance animation. Sticky
-          can't be thrown off that way. The `pb-[env(safe-area-inset-bottom)]` only
-          resolves once the viewport meta opts in with `viewport-fit=cover`. */}
-      <nav className="sticky bottom-0 z-20 flex border-t border-ink bg-background pb-[env(safe-area-inset-bottom)]">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={"end" in item ? item.end : false}
-            className={({ isActive }) =>
-              cn(
-                "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors active:bg-foreground/10",
-                isActive
-                  ? "font-semibold text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )
-            }
-          >
-            <item.icon className="size-5" />
-            {item.label}
-          </NavLink>
-        ))}
+      {/* `transform-gpu` (translateZ(0)) forces the fixed bar onto its own GPU
+          compositing layer. Without it, mobile Safari recomputes a plain
+          `position: fixed` bar's spot against the layout viewport mid-scroll
+          (URL-bar show/hide, momentum scroll) and it intermittently detaches and
+          floats over content; a promoted layer is composited independently of the
+          scroll, so it stays glued to the bottom. The `pb-[env(safe-area-inset-bottom)]`
+          only resolves once the viewport meta opts in with `viewport-fit=cover`. */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 transform-gpu border-t border-ink bg-background">
+        <div className="mx-auto flex max-w-2xl pb-[env(safe-area-inset-bottom)]">
+          {items.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={"end" in item ? item.end : false}
+              className={({ isActive }) =>
+                cn(
+                  "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors active:bg-foreground/10",
+                  isActive
+                    ? "font-semibold text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
+              <item.icon className="size-5" />
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
       </nav>
     </div>
   )
