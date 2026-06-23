@@ -148,7 +148,7 @@ Local dev needs no Netlify account; this step is only for hosting.
    2 min) runs only on the published production deploy; trigger it on demand with
    `netlify functions:invoke sync-results`.
 
-### 7. Parallel deploy to Cloudflare Pages (optional)
+### 7. Parallel deploy to Cloudflare Workers (optional)
 
 The frontend is a static Vite SPA that talks directly to Supabase, so the same
 `dist/` build can be served from a second host for redundancy — or to dodge
@@ -157,19 +157,23 @@ throttle the whole wildcard). The sync **function does not run here**: it only
 writes results into Supabase and only needs to run in one place (leave it on
 Netlify), while this deploy serves the SPA and reads the same backend.
 
-1. Cloudflare → **Workers & Pages → Create → Pages → Connect to Git**, pick this
-   repo.
-2. Build settings: build command `npm run build`, output directory `dist`.
-3. Add the `VITE_*` variables (Supabase URL + anon key) under the project's
-   **Variables and Secrets**. The server-only keys (`SUPABASE_SERVICE_ROLE_KEY`,
+1. Cloudflare → **Workers & Pages → Create → Continue with GitHub**, pick this
+   repo. Build settings are read from [`wrangler.jsonc`](wrangler.jsonc): build
+   command `npm run build`, deploy command `npx wrangler deploy` (serves `dist/`
+   as static assets).
+2. Add the `VITE_*` variables (Supabase URL + anon key) under **Advanced
+   settings → Variables**. The server-only keys (`SUPABASE_SERVICE_ROLE_KEY`,
    `FOOTBALL_DATA_TOKEN`, `SYNC_SECRET`) are **not** needed — the sync function
    stays on Netlify.
-4. Client-side routes resolve via [`public/_redirects`](public/_redirects)
-   (`/* /index.html 200`), which Cloudflare Pages honors out of the box — no
-   extra config.
-5. Point a custom subdomain at it (e.g. via Cloudflare DNS) and add that origin
-   to the **Supabase redirect URLs** and **Google OAuth authorized origins**, or
-   Google sign-in will reject the new domain.
+3. Client-side routes resolve via `assets.not_found_handling:
+   "single-page-application"` in `wrangler.jsonc` (the Workers equivalent of an
+   SPA fallback) — no `_redirects` file (Cloudflare's asset validator rejects a
+   `/* /index.html 200` self-loop; Netlify's own fallback lives in
+   `netlify.toml`).
+4. Point a custom subdomain at the Worker (**Settings → Domains & Routes → Add →
+   Custom domain**, e.g. `app.alisalem.ca`) and add that origin to the
+   **Supabase redirect URLs** and **Google OAuth authorized origins**, or Google
+   sign-in will reject the new domain.
 
 ## Project structure
 
