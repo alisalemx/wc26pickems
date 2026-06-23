@@ -318,6 +318,37 @@ Leaderboard, MyPredictions (`/me`), and Admin; `AdminRoute` further gates
 Pages: Matches (index), Leaderboard, Standings, MyPredictions (`/me`), Admin,
 Login, Welcome (`/welcome`).
 
+### Hosting & parallel deploys (`netlify.toml`, `wrangler.jsonc`)
+The frontend is a static Vite SPA reading **directly from Supabase**, so the same
+`dist/` build can be served from **multiple hosts at once** — they all read the
+same backend and stay identical. This is used to dodge region-level blocks of the
+shared `*.netlify.app` domain (some ISPs/countries throttle the whole wildcard):
+the app is served from **Netlify** *and*, in parallel, from **Cloudflare Workers**
+static assets (`wrangler.jsonc`, `npx wrangler deploy` publishes `dist/`). Custom
+subdomains (e.g. `wc26.alisalem.ca`) point at whichever host; for a blocked region,
+hand out the Cloudflare one (its edge isn't caught by the Netlify wildcard block).
+
+Two host-specific rules to keep straight:
+- **The sync cron runs on Netlify only.** `sync-results` just writes results into
+  Supabase, so it must live in exactly one place; the Cloudflare deploy serves the
+  SPA and reads the same data. Don't duplicate it (and the Cloudflare deploy needs
+  **no** server-only secrets — only the `VITE_*` build vars).
+- **SPA fallback is configured per host, and they are not interchangeable.**
+  Netlify uses the `[[redirects]]` rule in `netlify.toml`; Cloudflare Workers uses
+  `assets.not_found_handling: "single-page-application"` in `wrangler.jsonc`. Do
+  **not** add a `public/_redirects` with `/* /index.html 200` — Cloudflare's
+  static-asset validator rejects it as an infinite-loop self-redirect and fails
+  the deploy.
+
+**Every serving domain must be allowlisted for OAuth or sign-in silently bounces
+to the wrong host.** `signInWithGoogle` requests `redirectTo:
+${window.location.origin}/`, but Supabase honors it only if it matches the
+**Redirect URLs** allowlist — otherwise it falls back to the **Site URL** (which
+reads as "login redirected me back to the *other* deploy"). For each domain add
+`https://<domain>/**` (the `/**` wildcard is required — a bare domain won't match
+the trailing `/`) to Supabase → Auth → URL Configuration, and add the origin to
+the Google OAuth client's **Authorized JavaScript origins**.
+
 ## Gotchas
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
@@ -328,6 +359,7 @@ Login, Welcome (`/welcome`).
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
 - **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. Because football-data serves some teams under inconsistent TLAs (Uruguay `URU`/`URY`, flip-flopping across responses), the sync canonicalizes every stored code via `canonicalTla` (`netlify/lib/link-matches.mts`) — so `team_form.code` must use that **canonical** value (Uruguay = `URU`, matching `teams.ts`/`standings`). If a team's form silently disappears, suspect a new such split: add the alias to `canonicalTla` (one entry fixes both linking and the stored-code pinning) — **don't** flip the `team_form` key, which only moves the breakage. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
+- **The app is served from two hosts in parallel (Netlify + Cloudflare Workers) off the same `dist`/Supabase** — keep the per-host SPA fallback split (`netlify.toml` vs `wrangler.jsonc` `not_found_handling`; **no** `public/_redirects` — Cloudflare rejects its self-loop), run the sync cron on Netlify only, and allowlist **every** serving domain for OAuth as `https://<domain>/**` (see "Hosting & parallel deploys").
 
 ## Commit conventions
 
