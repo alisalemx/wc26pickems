@@ -171,9 +171,22 @@ Netlify), while this deploy serves the SPA and reads the same backend.
    `/* /index.html 200` self-loop; Netlify's own fallback lives in
    `netlify.toml`).
 4. Point a custom subdomain at the Worker (**Settings → Domains & Routes → Add →
-   Custom domain**, e.g. `app.alisalem.ca`) and add that origin to the
-   **Supabase redirect URLs** and **Google OAuth authorized origins**, or Google
-   sign-in will reject the new domain.
+   Custom domain**, e.g. `wc26.alisalem.ca` — a subdomain, never the bare apex).
+   Since the zone is already on Cloudflare it creates the DNS record + TLS cert
+   automatically. If you move a subdomain here from Netlify, remove it as a
+   custom domain on the Netlify side so two hosts aren't claiming the same name.
+5. **Make Google sign-in work on the new domain.** The app requests
+   `redirectTo: ${window.location.origin}/`, but Supabase only honors that if the
+   URL matches its allowlist — otherwise it falls back to the **Site URL** (your
+   Netlify domain), which looks like login "redirecting you back to Netlify". Fix
+   it in **Supabase → Authentication → URL Configuration**:
+   - add `https://wc26.alisalem.ca/**` to **Redirect URLs** — the `/**` wildcard
+     is required (a bare domain won't match the trailing `/`);
+   - optionally set **Site URL** to the new domain.
+
+   Then add `https://wc26.alisalem.ca` to **Authorized JavaScript origins** on the
+   Google OAuth client. Keep the existing Netlify entries so that host keeps
+   working too.
 
 ## Project structure
 
