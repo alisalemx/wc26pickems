@@ -1,0 +1,5 @@
+# SPA fallback: serve index.html for client-side routes (e.g. /leaderboard, /me).
+# Portable across hosts — honored by both Netlify and Cloudflare Pages — so the
+# same dist/ build can be served from either. (Netlify also reads netlify.toml;
+# this file is what makes a Cloudflare Pages deploy route correctly.)
+/*  /index.html  200
