@@ -1,0 +1,14 @@
+{
+  // Cloudflare Workers static-assets deploy for the SPA. `npm run build`
+  // produces ./dist, and Wrangler serves it as static assets — no Worker
+  // script needed. This is the parallel deploy alongside Netlify (both read
+  // the same Supabase backend; the sync cron stays on Netlify only).
+  "name": "wc26pickems",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve index.html for client-side routes (/leaderboard, /me, …),
+    // the Workers equivalent of the _redirects SPA fallback.
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -148,6 +148,29 @@ Local dev needs no Netlify account; this step is only for hosting.
    2 min) runs only on the published production deploy; trigger it on demand with
    `netlify functions:invoke sync-results`.
 
+### 7. Parallel deploy to Cloudflare Pages (optional)
+
+The frontend is a static Vite SPA that talks directly to Supabase, so the same
+`dist/` build can be served from a second host for redundancy — or to dodge
+region-level blocks of the shared `*.netlify.app` domain (some ISPs/countries
+throttle the whole wildcard). The sync **function does not run here**: it only
+writes results into Supabase and only needs to run in one place (leave it on
+Netlify), while this deploy serves the SPA and reads the same backend.
+
+1. Cloudflare → **Workers & Pages → Create → Pages → Connect to Git**, pick this
+   repo.
+2. Build settings: build command `npm run build`, output directory `dist`.
+3. Add the `VITE_*` variables (Supabase URL + anon key) under the project's
+   **Variables and Secrets**. The server-only keys (`SUPABASE_SERVICE_ROLE_KEY`,
+   `FOOTBALL_DATA_TOKEN`, `SYNC_SECRET`) are **not** needed — the sync function
+   stays on Netlify.
+4. Client-side routes resolve via [`public/_redirects`](public/_redirects)
+   (`/* /index.html 200`), which Cloudflare Pages honors out of the box — no
+   extra config.
+5. Point a custom subdomain at it (e.g. via Cloudflare DNS) and add that origin
+   to the **Supabase redirect URLs** and **Google OAuth authorized origins**, or
+   Google sign-in will reject the new domain.
+
 ## Project structure
 
 ```
