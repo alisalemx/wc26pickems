@@ -104,7 +104,7 @@ export default async (req: Request) => {
   const { data: rows, error: loadErr } = await db
     .from("matches")
     .select(
-      "id, fd_id, stage, kickoff, home_code, away_code, result_locked, status, home_score, away_score, updated_at"
+      "id, fd_id, stage, kickoff, home_team, away_team, home_code, away_code, result_locked, status, home_score, away_score, updated_at"
     )
   if (loadErr) {
     return new Response(`db load error: ${loadErr.message}`, { status: 500 })
@@ -217,13 +217,22 @@ export default async (req: Request) => {
       stage,
       group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
       matchday: m.matchday ?? null,
-      home_team: m.homeTeam?.name ?? null,
-      away_team: m.awayTeam?.name ?? null,
+      // Hold a knockout slot we've already resolved to a team when the feed
+      // hands back null for it. Knockout slots fill one side at a time as groups
+      // finish, and the free tier is laggy/cache-split — a slot it populated one
+      // run can come back null the next (the same flip-flop class as the Uruguay
+      // TLA). Writing that null straight through would blink the team out of the
+      // bracket ("the qualified team appeared, then vanished"), so coalesce each
+      // field: take the feed's value when present, else keep what we stored. A
+      // genuine reassignment (team A → team B) still lands; only a regression to
+      // null is held.
+      home_team: m.homeTeam?.name ?? cur?.home_team ?? null,
+      away_team: m.awayTeam?.name ?? cur?.away_team ?? null,
       // Pin the code to one canonical TLA so a team football-data serves under
       // two codes (Uruguay URU/URY) doesn't flip our stored value every sync and
       // make the team_form / in-tournament joins blink out (see canonicalTla).
-      home_code: canonicalTla(m.homeTeam?.tla ?? null),
-      away_code: canonicalTla(m.awayTeam?.tla ?? null),
+      home_code: canonicalTla(m.homeTeam?.tla ?? null) ?? cur?.home_code ?? null,
+      away_code: canonicalTla(m.awayTeam?.tla ?? null) ?? cur?.away_code ?? null,
       updated_at: new Date().toISOString(),
     }
     const resultFields =
