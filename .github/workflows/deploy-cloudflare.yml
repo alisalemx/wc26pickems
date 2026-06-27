@@ -48,5 +48,9 @@ jobs:
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
+          # Pin wrangler v4: the action's bundled 3.90.0 can't deploy an
+          # assets-only Worker (our wrangler.jsonc has `assets` but no `main`
+          # script), failing with "Missing entry-point". v4 supports it.
+          wranglerVersion: "4"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
