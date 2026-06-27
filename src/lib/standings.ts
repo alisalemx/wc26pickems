@@ -39,6 +39,23 @@ function byMetrics(a: Standing, b: Standing): number {
  *  the table from reshuffling between refetches when teams are genuinely level. */
 const byName = (a: Standing, b: Standing) => a.team.localeCompare(b.team)
 
+/** Resolve a team's official position from football-data, if known. Used only as
+ *  the tiebreaker after head-to-head — football-data's published standings encode
+ *  FIFA's fair-play / drawing-of-lots steps that we can't compute, so we defer to
+ *  them when our own live table leaves teams genuinely level. */
+export type PositionLookup = (s: Standing) => number | undefined
+
+/** Build the final tiebreaker: football-data's official position when both teams
+ *  have one (the fair-play / lots order we can't derive), else alphabetical. */
+function makeTiebreak(positionOf?: PositionLookup) {
+  return (a: Standing, b: Standing): number => {
+    const pa = positionOf?.(a)
+    const pb = positionOf?.(b)
+    if (pa != null && pb != null && pa !== pb) return pa - pb
+    return byName(a, b)
+  }
+}
+
 /** Accumulate W/D/L, goals, and points from finished matches. With `subset`,
  *  only matches between two teams that are *both* in the subset count — a FIFA
  *  head-to-head "mini-table" — and only those teams get rows. Without it, every
@@ -65,8 +82,15 @@ function accumulate(
     if (subset && !(subset.has(m.home_team) && subset.has(m.away_team))) continue
     const h = ensure(m.home_team, m.home_code)
     const a = ensure(m.away_team, m.away_code)
-    if (m.status !== "FINISHED" || m.home_score == null || m.away_score == null)
-      continue
+    // Count finished results and live in-progress ones (the current score is
+    // provisional but moves the table "as it happens", matching football-data's
+    // own standings and the live score shown on the match list). Matches not yet
+    // under way (SCHEDULED/TIMED) carry null scores and are skipped here.
+    const counts =
+      m.status === "FINISHED" ||
+      m.status === "IN_PLAY" ||
+      m.status === "PAUSED"
+    if (!counts || m.home_score == null || m.away_score == null) continue
     h.p++
     a.p++
     h.gf += m.home_score
@@ -98,7 +122,11 @@ function accumulate(
  *  just those teams (criterion g) — recursion that terminates because the subset
  *  strictly shrinks. A set that can't be separated (they haven't all met, or the
  *  results form a cycle) falls back to name order. */
-function breakHeadToHead(cluster: Standing[], matches: MatchRow[]): Standing[] {
+function breakHeadToHead(
+  cluster: Standing[],
+  matches: MatchRow[],
+  tiebreak: (a: Standing, b: Standing) => number
+): Standing[] {
   const names = new Set(cluster.map((s) => s.team))
   const mini = accumulate(matches, names)
   const rec = (s: Standing) => mini.get(s.team) ?? blank(s.team, s.code)
@@ -114,10 +142,10 @@ function breakHeadToHead(cluster: Standing[], matches: MatchRow[]): Standing[] {
       out.push(sub[0])
     } else if (sub.length === cluster.length) {
       // The mini-table separated nobody → head-to-head is exhausted for this set.
-      out.push(...[...sub].sort(byName))
+      out.push(...[...sub].sort(tiebreak))
     } else {
       // A strict subset is still level → re-apply head-to-head to just them.
-      out.push(...breakHeadToHead(sub, matches))
+      out.push(...breakHeadToHead(sub, matches, tiebreak))
     }
     i = j
   }
@@ -126,9 +154,20 @@ function breakHeadToHead(cluster: Standing[], matches: MatchRow[]): Standing[] {
 
 /** Group standings ordered by the full FIFA ruleset we can compute: points,
  *  goal difference, goals scored, then head-to-head (mini-table points / GD /
- *  goals, applied recursively) among any teams still level, then name as the
- *  stable stand-in for the uncomputable fair-play / drawing-of-lots steps. */
-export function computeGroup(matches: MatchRow[]): Standing[] {
+ *  goals, applied recursively) among any teams still level, then — for teams we
+ *  still can't separate — football-data's official `position` (which encodes the
+ *  uncomputable fair-play / drawing-of-lots steps) when a `positionOf` lookup is
+ *  supplied, else name as the stable stand-in.
+ *
+ *  Computing the order ourselves from `matches` (rather than rendering
+ *  football-data's standings feed verbatim) keeps the table consistent with the
+ *  live scores shown elsewhere in the app and reflects in-progress results "as it
+ *  happens", instead of lagging the separately-cadenced standings endpoint. */
+export function computeGroup(
+  matches: MatchRow[],
+  positionOf?: PositionLookup
+): Standing[] {
+  const tiebreak = makeTiebreak(positionOf)
   const overall = [...accumulate(matches).values()].sort(byMetrics)
 
   const out: Standing[] = []
@@ -136,7 +175,11 @@ export function computeGroup(matches: MatchRow[]): Standing[] {
     let j = i + 1
     while (j < overall.length && byMetrics(overall[i], overall[j]) === 0) j++
     const cluster = overall.slice(i, j)
-    out.push(...(cluster.length === 1 ? cluster : breakHeadToHead(cluster, matches)))
+    out.push(
+      ...(cluster.length === 1
+        ? cluster
+        : breakHeadToHead(cluster, matches, tiebreak))
+    )
     i = j
   }
   return out

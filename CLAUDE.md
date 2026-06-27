@@ -244,31 +244,38 @@ card data. football-data's `/competitions/WC/standings` endpoint already applies
 that whole chain, so the sync function (which also fetches it) upserts each team's
 `position` + stats into the public, service-role-written `standings` table
 (mirrors `matches`/`team_form`), read client-side via `useStandings`
-(`["standings"]`, polled 60s). The Groups tab maps those rows to its table in
-`position` order. Two football-data quirks the table handles: its standings count
-**in-progress matches** (a live result shows before the matches feed flips to
-FINISHED), and it serves a few teams under an **inconsistent TLA** — Uruguay
-comes back as `URU` or `URY` depending on both the feed and the individual
+(`["standings"]`, polled 60s). Two football-data quirks the data handles: its
+standings count **in-progress matches** (a live result shows before the matches
+feed flips to FINISHED), and it serves a few teams under an **inconsistent TLA** —
+Uruguay comes back as `URU` or `URY` depending on both the feed and the individual
 response (the free tier flip-flops it every couple of minutes). The sync pins
 every code it stores to one canonical TLA (`URU`) via `canonicalTla` (see "Data
-flow"), so `matches`/`standings`/`team_form` always agree; the table also keys on
+flow"), so `matches`/`standings`/`team_form` always agree; the rows also key on
 the stable `fd_team_id`, and both codes map in `flags.ts`.
 
-`src/lib/standings.ts` (`computeGroup`, unit-tested in `standings.test.ts`) is the
-**fallback** orderer used only before the first standings sync (and offline dev).
-It implements the FIFA criteria we *can* compute — points → GD → goals →
-**head-to-head** (a recursive mini-table among only the tied teams) → name (the
-stand-in for the uncomputable fair-play / lots). `rankThirds` ranks the 12
-third-placed teams (best 8 advance to the R32) by points → GD → goals → name; no
-head-to-head since thirds sit in different groups, and it runs on whichever source
-is active. The amber best-thirds highlight only shows when every team has played
-the same number of games (`thirdsComparable`), so the ranking is on equal footing.
-That gate reads the `p` (played) column of the same rows the table renders — the
-official `standings` when synced — rather than recounting the `matches` feed, so it
-always agrees with the visible P column and a result that's briefly missing from
-our `matches` rows mid-sync can't desync one group's count and flicker the band off.
-The Bracket tab does **not** use any of this — it fills knockout slots from the
-fixture list.
+The Groups tab does **not** render football-data's `position` order verbatim —
+that lags, because the `/standings` endpoint updates on a different cadence than
+the `/matches` feed, so the table could disagree with the live score shown on the
+match list (e.g. a side sitting a place too low through a live draw). Instead the
+table is **computed from our own `matches` feed** via `computeGroup`, so it always
+agrees with the rest of the app and moves "as it happens"; football-data's
+`position` is consulted **only as the final tiebreaker** for teams our own
+criteria leave genuinely level (the fair-play / drawing-of-lots step we can't
+derive), passed into `computeGroup` as an optional `PositionLookup`.
+
+`src/lib/standings.ts` (`computeGroup`, unit-tested in `standings.test.ts`)
+implements the FIFA criteria we *can* compute — points → GD → goals →
+**head-to-head** (a recursive mini-table among only the tied teams) → football-data
+`position` (when supplied) → name (the stable stand-in). `accumulate` counts
+**FINISHED, IN_PLAY, and PAUSED** matches (in-progress scores are provisional but
+move the table live, matching football-data and the match list); SCHEDULED/TIMED
+rows carry null scores and are skipped. `rankThirds` ranks the 12 third-placed
+teams (best 8 advance to the R32) by points → GD → goals → name; no head-to-head
+since thirds sit in different groups. The amber best-thirds highlight shows **live**
+("as it happens") once all 12 groups have a third-placed team that has played at
+least one match (`thirdsComparable`) — the ranking is provisional mid-stage and
+settles into the real cut-off as the final matchday completes. The Bracket tab does
+**not** use any of this — it fills knockout slots from the fixture list.
 
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:

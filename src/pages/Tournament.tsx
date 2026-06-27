@@ -20,45 +20,24 @@ import { ListSkeleton } from "@/components/ListSkeleton"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { TeamDetailDialog } from "@/components/TeamInfoDialog"
 import { Bracket } from "@/components/Bracket"
-import { computeGroup, rankThirds, type Standing } from "@/lib/standings"
-import type { GroupStandingRow, MatchRow } from "@/lib/types"
+import {
+  computeGroup,
+  rankThirds,
+  type PositionLookup,
+  type Standing,
+} from "@/lib/standings"
+import type { MatchRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
-
-/** Convert synced standings rows into the per-group ordered tables the UI
- *  renders, preserving football-data's official `position` order (which encodes
- *  FIFA's fair-play tiebreaker). */
-function groupsFromStandings(
-  rows: GroupStandingRow[]
-): { name: string; rows: Standing[] }[] {
-  const byGroup = new Map<string, Standing[]>()
-  const sorted = [...rows].sort(
-    (a, b) =>
-      a.group_name.localeCompare(b.group_name) || a.position - b.position
-  )
-  for (const r of sorted) {
-    if (!byGroup.has(r.group_name)) byGroup.set(r.group_name, [])
-    byGroup.get(r.group_name)!.push({
-      team: r.team_name ?? r.team_code ?? "—",
-      code: r.team_code,
-      p: r.played,
-      w: r.won,
-      d: r.drawn,
-      l: r.lost,
-      gf: r.gf,
-      ga: r.ga,
-      pts: r.points,
-    })
-  }
-  return [...byGroup.entries()].map(([name, rows]) => ({ name, rows }))
-}
 
 function Groups() {
   const { data: matches, isLoading: matchesLoading } = useMatches()
   const { data: standings, isLoading: standingsLoading } = useStandings()
 
   const { groups, qualifyingThirds, thirdsComparable } = useMemo(() => {
-    // Fixtures grouped — the fallback table source until the standings table is
-    // first synced (and offline dev).
+    // Group the fixtures. This is the source the table is computed from — our own
+    // live `matches` feed — so the standings always agree with the scores shown
+    // on the match list and move "as it happens", instead of lagging the
+    // separately-cadenced football-data /standings endpoint.
     const byGroup = new Map<string, MatchRow[]>()
     for (const m of matches ?? []) {
       if (m.stage !== "GROUP" || !m.group_name) continue
@@ -66,14 +45,35 @@ function Groups() {
       byGroup.get(m.group_name)!.push(m)
     }
 
-    // Prefer football-data's official order (it applies the fair-play tiebreaker
-    // we can't compute); fall back to our client-side table until it's synced.
-    const groups =
-      standings && standings.length
-        ? groupsFromStandings(standings)
-        : [...byGroup.entries()]
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([name, ms]) => ({ name, rows: computeGroup(ms) }))
+    // football-data's official standings encode FIFA's fair-play / drawing-of-lots
+    // tiebreaker we can't compute. We don't render its order verbatim (it lags our
+    // live results); we use it only as a position lookup that breaks ties our own
+    // table leaves genuinely level. Keyed by code, with a name fallback.
+    const posByGroup = new Map<
+      string,
+      { byCode: Map<string, number>; byName: Map<string, number> }
+    >()
+    for (const r of standings ?? []) {
+      let e = posByGroup.get(r.group_name)
+      if (!e) {
+        e = { byCode: new Map(), byName: new Map() }
+        posByGroup.set(r.group_name, e)
+      }
+      if (r.team_code) e.byCode.set(r.team_code, r.position)
+      if (r.team_name) e.byName.set(r.team_name, r.position)
+    }
+
+    const groups = [...byGroup.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, ms]) => {
+        const pos = posByGroup.get(name)
+        const positionOf: PositionLookup | undefined = pos
+          ? (s) =>
+              (s.code != null ? pos.byCode.get(s.code) : undefined) ??
+              pos.byName.get(s.team)
+          : undefined
+        return { name, rows: computeGroup(ms, positionOf) }
+      })
 
     // The 8 best third-placed teams across all groups also advance to the R32.
     const thirds = groups
@@ -84,28 +84,27 @@ function Groups() {
       thirds.slice(0, 8).map((r) => r.code ?? r.team)
     )
 
-    // Comparable only when every team has played the same number of games (and
-    // at least one): then the thirds are ranked on equal footing. While a round
-    // is mid-flight the counts differ, so the highlight hides until groups level
-    // out again (it re-appears live as the final matchday completes). Derived
-    // from the same rows the table renders — the official standings when synced —
-    // so the gate always agrees with the visible P column, and a single result
-    // that's briefly missing from our matches feed mid-sync can't desync one
-    // group's count and flicker the whole band off.
-    const played = groups.flatMap((g) => g.rows.map((r) => r.p))
+    // Show the best-thirds race live ("as it happens"): rank the third-placed
+    // teams as results land rather than waiting for every group to level out on
+    // games played. The only gate is that all 12 groups have a third-placed team
+    // that has actually played a match — so we never highlight a team before it
+    // has a result on the board. Mid-stage the ranking is provisional (a team that
+    // has played fewer games may still climb), settling into the real cut-off as
+    // the final matchday completes.
     const thirdsComparable =
-      played.length > 0 && played[0] > 0 && played.every((p) => p === played[0])
+      thirds.length >= 12 && thirds.every((r) => r.p > 0)
 
     return { groups, qualifyingThirds, thirdsComparable }
   }, [matches, standings])
 
   // Wait for the official standings before first paint, not just for matches.
+  // The table is computed from matches, but football-data's positions break ties
+  // we can't compute, so a first paint on matches alone could place genuinely
+  // level teams by name and then reorder a beat later when standings arrives.
   // The matches query is usually warm (shared with the Matches page) while
-  // standings is cold, so rendering on matches alone would flash the client-side
-  // fallback order and then snap to football-data's official order a beat later
-  // (the two disagree on tiebreakers and on counting in-progress matches). Gating
-  // on isLoading only affects the very first load — background 60s refetches keep
-  // their previous data, so this never re-flashes the skeleton.
+  // standings is cold, so gate on both to avoid that flash. This only affects the
+  // very first load — background 60s refetches keep their previous data, so the
+  // skeleton never re-appears.
   if (matchesLoading || standingsLoading) {
     return (
       <ListSkeleton

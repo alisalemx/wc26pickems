@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { computeGroup, rankThirds, type Standing } from "./standings"
+import {
+  computeGroup,
+  rankThirds,
+  type PositionLookup,
+  type Standing,
+} from "./standings"
 import type { MatchRow } from "./types"
 
 /** Build a group match. Pass scores to mark it FINISHED; omit for a fixture that
@@ -8,9 +13,10 @@ function mk(
   home: string,
   away: string,
   hs?: number,
-  as?: number
+  as?: number,
+  status: MatchRow["status"] = hs != null && as != null ? "FINISHED" : "TIMED"
 ): MatchRow {
-  const finished = hs != null && as != null
+  const scored = hs != null && as != null
   return {
     id: 0,
     fd_id: null,
@@ -23,9 +29,9 @@ function mk(
     away_code: away.slice(0, 3).toUpperCase(),
     kickoff: "2026-06-12T18:00:00Z",
     venue: null,
-    status: finished ? "FINISHED" : "TIMED",
-    home_score: finished ? hs : null,
-    away_score: finished ? as : null,
+    status,
+    home_score: scored ? hs : null,
+    away_score: scored ? as : null,
     home_pens: null,
     away_pens: null,
     duration: "REGULAR",
@@ -101,6 +107,38 @@ describe("computeGroup", () => {
       mk("C", "A", 1, 0),
     ])
     expect(order(rows)).toEqual(["A", "B", "C"])
+  })
+
+  it("counts in-progress matches so the table moves as it happens", () => {
+    // Group G mid-decider: Egypt vs Iran live at 1-1. Belgium has finished all
+    // three (5 pts). With the draw counting, Egypt (5 pts) sits 2nd and Iran
+    // (3 pts) 3rd — the live order — not the pre-match positions.
+    const rows = computeGroup([
+      mk("Belgium", "Egypt", 1, 1),
+      mk("Iran", "NewZealand", 2, 2),
+      mk("Belgium", "Iran", 0, 0),
+      mk("NewZealand", "Egypt", 1, 3),
+      mk("NewZealand", "Belgium", 1, 5),
+      mk("Egypt", "Iran", 1, 1, "IN_PLAY"),
+    ])
+    expect(order(rows)).toEqual(["Belgium", "Egypt", "Iran", "NewZealand"])
+    const egypt = rows.find((r) => r.team === "Egypt")!
+    expect([egypt.p, egypt.pts]).toEqual([3, 5])
+  })
+
+  it("breaks an unresolvable tie by football-data position when supplied", () => {
+    // Perfect head-to-head cycle A>B>C>A — our criteria can't separate them, so
+    // without a position lookup it falls back to name order (A, B, C). A supplied
+    // lookup (football-data's fair-play order) overrides that to C, A, B.
+    const matches = [
+      mk("A", "B", 1, 0),
+      mk("B", "C", 1, 0),
+      mk("C", "A", 1, 0),
+    ]
+    expect(order(computeGroup(matches))).toEqual(["A", "B", "C"])
+    const positionOf: PositionLookup = (s) =>
+      ({ C: 1, A: 2, B: 3 } as Record<string, number>)[s.team]
+    expect(order(computeGroup(matches, positionOf))).toEqual(["C", "A", "B"])
   })
 
   it("uses head-to-head only among the tied teams, not the whole group", () => {
