@@ -331,9 +331,18 @@ The frontend is a static Vite SPA reading **directly from Supabase**, so the sam
 same backend and stay identical. This is used to dodge region-level blocks of the
 shared `*.netlify.app` domain (some ISPs/countries throttle the whole wildcard):
 the app is served from **Netlify** *and*, in parallel, from **Cloudflare Workers**
-static assets (`wrangler.jsonc`, `npx wrangler deploy` publishes `dist/`). Custom
-subdomains (e.g. `wc26.alisalem.ca`) point at whichever host; for a blocked region,
-hand out the Cloudflare one (its edge isn't caught by the Netlify wildcard block).
+static assets (`wrangler.jsonc` publishes `dist/`). Custom subdomains (e.g.
+`wc26.alisalem.ca`) point at whichever host; for a blocked region, hand out the
+Cloudflare one (its edge isn't caught by the Netlify wildcard block).
+
+**Both hosts must redeploy together or they drift.** Netlify is wired to the
+repo and rebuilds itself on every push to `main`; the Cloudflare side is driven
+by the `.github/workflows/deploy-cloudflare.yml` GitHub Action (build `dist/` →
+`cloudflare/wrangler-action`) on the same push, so a change can't land on one
+host but not the other. The Action needs four repo secrets —
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and the public
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` build vars; `workflow_dispatch`
+allows a manual re-run, and `npx wrangler deploy` is still the local fallback.
 
 Two host-specific rules to keep straight:
 - **The sync cron runs on Netlify only.** `sync-results` just writes results into

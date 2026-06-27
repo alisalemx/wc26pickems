@@ -1,0 +1,52 @@
+# Deploy the SPA to Cloudflare Workers static assets on every push to main.
+#
+# Netlify is wired to the repo and redeploys itself on push, but the parallel
+# Cloudflare deploy is a manual `npx wrangler deploy` — so without this workflow
+# it silently drifts stale while Netlify stays current (the two serve the same
+# Supabase backend off the same dist/, so they must ship together). This builds
+# dist/ and publishes it with Wrangler, keeping both hosts in lockstep.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — token with the "Workers Scripts: Edit" permission
+#   CLOUDFLARE_ACCOUNT_ID  — the Cloudflare account id that owns the Worker
+#   VITE_SUPABASE_URL      — same public value used by the Netlify build
+#   VITE_SUPABASE_ANON_KEY — the public anon key (safe to expose to the client)
+#
+# Only the VITE_* vars are needed at build time; the sync cron + service-role
+# key stay on Netlify (this deploy serves the SPA and reads Supabase directly).
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# One deploy at a time; cancel an in-flight run when a newer commit lands.
+concurrency:
+  group: cloudflare-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
