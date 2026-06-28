@@ -18,7 +18,11 @@ import { readFileSync } from "node:fs"
 import { resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createClient } from "@supabase/supabase-js"
-import { mapApiStage, type MatchUpsert } from "./fd-shared"
+import {
+  mapApiStage,
+  KNOCKOUT_FD_ID_TO_NUMBER,
+  type MatchUpsert,
+} from "./fd-shared"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -44,21 +48,31 @@ async function fromApi(): Promise<MatchUpsert[]> {
     throw new Error(`football-data.org error ${res.status}: ${await res.text()}`)
   }
   const data = (await res.json()) as { matches: ApiMatch[] }
-  // Sort chronologically and number 1..N within group / knockout blocks.
+  // Group matches are numbered 1..72 chronologically (FIFA numbers the group
+  // stage in date order, so a chronological sort reproduces the official id).
+  // Knockout matches are NOT chronological in FIFA's official numbering, so they
+  // must be pinned to their official slot via KNOCKOUT_FD_ID_TO_NUMBER — numbering
+  // them by kickoff time scrambles the bracket (the wrong winners meet, because
+  // `FEEDERS` in Bracket.tsx is keyed by official match number).
   const sorted = [...data.matches].sort(
     (a, b) => +new Date(a.utcDate) - +new Date(b.utcDate)
   )
-  // Knockout ids start after the last group id, derived from the actual group
-  // count rather than a hardcoded 72, so a different group total can't make a
-  // group id collide with a knockout id under onConflict:"id".
-  const groupCount = sorted.filter(
-    (m) => mapApiStage(m.stage) === "GROUP"
-  ).length
   let groupId = 0
-  let koId = groupCount
   return sorted.map((m): MatchUpsert => {
     const stage = mapApiStage(m.stage)
-    const id = stage === "GROUP" ? ++groupId : ++koId
+    let id: number
+    if (stage === "GROUP") {
+      id = ++groupId
+    } else {
+      const official = KNOCKOUT_FD_ID_TO_NUMBER[m.id]
+      if (official == null) {
+        throw new Error(
+          `No official match number for knockout fd_id ${m.id} (${stage}). ` +
+            `Add it to KNOCKOUT_FD_ID_TO_NUMBER in scripts/fd-shared.ts.`
+        )
+      }
+      id = official
+    }
     return {
       id,
       fd_id: m.id,
