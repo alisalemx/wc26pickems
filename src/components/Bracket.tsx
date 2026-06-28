@@ -37,6 +37,11 @@ const FEEDERS: Record<number, [number, number]> = {
 const FINAL_ID = 104
 const THIRD_ID = 103
 
+/** The third-place play-off (103) sits outside the winners' tree: it's contested
+ *  by the two semi-final LOSERS (matches 101, 102), so it resolves from feeder
+ *  losers rather than winners. */
+const THIRD_FEEDERS: [number, number] = [101, 102]
+
 /** Winner-round nav pills in bracket order, each paired with its column depth
  *  counting from the Round-of-32 leaves (depth 0). The Final is depth 4. */
 const ROUND_NAV: { stage: MatchStage; depth: number }[] = [
@@ -85,6 +90,58 @@ function winnerSide(m: MatchRow): "home" | "away" | null {
     if (m.away_pens > m.home_pens) return "away"
   }
   return null
+}
+
+/** The (name, code) of one side of a match. */
+function sideTeam(m: MatchRow, side: "home" | "away") {
+  return side === "home"
+    ? { team: m.home_team, code: m.home_code }
+    : { team: m.away_team, code: m.away_code }
+}
+
+/** Resolve the team a feeder match sends onward: its winner (winners' tree) or
+ *  its loser (third-place play-off). Null until that feeder is decided. */
+function feederTeam(
+  byId: Map<number, MatchRow>,
+  feederId: number,
+  which: "winner" | "loser"
+) {
+  const m = byId.get(feederId)
+  if (!m) return null
+  const w = winnerSide(m)
+  if (!w) return null
+  const side = which === "winner" ? w : w === "home" ? "away" : "home"
+  return sideTeam(m, side)
+}
+
+/** Fill a knockout match's empty team slots from its feeders' decided results,
+ *  so a round populates the instant the feeding matches finish rather than
+ *  waiting for football-data to assign the slot upstream. Display-only: the
+ *  stored row always wins when present (a real assignment overrides our
+ *  derivation, including home/away orientation), and only a null side is filled.
+ *  Resolves one level — a feeder that's FINISHED already carries its own teams —
+ *  which cascades naturally as each round completes. Returns the row unchanged
+ *  when nothing can (or needs to) be filled. */
+function resolveMatch(
+  byId: Map<number, MatchRow>,
+  id: number
+): MatchRow | undefined {
+  const m = byId.get(id)
+  if (!m) return undefined
+  const isThird = id === THIRD_ID
+  const feeders = isThird ? THIRD_FEEDERS : FEEDERS[id]
+  if (!feeders) return m
+  const which = isThird ? "loser" : "winner"
+  const home = m.home_team == null ? feederTeam(byId, feeders[0], which) : null
+  const away = m.away_team == null ? feederTeam(byId, feeders[1], which) : null
+  if (!home && !away) return m
+  return {
+    ...m,
+    home_team: m.home_team ?? home?.team ?? null,
+    home_code: m.home_code ?? home?.code ?? null,
+    away_team: m.away_team ?? away?.team ?? null,
+    away_code: m.away_code ?? away?.code ?? null,
+  }
 }
 
 function TeamLine({
@@ -237,7 +294,7 @@ function Node({
   conn: number
   byId: Map<number, MatchRow>
 }) {
-  const m = byId.get(id)
+  const m = resolveMatch(byId, id)
   const feeders = FEEDERS[id]
   const full = depth === activeDepth
 
@@ -293,10 +350,11 @@ function Node({
  *  that round's matches expand to full cards (with date + scores), while every
  *  other round compresses to flag + score chips so the whole tree fits the
  *  viewport with no horizontal scroll. Built from FEEDERS, so the full shape
- *  shows even before any knockout team is known — slots fill in ("TBD" →
- *  teams/scores) as the sync resolves results. The third-place play-off is fed
- *  by the SF losers, so it sits outside the winners' tree and is shown on its
- *  own below. */
+ *  shows even before any knockout team is known — empty slots fill in as soon as
+ *  their feeder matches finish (winners propagated client-side via `resolveMatch`,
+ *  ahead of football-data assigning the slot upstream). The third-place play-off
+ *  is fed by the SF losers, so it sits outside the winners' tree and is shown on
+ *  its own below. */
 export function Bracket() {
   const query = useMatches()
   const matches = query.data
@@ -345,7 +403,7 @@ export function Bracket() {
 
   if (!hasKnockout) return null
 
-  const third = byId.get(THIRD_ID)
+  const third = resolveMatch(byId, THIRD_ID)
 
   return (
     <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-300 ease-out motion-reduce:animate-none">
