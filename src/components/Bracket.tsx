@@ -216,25 +216,6 @@ function MatchMini({ m }: { m: MatchRow }) {
   )
 }
 
-/** Earliest kickoff (ms since epoch) anywhere in a match's feeder subtree, used
- *  to order a node's two feeders top-to-bottom by date. Internal matches kick
- *  off after their feeders, so the min lives in the R32 leaves — recursing down
- *  to them covers it. Knockout rows carry `kickoff` even before teams are known,
- *  so this is stable from the start; a missing match/kickoff sinks to the bottom
- *  via +Infinity. */
-function subtreeEarliest(id: number, byId: Map<number, MatchRow>): number {
-  const feeders = FEEDERS[id]
-  if (!feeders) {
-    const t = byId.get(id)?.kickoff
-    const ms = t ? Date.parse(t) : NaN
-    return Number.isNaN(ms) ? Infinity : ms
-  }
-  return Math.min(
-    subtreeEarliest(feeders[0], byId),
-    subtreeEarliest(feeders[1], byId)
-  )
-}
-
 /** One node of the bracket, laid out recursively: this match's two feeders
  *  (stacked vertically) on the left, then a connector, then this match's card —
  *  vertically centred between its feeders. `depth` is this match's round
@@ -273,24 +254,15 @@ function Node({
     )
   }
 
-  // Order the two feeders top→bottom by the earliest kickoff anywhere in each
-  // one's subtree. Swapping a node's children is structurally lossless (a
-  // pairing reads the same drawn on top or bottom, and the connector is
-  // symmetric), so this makes the tree read chronologically without breaking a
-  // single feeder line.
-  const [top, bottom] = [...feeders].sort(
-    (a, b) => subtreeEarliest(a, byId) - subtreeEarliest(b, byId)
-  )
-
   return (
     <div className="flex items-stretch">
       <div className="flex flex-col justify-center">
         <div className="flex items-center">
-          <Node id={top} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
+          <Node id={feeders[0]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
           <div className="shrink-0 border-t border-border" style={{ width: stub }} />
         </div>
         <div className="flex items-center">
-          <Node id={bottom} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
+          <Node id={feeders[1]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
           <div className="shrink-0 border-t border-border" style={{ width: stub }} />
         </div>
       </div>
