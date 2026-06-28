@@ -278,16 +278,21 @@ export function MatchCard({
         )}
       </div>
 
-      {canPredict && (
-        <PopularPicks
-          matchId={match.id}
-          selected={`${home}-${away}`}
-          onPick={(h, a) => {
-            setHome(String(h))
-            setAway(String(a))
-          }}
-        />
-      )}
+      {canPredict &&
+        (match.stage === "GROUP" ? (
+          <PopularPicks
+            matchId={match.id}
+            selected={`${home}-${away}`}
+            onPick={(h, a) => {
+              setHome(String(h))
+              setAway(String(a))
+            }}
+          />
+        ) : (
+          <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+            Popular picks are hidden in the knockout stage
+          </p>
+        ))}
 
       {hasFooter && (
       <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">

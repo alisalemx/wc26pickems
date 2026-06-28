@@ -192,6 +192,11 @@ suppresses chips for matches with too few predictors; `0008` set it to 4,
 deanonymization-by-subtraction trade-off). The client reads it via
 `usePredictionDistribution` (query key `["prediction-distributions"]`).
 
+Chips render for **group-stage matches only** — knockout cards (`match.stage !==
+"GROUP"`) show a muted "Popular picks are hidden in the knockout stage" note in
+their place (gated in `MatchCard`, not the RPC, which still returns knockout
+rows).
+
 ### Team form (`0011_team_form.sql`, `0012_team_form_honors.sql`)
 `MatchCard` shows each side's recent W/D/L form (`TeamForm`) below the countries
 (upcoming matches only) as **one rolling 5-match window** (`MAX_PILLS = 5`),
