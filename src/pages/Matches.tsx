@@ -7,6 +7,7 @@ import {
   useUpsertPrediction,
 } from "@/hooks/queries"
 import { MatchCard } from "@/components/MatchCard"
+import { PenaltyNote } from "@/components/PenaltyNote"
 import { DayHeader } from "@/components/DayHeader"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
@@ -244,6 +245,7 @@ export function Matches() {
               </Button>
             </div>
           )}
+          <PenaltyNote />
           {renderDayMatches(current[1])}
         </div>
       )}
@@ -264,6 +266,8 @@ export function Matches() {
           {grouped.length === 0 && (
             <EmptyState>No matches in this stage.</EmptyState>
           )}
+
+          <PenaltyNote />
 
           {grouped.map(([day, dayMatches]) => (
             <section
