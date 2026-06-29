@@ -188,6 +188,19 @@ export default async (req: Request) => {
     const ft = m.score?.fullTime ?? { home: null, away: null }
     const pens = m.score?.penalties ?? { home: null, away: null }
 
+    // football-data BAKES THE SHOOTOUT INTO `fullTime` for penalty-decided
+    // matches: fullTime = regularTime + extraTime + penalties (a 1-1 game won
+    // 4-3 on pens reports fullTime 5-4, penalties 4-3). But home_score/away_score
+    // are the 90'+ET result — predictions are scored on them, W/D/L form reads
+    // them, and the card's "Result" shows them — while the shootout is display-
+    // only (home_pens/away_pens). So strip the shootout back out to recover the
+    // pre-penalty score. `penalties` is null for non-shootout matches, so this is
+    // a no-op there and `fullTime` passes through unchanged.
+    const result = {
+      home: ft.home != null ? ft.home - (pens.home ?? 0) : null,
+      away: ft.away != null ? ft.away - (pens.away ?? 0) : null,
+    }
+
     // Hold the result we already have (skip result fields, still reconcile
     // fixture metadata) when:
     //  - an admin locked the row;
@@ -240,8 +253,8 @@ export default async (req: Request) => {
         ? {}
         : {
             status: m.status,
-            home_score: ft.home,
-            away_score: ft.away,
+            home_score: result.home,
+            away_score: result.away,
             home_pens: pens.home ?? null,
             away_pens: pens.away ?? null,
             duration: m.score?.duration ?? "REGULAR",
