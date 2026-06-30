@@ -13,9 +13,8 @@ import { PredictionCountdown } from "./PredictionCountdown"
 import { TeamForm } from "./TeamForm"
 import { TeamInfoDialog } from "./TeamInfoDialog"
 import { ScorePair } from "./ScoreInput"
-import { useElapsedMinutes } from "@/hooks/useCountdown"
-import { kickoffTime, isLocked, isLive } from "@/lib/format"
-import { liveScoreUrl } from "@/lib/links"
+import { useLiveSeconds } from "@/hooks/useCountdown"
+import { kickoffTime, isLocked, isLive, parseClockMinute, formatClock } from "@/lib/format"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import {
   useRevealedPredictions,
@@ -164,19 +163,13 @@ export function MatchCard({
           className="justify-self-start"
         />
 
-        {/* Center slot: absolute kickoff time (in strong foreground ink) on
-            upcoming/ended cards. While the match is in progress the "Locked"
-            chip moves here, and the right slot carries the live elapsed-time
-            label in its place. */}
-        {live ? (
-          <span className="flex items-center justify-self-center gap-1 font-medium text-muted-foreground">
-            <Lock className="size-3" /> Locked
-          </span>
-        ) : (
-          <span className="justify-self-center font-medium tabular-nums text-foreground">
-            {kickoffTime(match.kickoff)}
-          </span>
-        )}
+        {/* Center slot: the kickoff (match start) time, in strong foreground
+            ink, shown in every state — including while the match is live, where
+            the right slot carries the live elapsed-time clock and a small lock
+            by your "Pick" below marks that predictions are locked. */}
+        <span className="justify-self-center font-medium tabular-nums text-foreground">
+          {kickoffTime(match.kickoff)}
+        </span>
 
         <span
           className={cn(
@@ -185,8 +178,8 @@ export function MatchCard({
           )}
         >
           {live ? (
-            // In progress: the pulsing elapsed-time clock sits where "Locked"
-            // normally goes (Locked has moved to the center slot).
+            // In progress: the pulsing live clock. The "locked" state is marked
+            // by a small lock icon next to your "Pick" below, not here.
             <LiveLabel match={match} />
           ) : locked ? (
             <>
@@ -239,7 +232,18 @@ export function MatchCard({
               <div className="grid grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-1 leading-none">
                 {prediction && (
                   <>
-                    <span className="text-sm text-muted-foreground">Pick</span>
+                    <span className="relative text-sm text-muted-foreground">
+                      {/* Lock hangs to the left of "Pick" via absolute
+                          positioning so it doesn't widen the label column and
+                          shift the centered Pick/Live/Result block — a compact
+                          "predictions are locked" marker now the header just
+                          shows the kickoff time. */}
+                      <Lock
+                        aria-label="Locked"
+                        className="absolute right-full top-1/2 mr-1 size-3 -translate-y-1/2"
+                      />
+                      Pick
+                    </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {prediction.home_pred}–{prediction.away_pred}
                     </span>
@@ -446,54 +450,53 @@ export function MatchCard({
 }
 
 /** Right-slot label for a match in progress (where "Locked" sits otherwise).
- *  A pulsing green dot beside the live match clock (ESPN's synced minute, or a
- *  wall-clock estimate as a fallback — see `LiveClock`). The whole label links
- *  out to a live-score search for the minute-by-minute detail (lineups, events).
- *  Falls back to a plain (unlinked) clock if the teams aren't resolved yet (TBD
- *  slots). The `animate-ping` dot is neutralized by the global
- *  prefers-reduced-motion backstop. */
+ *  A pulsing green dot beside the live match clock (see `LiveClock`). The
+ *  `animate-ping` dot is neutralized by the global prefers-reduced-motion
+ *  backstop. */
 function LiveLabel({ match }: { match: MatchRow }) {
-  const content = (
-    <>
+  return (
+    <span className="flex items-center gap-1.5 font-medium tabular-nums text-green-600 dark:text-green-500">
       <span className="relative flex size-1.5">
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
         <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
       </span>
-      <LiveClock minute={match.minute} kickoff={match.kickoff} />
-    </>
-  )
-  const base =
-    "flex items-center gap-1.5 font-medium tabular-nums text-green-600 dark:text-green-500"
-
-  if (!match.home_team || !match.away_team) {
-    return <span className={base}>{content}</span>
-  }
-
-  return (
-    <a
-      href={liveScoreUrl(match.home_team, match.away_team)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        base,
-        "-mx-1 rounded-sm px-1 underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10"
-      )}
-    >
-      {content}
-    </a>
+      <LiveClock
+        minute={match.minute}
+        updatedAt={match.updated_at}
+        kickoff={match.kickoff}
+      />
+    </span>
   )
 }
 
-/** The elapsed-time clock inside `LiveLabel`. Prefers ESPN's synced match clock
- *  (`minute`, e.g. "67'" or "HT") — the real broadcast minute — and falls back
- *  to a wall-clock estimate counted from kickoff when the feed hasn't reported a
- *  minute yet (the first moments after kickoff, a sync gap, or a group match,
- *  which isn't ESPN-synced). The fallback ticks each minute; its local state
- *  re-renders only this span. */
-function LiveClock({ minute, kickoff }: { minute: string | null; kickoff: string }) {
-  // Only run the ticking estimate while we have no synced minute to show.
-  const fallback = useElapsedMinutes(kickoff, minute == null)
-  return <span>{minute ?? `${fallback}'`}</span>
+/** The ticking "M:SS" clock inside `LiveLabel`. When ESPN has reported a clean
+ *  minute ("67'") we anchor on it and tick the seconds forward from the moment
+ *  it was synced (`updatedAt`), re-anchoring on each sync — so the real
+ *  broadcast minute stays accurate while the seconds animate between the ~2-min
+ *  syncs. ESPN's non-numeric labels — halftime "HT" and stoppage clocks
+ *  ("45'+2'") — are shown verbatim (extrapolating seconds across them would
+ *  mislead). With no synced minute yet (the first moments after kickoff, a sync
+ *  gap, or a group match, which isn't ESPN-synced) it ticks "M:SS" from kickoff
+ *  as a wall-clock fallback. Local ticking state re-renders only this span. */
+function LiveClock({
+  minute,
+  updatedAt,
+  kickoff,
+}: {
+  minute: string | null
+  updatedAt: string
+  kickoff: string
+}) {
+  const anchorMin = parseClockMinute(minute)
+  const synced = anchorMin != null
+  const verbatim = minute != null && !synced // "HT" / stoppage — show as-is
+  const seconds = useLiveSeconds(
+    synced ? updatedAt : kickoff,
+    anchorMin ?? 0,
+    !verbatim
+  )
+  if (verbatim) return <span>{minute}</span>
+  return <span>{formatClock(seconds)}</span>
 }
 
 /** Quick-pick row of the crowd's most-predicted scorelines. Counts are

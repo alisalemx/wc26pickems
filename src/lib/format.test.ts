@@ -7,6 +7,8 @@ import {
   formatCountdown,
   shortDate,
   ordinal,
+  parseClockMinute,
+  formatClock,
 } from "./format"
 
 describe("isLocked", () => {
@@ -104,6 +106,29 @@ describe("formatCountdown", () => {
 
   it("truncates sub-second remainders toward the lower unit", () => {
     expect(formatCountdown(kickoff, at(1_999))).toBe("0:01")
+  })
+})
+
+describe("parseClockMinute", () => {
+  it("parses a clean minute, with or without the apostrophe", () => {
+    expect(parseClockMinute("67'")).toBe(67)
+    expect(parseClockMinute("67")).toBe(67)
+    expect(parseClockMinute("3'")).toBe(3)
+  })
+  it("is null for stoppage, halftime, and empty/garbage", () => {
+    expect(parseClockMinute("45'+2'")).toBeNull()
+    expect(parseClockMinute("HT")).toBeNull()
+    expect(parseClockMinute("")).toBeNull()
+    expect(parseClockMinute(null)).toBeNull()
+  })
+})
+
+describe("formatClock", () => {
+  it("renders M:SS with unpadded minutes and padded seconds", () => {
+    expect(formatClock(7)).toBe("0:07")
+    expect(formatClock(67)).toBe("1:07")
+    expect(formatClock(4023)).toBe("67:03")
+    expect(formatClock(4020)).toBe("67:00")
   })
 })
 

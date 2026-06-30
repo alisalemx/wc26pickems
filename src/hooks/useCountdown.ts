@@ -24,13 +24,19 @@ export function useCountdown(targetIso: string, active = true): number {
   return Math.max(0, target - now)
 }
 
-/** Whole minutes elapsed since `sinceIso`, re-rendering every second so a live
- *  match's elapsed clock visibly ticks up. This is wall-clock based — we don't
- *  sync the official match minute — so it counts the time since kickoff and
- *  drifts from the true clock by halftime and stoppage. Clamped at zero. Like
- *  `useCountdown`, the state is local so only the small label re-renders. */
-export function useElapsedMinutes(sinceIso: string, active = true): number {
-  const since = new Date(sinceIso).getTime()
+/** Live elapsed seconds for a ticking match clock, re-rendering each second.
+ *  Returns `baseMinutes * 60` plus the whole seconds since `anchorIso`, so the
+ *  caller can anchor on a synced match minute (ESPN's clock, observed at the
+ *  row's last sync) and extrapolate the seconds forward, or fall back to
+ *  counting from kickoff (`baseMinutes` 0). Clamped at zero; ticking stops when
+ *  `active` is false. Like `useCountdown`, the state is local so only the small
+ *  clock label re-renders. */
+export function useLiveSeconds(
+  anchorIso: string,
+  baseMinutes: number,
+  active = true
+): number {
+  const anchor = new Date(anchorIso).getTime()
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -39,5 +45,5 @@ export function useElapsedMinutes(sinceIso: string, active = true): number {
     return () => clearInterval(timer)
   }, [active])
 
-  return Math.max(0, Math.floor((now - since) / 60_000))
+  return Math.max(0, baseMinutes * 60 + Math.floor((now - anchor) / 1_000))
 }

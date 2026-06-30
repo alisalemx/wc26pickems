@@ -92,6 +92,24 @@ export function formatCountdown(iso: string, now: number = Date.now()): string |
   return `${minutes}:${pad(seconds)}`
 }
 
+/** The leading integer of ESPN's match-clock string ("67'" -> 67) — the minute
+ *  to anchor a ticking seconds clock on. Returns null when it isn't a clean
+ *  minute we can tick from: "HT", a stoppage clock ("45'+2'"), an empty/garbage
+ *  value, or null. */
+export function parseClockMinute(minute: string | null): number | null {
+  if (!minute) return null
+  const m = /^(\d+)'?$/.exec(minute.trim())
+  return m ? Number(m[1]) : null
+}
+
+/** Whole seconds as a stopwatch clock "M:SS" — single-digit minutes unpadded,
+ *  seconds always two digits: 7 -> "0:07", 67 -> "1:07", 4023 -> "67:03". */
+export function formatClock(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${String(s).padStart(2, "0")}`
+}
+
 /** English ordinal for a positive integer: 1 -> "1st", 2 -> "2nd", 3 -> "3rd",
  *  with the 11/12/13 exception ("11th", "12th", "13th"). */
 export function ordinal(n: number): string {
