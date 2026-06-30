@@ -3,6 +3,11 @@ import { createClient } from "@supabase/supabase-js"
 import { linkMatches, canonicalTla } from "../lib/link-matches.mts"
 import type { ApiMatchLite } from "../lib/link-matches.mts"
 import { isSyncAuthorized } from "../lib/sync-auth.mts"
+import {
+  parseEspnScoreboard,
+  indexEspnByInstant,
+  type EspnResult,
+} from "../lib/espn.mts"
 
 type Stage = "GROUP" | "R32" | "R16" | "QF" | "SF" | "THIRD" | "FINAL"
 
@@ -173,9 +178,52 @@ export default async (req: Request) => {
 
   const links = linkMatches(ourRows, apiLite)
 
+  // Knockout results come from ESPN, not football-data: FD's free tier serves a
+  // corrupt score.fullTime for penalty/extra-time matches (see espn.mts). We
+  // only fetch ESPN when a knockout row is in its live window — from a few hours
+  // before kickoff until well after — and isn't already finalized. Outside those
+  // windows (group stage, pre-tournament, knockouts all done) this stays at zero
+  // ESPN calls. One ranged request covers the whole knockout stage.
+  const KO_LEAD_MS = 3 * 60 * 60_000
+  const KO_TRAIL_MS = 6 * 60 * 60_000
+  const nowMs = now.getTime()
+  const koRows = ourRows.filter((r) => r.stage !== "GROUP" && r.kickoff)
+  const needEspn = koRows.some((r) => {
+    const finalized = r.status === "FINISHED" && r.home_score != null
+    if (finalized) return false
+    const k = new Date(r.kickoff as string).getTime()
+    return k - KO_LEAD_MS <= nowMs && nowMs <= k + KO_TRAIL_MS
+  })
+
+  let espnByInstant = new Map<number, EspnResult>()
+  let espnFetched = false
+  if (needEspn) {
+    // Range the request across every knockout kickoff date (±1 day for the feed's
+    // timezone filing). Best-effort: any failure leaves knockout rows holding
+    // their prior result — we never fall back to FD's bad knockout score.
+    const koMs = koRows.map((r) => new Date(r.kickoff as string).getTime())
+    const fmt = (ms: number) => {
+      const d = new Date(ms)
+      const p = (n: number) => String(n).padStart(2, "0")
+      return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}`
+    }
+    const from = fmt(Math.min(...koMs) - 24 * 60 * 60_000)
+    const to = fmt(Math.max(...koMs) + 24 * 60 * 60_000)
+    const espnRes = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${from}-${to}`,
+      { signal: AbortSignal.timeout(8000) }
+    ).catch(() => null)
+    if (espnRes?.ok) {
+      const espnBody = await espnRes.json().catch(() => null)
+      espnByInstant = indexEspnByInstant(parseEspnScoreboard(espnBody))
+      espnFetched = espnByInstant.size > 0
+    }
+  }
+
   let updated = 0
   let failed = 0
   let unlinked = 0
+  let espnKnockout = 0
 
   for (const m of matches) {
     const stage = mapStage(m.stage)
@@ -221,8 +269,6 @@ export default async (req: Request) => {
     const finishedButScoreless =
       m.status === "FINISHED" && (ft.home == null || ft.away == null)
     const regressing = m.status !== "FINISHED" && haveRecordedFinal
-    const holdResult =
-      lockedIds.has(ourId) || finishedButScoreless || regressing
 
     const fixtureFields = {
       fd_id: m.id,
@@ -248,17 +294,47 @@ export default async (req: Request) => {
       away_code: canonicalTla(m.awayTeam?.tla ?? null) ?? cur?.away_code ?? null,
       updated_at: new Date().toISOString(),
     }
-    const resultFields =
-      holdResult
-        ? {}
-        : {
-            status: m.status,
-            home_score: result.home,
-            away_score: result.away,
-            home_pens: pens.home ?? null,
-            away_pens: pens.away ?? null,
-            duration: m.score?.duration ?? "REGULAR",
-          }
+    // Result fields by source:
+    //  - admin-locked row → never touched (manual result stands);
+    //  - knockout row → driven by ESPN only. FD's knockout score is unreliable:
+    //    its free tier mangles penalty matches so badly that even stripping the
+    //    shootout out of fullTime can't recover the 90'+ET score (Germany–Paraguay
+    //    came back fullTime 5-6 / pens 5-5, which strips to a wrong 0-1, not 1-1).
+    //    Hold the prior value when ESPN has nothing usable so we never write FD's
+    //    bad score and never regress a recorded final;
+    //  - group row → football-data, with the shootout stripped out of fullTime
+    //    (a no-op in the group stage — see `result` above) and the existing
+    //    scoreless/regression hold.
+    let resultFields: Record<string, unknown> = {}
+    if (lockedIds.has(ourId)) {
+      resultFields = {}
+    } else if (stage !== "GROUP") {
+      const er = espnByInstant.get(new Date(m.utcDate).getTime())
+      const espnFinishedScoreless =
+        er?.status === "FINISHED" && (er.homeScore == null || er.awayScore == null)
+      const espnRegressing =
+        er != null && er.status !== "FINISHED" && haveRecordedFinal
+      if (er && !espnFinishedScoreless && !espnRegressing) {
+        resultFields = {
+          status: er.status,
+          home_score: er.homeScore,
+          away_score: er.awayScore,
+          home_pens: er.homePens,
+          away_pens: er.awayPens,
+          duration: er.duration,
+        }
+        espnKnockout++
+      }
+    } else if (!finishedButScoreless && !regressing) {
+      resultFields = {
+        status: m.status,
+        home_score: result.home,
+        away_score: result.away,
+        home_pens: pens.home ?? null,
+        away_pens: pens.away ?? null,
+        duration: m.score?.duration ?? "REGULAR",
+      }
+    }
 
     const { error } = await db
       .from("matches")
@@ -322,7 +398,15 @@ export default async (req: Request) => {
   }
 
   return new Response(
-    JSON.stringify({ received: matches.length, updated, failed, unlinked, standings }),
+    JSON.stringify({
+      received: matches.length,
+      updated,
+      failed,
+      unlinked,
+      standings,
+      espnFetched,
+      espnKnockout,
+    }),
     { status: 200, headers: { "content-type": "application/json" } }
   )
 }

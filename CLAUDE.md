@@ -282,11 +282,40 @@ least one match (`thirdsComparable`) — the ranking is provisional mid-stage an
 settles into the real cut-off as the final matchday completes. The Bracket tab does
 **not** use any of this — it fills knockout slots from the fixture list.
 
+### Knockout results from ESPN (`netlify/lib/espn.mts`)
+**Knockout result fields come from ESPN, not football-data.** FD's free tier
+serves a corrupt `score.fullTime` for penalty/extra-time matches (Germany–Paraguay
+R32 came back `5-6`, winner `null`, pens `5-5`, when it finished 1-1 / Paraguay 4-3
+on pens — the correct 1-1 was only in `regularTime`). ESPN's free, keyless
+scoreboard (`site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard`)
+reports the clean post-ET score in `competitor.score` and the shootout in
+`competitor.shootoutScore` — exactly the 90'+ET / penalty split our schema stores.
+**Group results and official standings stay on football-data;** only knockout
+results switch.
+- `espn.mts` (pure, unit-tested in `espn.test.mts`): `parseEspnScoreboard` maps
+  ESPN → our vocabulary (`status` FINISHED/IN_PLAY/PAUSED/TIMED via
+  `mapEspnStatus`; `duration` REGULAR/EXTRA_TIME/PENALTY_SHOOTOUT via
+  `espnDuration`). It's deliberately defensive (the endpoint is undocumented /
+  ToS-gray): malformed events are skipped, and a scheduled fixture's `0-0` is
+  stored as null, not a real draw.
+- Linking is by **exact kickoff instant** (`indexEspnByInstant`) — no two
+  knockout rows share a kickoff, and ESPN's kickoff instants + team abbreviations
+  match ours, so no ESPN-id map is needed (unlike FD's `KNOCKOUT_FD_ID_TO_NUMBER`).
+- `sync-results.mts` makes **one ranged ESPN request** (`?dates=min-max` spanning
+  every knockout kickoff date) gated to fire only when a knockout row is in its
+  live window (3h before → 6h after kickoff) and not yet finalized — so it's zero
+  ESPN calls during the group stage / pre-tournament / once knockouts are done.
+  Knockout rows are driven by ESPN **only** (FD's knockout score is never written),
+  holding the prior value when ESPN has nothing usable and never regressing a
+  recorded final. Best-effort like standings: an ESPN failure leaves prior results
+  intact. `result_locked` (below) still overrides everything. Response reports
+  `espnFetched`/`espnKnockout`.
+
 ### Admin result locks (`0006_result_lock.sql`)
 `matches.result_locked` lets an admin's manual result survive the 10-min sync:
 when set, the sync function skips the result fields (status/scores/pens/duration)
 for that row but keeps reconciling fixture metadata (teams, kickoff, `fd_id`).
-Unlocking re-opens the row to the API.
+Unlocking re-opens the row to the API (or, for a knockout row, to ESPN).
 
 ### Auth & identity / usernames (`0001_init.sql`, `0002_auth.sql`)
 Sign-in is **Google OAuth only** (email/password was removed). OAuth needs a
