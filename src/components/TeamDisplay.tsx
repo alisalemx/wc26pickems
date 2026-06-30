@@ -14,6 +14,7 @@ export function TeamDisplay({
   align = "left",
   size = "md",
   stack = false,
+  dim = false,
   className,
 }: {
   name: string | null
@@ -21,6 +22,9 @@ export function TeamDisplay({
   align?: "left" | "right"
   size?: "sm" | "md"
   stack?: boolean
+  /** Grey out + fade the team — used to de-emphasize the loser on a finished
+   *  match card. The `grayscale` filter desaturates the emoji flag too. */
+  dim?: boolean
   className?: string
 }) {
   if (stack) {
@@ -28,10 +32,18 @@ export function TeamDisplay({
       <div
         className={cn(
           "flex min-w-0 flex-col items-center gap-1.5 text-center",
+          dim && "opacity-60 grayscale",
           className
         )}
       >
-        <span className="text-4xl leading-none sm:text-5xl">{flagEmoji(code)}</span>
+        <span
+          className={cn(
+            "text-4xl leading-none sm:text-5xl",
+            dim && "opacity-75"
+          )}
+        >
+          {flagEmoji(code)}
+        </span>
         <span className="line-clamp-2 whitespace-normal text-sm font-medium leading-tight sm:text-base">
           {name ?? "TBD"}
         </span>
@@ -44,10 +56,17 @@ export function TeamDisplay({
       className={cn(
         "flex min-w-0 items-center gap-2",
         align === "right" && "flex-row-reverse text-right",
+        dim && "opacity-60 grayscale",
         className
       )}
     >
-      <span className={cn("leading-none", size === "md" ? "text-2xl" : "text-base")}>
+      <span
+        className={cn(
+          "leading-none",
+          size === "md" ? "text-2xl" : "text-base",
+          dim && "opacity-75"
+        )}
+      >
         {flagEmoji(code)}
       </span>
       <span className={cn("truncate", size === "md" ? "font-medium" : "text-sm")}>

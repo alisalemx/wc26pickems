@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { SegmentedControl } from "@/components/SegmentedControl"
 import { TeamDisplay } from "@/components/TeamDisplay"
+import { Whistle } from "@/components/Whistle"
 import { flagEmoji } from "@/lib/flags"
 import { STAGE_SHORT } from "@/lib/scoring"
 import { kickoffTime, shortDate, isLive } from "@/lib/format"
@@ -164,12 +165,16 @@ function TeamLine({
     <div
       className={cn(
         "flex items-center justify-between gap-1.5",
-        won && "font-semibold",
-        lost && "text-muted-foreground"
+        won && "font-semibold"
       )}
     >
-      <TeamDisplay name={name} code={code} size="sm" />
-      <span className="flex shrink-0 items-center gap-1 tabular-nums">
+      <TeamDisplay name={name} code={code} size="sm" dim={lost} />
+      <span
+        className={cn(
+          "flex shrink-0 items-center gap-1 tabular-nums",
+          lost && "text-muted-foreground"
+        )}
+      >
         {pens != null && (
           <span className="text-[10px] text-muted-foreground">({pens})</span>
         )}
@@ -200,8 +205,12 @@ function MatchFull({ m }: { m: MatchRow }) {
         <span>{shortDate(m.kickoff)}</span>
         {live ? (
           <LiveTag home={m.home_team} away={m.away_team} />
+        ) : finished ? (
+          <span className="flex items-center gap-1">
+            <Whistle className="size-3" /> FT
+          </span>
         ) : (
-          <span>{finished ? "FT" : kickoffTime(m.kickoff)}</span>
+          <span>{kickoffTime(m.kickoff)}</span>
         )}
       </div>
       <div className="flex flex-col gap-0.5 px-2 py-1">
@@ -275,7 +284,9 @@ function TinyRow({
         lost && "opacity-40"
       )}
     >
-      <span className="text-sm leading-none">{flagEmoji(code)}</span>
+      <span className={cn("text-sm leading-none", lost && "grayscale")}>
+        {flagEmoji(code)}
+      </span>
       <span className="w-3 text-right text-[11px] tabular-nums">{score ?? ""}</span>
     </div>
   )

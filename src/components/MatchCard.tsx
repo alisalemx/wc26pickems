@@ -61,6 +61,23 @@ export function MatchCard({
   // overlaps `finished`.
   const liveScore =
     live && match.home_score != null && match.away_score != null
+  // Which side lost a finished match — greyed out + faded on the card. Judged
+  // on the 90'+ET score, with the penalty shootout breaking a knockout draw
+  // (mirrors how scoring reads the result). A genuine draw has no loser.
+  const homeLost =
+    finished &&
+    (match.away_score! > match.home_score! ||
+      (match.home_score === match.away_score &&
+        match.home_pens != null &&
+        match.away_pens != null &&
+        match.away_pens > match.home_pens))
+  const awayLost =
+    finished &&
+    (match.home_score! > match.away_score! ||
+      (match.home_score === match.away_score &&
+        match.home_pens != null &&
+        match.away_pens != null &&
+        match.home_pens > match.away_pens))
   const predictable =
     !locked && match.home_team != null && match.away_team != null
   // Anonymous visitors can see the match but can't enter or save a prediction.
@@ -185,7 +202,12 @@ export function MatchCard({
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3">
-        <TeamDisplay name={match.home_team} code={match.home_code} stack />
+        <TeamDisplay
+          name={match.home_team}
+          code={match.home_code}
+          stack
+          dim={homeLost}
+        />
         <div className="flex justify-center">
           {signedIn ? (
             canPredict ? (
@@ -274,7 +296,13 @@ export function MatchCard({
             </span>
           )}
         </div>
-        <TeamDisplay name={match.away_team} code={match.away_code} align="right" stack />
+        <TeamDisplay
+          name={match.away_team}
+          code={match.away_code}
+          align="right"
+          stack
+          dim={awayLost}
+        />
 
         {bothKnown && !finished && (
           <>
