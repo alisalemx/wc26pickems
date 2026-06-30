@@ -53,6 +53,14 @@ export function MatchCard({
   // Pulse LIVE only within a plausible match window — a feed left stuck at
   // IN_PLAY past full time should fall back to the locked state, not pulse forever.
   const live = isLive(match.kickoff, match.status, match.stage)
+  // Show the running score while a match is on. We now sync in-play scores
+  // (ESPN for the knockouts, football-data for the group stage), so a live card
+  // can display the current scoreline, not just a LIVE pulse. Guarded on
+  // non-null scores so a just-kicked-off match we haven't synced yet falls back
+  // to the plain LIVE label. `live` is false once FINISHED, so this never
+  // overlaps `finished`.
+  const liveScore =
+    live && match.home_score != null && match.away_score != null
   const predictable =
     !locked && match.home_team != null && match.away_team != null
   // Anonymous visitors can see the match but can't enter or save a prediction.
@@ -192,18 +200,29 @@ export function MatchCard({
                 disabled={!canPredict}
                 muted={!canPredict}
               />
-            ) : prediction || finished ? (
-              // Locked/finished: drop the disabled boxes and show text instead —
-              // your prediction above the actual result (once it's in). Labels
-              // are left-aligned so "Result" sits under "Pick" with the
-              // scores in their own column; the shootout score tucks under the
-              // result score it decided (column 2), not the label.
+            ) : prediction || finished || liveScore ? (
+              // Locked/live/finished: drop the disabled boxes and show text
+              // instead — your Pick above the live Score while the match is on,
+              // or the final Result once it's in. Labels are left-aligned so the
+              // score label sits under "Pick" with the scores in their own
+              // column; the shootout score tucks under the result score it
+              // decided (column 2), not the label.
               <div className="grid grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-1 leading-none">
                 {prediction && (
                   <>
                     <span className="text-sm text-muted-foreground">Pick</span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {prediction.home_pred}–{prediction.away_pred}
+                    </span>
+                  </>
+                )}
+                {liveScore && (
+                  <>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-500">
+                      Score
+                    </span>
+                    <span className="text-base font-bold tabular-nums text-foreground">
+                      {match.home_score}–{match.away_score}
                     </span>
                   </>
                 )}
@@ -242,6 +261,12 @@ export function MatchCard({
                   </span>
                 )}
             </div>
+          ) : liveScore ? (
+            // Visitor, match in progress: the running score (the center LIVE
+            // pulse already flags that it's live).
+            <span className="text-2xl font-bold tabular-nums">
+              {match.home_score}–{match.away_score}
+            </span>
           ) : (
             // Visitor, upcoming match: nothing to show yet.
             <span className="px-3 text-sm font-medium text-muted-foreground">
@@ -385,9 +410,9 @@ export function MatchCard({
   )
 }
 
-/** Center label for a match in progress. We only sync the final result (after
- *  full-time), so the card can't show a live score mid-match — instead it pulses
- *  "Live" and links out to a live-score search for the minute-by-minute. Falls
+/** Center label for a match in progress. The card body now shows the running
+ *  score (we sync in-play scores), so this pulses "LIVE" and links out to a
+ *  live-score search for the minute-by-minute detail (lineups, events). Falls
  *  back to a plain status label if the teams aren't resolved yet (TBD slots). */
 function LiveLabel({ match }: { match: MatchRow }) {
   // The dot and the arrow flank "LIVE" in equal-width boxes so the word stays

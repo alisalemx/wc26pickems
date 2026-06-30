@@ -6,7 +6,8 @@ import { SegmentedControl } from "@/components/SegmentedControl"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { flagEmoji } from "@/lib/flags"
 import { STAGE_SHORT } from "@/lib/scoring"
-import { kickoffTime, shortDate } from "@/lib/format"
+import { kickoffTime, shortDate, isLive } from "@/lib/format"
+import { liveScoreUrl } from "@/lib/links"
 import type { MatchRow, MatchStage } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -184,6 +185,7 @@ function TeamLine({
 function MatchFull({ m }: { m: MatchRow }) {
   const w = winnerSide(m)
   const finished = m.status === "FINISHED" && m.home_score != null
+  const live = isLive(m.kickoff, m.status, m.stage)
   const showPens =
     m.duration === "PENALTY_SHOOTOUT" &&
     m.home_pens != null &&
@@ -196,7 +198,11 @@ function MatchFull({ m }: { m: MatchRow }) {
     >
       <div className="flex items-center justify-between border-b border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         <span>{shortDate(m.kickoff)}</span>
-        <span>{finished ? "FT" : kickoffTime(m.kickoff)}</span>
+        {live ? (
+          <LiveTag home={m.home_team} away={m.away_team} />
+        ) : (
+          <span>{finished ? "FT" : kickoffTime(m.kickoff)}</span>
+        )}
       </div>
       <div className="flex flex-col gap-0.5 px-2 py-1">
         <TeamLine
@@ -217,6 +223,35 @@ function MatchFull({ m }: { m: MatchRow }) {
         />
       </div>
     </Card>
+  )
+}
+
+/** "LIVE" tag for the focused-round card header, replacing the kickoff/FT label
+ *  while a match is in progress. Pulsing green dot + LIVE, linking to the same
+ *  Google live-score search the match list uses (when both teams are resolved).
+ *  The CSS `animate-ping` is neutralized by the global prefers-reduced-motion
+ *  backstop. */
+function LiveTag({ home, away }: { home: string | null; away: string | null }) {
+  const inner = (
+    <>
+      <span className="relative flex size-1.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+      </span>
+      LIVE
+    </>
+  )
+  const base = "flex items-center gap-1 text-green-600 dark:text-green-500"
+  if (!home || !away) return <span className={base}>{inner}</span>
+  return (
+    <a
+      href={liveScoreUrl(home, away)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(base, "underline-offset-2 hover:underline")}
+    >
+      {inner}
+    </a>
   )
 }
 
