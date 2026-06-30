@@ -111,17 +111,6 @@ export function Layout() {
 
       <main className="flex-1 px-3 pb-24 pt-3 sm:px-4">
         <Outlet />
-        <footer className="mt-8 text-center text-xs text-muted-foreground">
-          Match data provided by{" "}
-          <a
-            href="https://www.football-data.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-sm -mx-1 px-1 text-primary underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10"
-          >
-            football-data.org
-          </a>
-        </footer>
       </main>
 
       {/* `transform-gpu` (translateZ(0)) forces the fixed bar onto its own GPU
