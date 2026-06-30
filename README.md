@@ -21,8 +21,12 @@ function** for result syncing.
   exact score **3 pts**, correct outcome (W/D/L) **1 pt**, multiplied by stage
   (R16/QF/3rd ×2, SF ×3, Final ×4). Knockouts are judged on the
   **90'+extra-time** score; penalty shootouts are shown but never scored.
-- **Results sync** every 2 minutes during the tournament. An **admin** page can
-  enter or correct any result manually; locked results survive the next sync.
+- **Results sync** every 2 minutes during the tournament — group results and
+  official standings from football-data.org, **knockout** results from ESPN
+  (whose feed reports the clean 90'+extra-time score and the shootout separately,
+  which football-data's free tier mangles for penalty-decided matches). An
+  **admin** page can enter or correct any result manually; locked results survive
+  the next sync.
 
 ## Quick start
 
@@ -197,7 +201,7 @@ src/
   lib/              supabase client, scoring, formatting, types (+ unit tests)
   pages/            Login, Welcome, Matches, Leaderboard, Standings, MyPredictions, Admin
 netlify/functions/  sync-results.mts (scheduled result fetcher)
-netlify/lib/        link-matches.mts (API↔fixture match linker + unit tests)
+netlify/lib/        link-matches.mts, espn.mts (knockout results), sync-auth.mts (+ unit tests)
 scripts/            generate-schedule.ts, seed-matches.ts, fd-shared.ts, teams.ts
 supabase/migrations/  schema + RLS + scoring views
 ```
@@ -207,12 +211,15 @@ supabase/migrations/  schema + RLS + scoring views
 
 ## Data & credits
 
-Match fixtures, kickoff times, and live results come from
+Match fixtures, kickoff times, group results, and official standings come from
 [football-data.org](https://www.football-data.org), fetched via their free-tier
 API (a `FOOTBALL_DATA_TOKEN` is required; register for one
-[here](https://www.football-data.org/client/register)). The `sync-results`
-Netlify function polls `competitions/WC/matches` every 2 minutes during the
-tournament to keep results current.
+[here](https://www.football-data.org/client/register)). **Knockout-stage
+results** come from [ESPN](https://www.espn.com)'s public scoreboard feed
+instead, because football-data's free tier reports a corrupted score for
+penalty/extra-time matches (the shootout baked into — and inconsistent with —
+the full-time score). The `sync-results` Netlify function polls these every
+2 minutes during the tournament to keep results current.
 
 This is an unofficial, non-commercial project and is not affiliated with or
-endorsed by FIFA or football-data.org.
+endorsed by FIFA, football-data.org, or ESPN.
