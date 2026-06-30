@@ -34,6 +34,10 @@ export interface MatchRow {
   home_pens: number | null
   away_pens: number | null
   duration: string
+  /** Live match clock for an in-progress match ("67'", "HT"), synced from ESPN
+   *  for knockout rows (see netlify/lib/espn.mts). Display-only; null when the
+   *  match isn't being clocked, and the card falls back to a wall-clock estimate. */
+  minute: string | null
   result_locked: boolean
   updated_at: string
 }

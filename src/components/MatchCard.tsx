@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { ChevronDown, Lock, CheckCircle2, ArrowUpRight } from "lucide-react"
+import { ChevronDown, Lock, CheckCircle2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ import { PredictionCountdown } from "./PredictionCountdown"
 import { TeamForm } from "./TeamForm"
 import { TeamInfoDialog } from "./TeamInfoDialog"
 import { ScorePair } from "./ScoreInput"
+import { useElapsedMinutes } from "@/hooks/useCountdown"
 import { kickoffTime, isLocked, isLive } from "@/lib/format"
 import { liveScoreUrl } from "@/lib/links"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
@@ -164,11 +165,13 @@ export function MatchCard({
         />
 
         {/* Center slot: absolute kickoff time (in strong foreground ink) on
-            upcoming/ended cards. While the match is in progress (kickoff passed,
-            no final result yet, within the live window) it carries a pulsing
-            "LIVE" label linking out to live scores. */}
+            upcoming/ended cards. While the match is in progress the "Locked"
+            chip moves here, and the right slot carries the live elapsed-time
+            label in its place. */}
         {live ? (
-          <LiveLabel match={match} />
+          <span className="flex items-center justify-self-center gap-1 font-medium text-muted-foreground">
+            <Lock className="size-3" /> Locked
+          </span>
         ) : (
           <span className="justify-self-center font-medium tabular-nums text-foreground">
             {kickoffTime(match.kickoff)}
@@ -181,7 +184,11 @@ export function MatchCard({
             finished && "text-muted-foreground"
           )}
         >
-          {locked ? (
+          {live ? (
+            // In progress: the pulsing elapsed-time clock sits where "Locked"
+            // normally goes (Locked has moved to the center slot).
+            <LiveLabel match={match} />
+          ) : locked ? (
             <>
               {finished ? (
                 <>
@@ -224,7 +231,7 @@ export function MatchCard({
               />
             ) : prediction || finished || liveScore ? (
               // Locked/live/finished: drop the disabled boxes and show text
-              // instead — your Pick above the live Score while the match is on,
+              // instead — your Pick above the Live score while the match is on,
               // or the final Result once it's in. Labels are left-aligned so the
               // score label sits under "Pick" with the scores in their own
               // column; the shootout score tucks under the result score it
@@ -241,7 +248,7 @@ export function MatchCard({
                 {liveScore && (
                   <>
                     <span className="text-sm font-medium text-green-600 dark:text-green-500">
-                      Score
+                      Live
                     </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {match.home_score}–{match.away_score}
@@ -284,8 +291,8 @@ export function MatchCard({
                 )}
             </div>
           ) : liveScore ? (
-            // Visitor, match in progress: the running score (the center LIVE
-            // pulse already flags that it's live).
+            // Visitor, match in progress: the running score (the header's
+            // pulsing elapsed clock already flags that it's live).
             <span className="text-2xl font-bold tabular-nums">
               {match.home_score}–{match.away_score}
             </span>
@@ -438,34 +445,28 @@ export function MatchCard({
   )
 }
 
-/** Center label for a match in progress. The card body now shows the running
- *  score (we sync in-play scores), so this pulses "LIVE" and links out to a
- *  live-score search for the minute-by-minute detail (lineups, events). Falls
- *  back to a plain status label if the teams aren't resolved yet (TBD slots). */
+/** Right-slot label for a match in progress (where "Locked" sits otherwise).
+ *  A pulsing green dot beside the live match clock (ESPN's synced minute, or a
+ *  wall-clock estimate as a fallback — see `LiveClock`). The whole label links
+ *  out to a live-score search for the minute-by-minute detail (lineups, events).
+ *  Falls back to a plain (unlinked) clock if the teams aren't resolved yet (TBD
+ *  slots). The `animate-ping` dot is neutralized by the global
+ *  prefers-reduced-motion backstop. */
 function LiveLabel({ match }: { match: MatchRow }) {
-  // The dot and the arrow flank "LIVE" in equal-width boxes so the word stays
-  // centered in the card — without matched widths the wider arrow would drag it
-  // off-center. The fallback's right box is an empty spacer balancing the dot.
-  const flank = "flex w-4 items-center justify-center"
-  const dot = (
-    <span className={flank}>
+  const content = (
+    <>
       <span className="relative flex size-1.5">
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
         <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
       </span>
-    </span>
+      <LiveClock minute={match.minute} kickoff={match.kickoff} />
+    </>
   )
   const base =
-    "flex items-center justify-self-center gap-0.5 font-medium text-green-600 dark:text-green-500"
+    "flex items-center gap-1.5 font-medium tabular-nums text-green-600 dark:text-green-500"
 
   if (!match.home_team || !match.away_team) {
-    return (
-      <span className={base}>
-        {dot}
-        LIVE
-        <span className={flank} aria-hidden />
-      </span>
-    )
+    return <span className={base}>{content}</span>
   }
 
   return (
@@ -478,13 +479,21 @@ function LiveLabel({ match }: { match: MatchRow }) {
         "-mx-1 rounded-sm px-1 underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:underline active:bg-foreground/10"
       )}
     >
-      {dot}
-      LIVE
-      <span className={flank}>
-        <ArrowUpRight className="size-3.5" />
-      </span>
+      {content}
     </a>
   )
+}
+
+/** The elapsed-time clock inside `LiveLabel`. Prefers ESPN's synced match clock
+ *  (`minute`, e.g. "67'" or "HT") — the real broadcast minute — and falls back
+ *  to a wall-clock estimate counted from kickoff when the feed hasn't reported a
+ *  minute yet (the first moments after kickoff, a sync gap, or a group match,
+ *  which isn't ESPN-synced). The fallback ticks each minute; its local state
+ *  re-renders only this span. */
+function LiveClock({ minute, kickoff }: { minute: string | null; kickoff: string }) {
+  // Only run the ticking estimate while we have no synced minute to show.
+  const fallback = useElapsedMinutes(kickoff, minute == null)
+  return <span>{minute ?? `${fallback}'`}</span>
 }
 
 /** Quick-pick row of the crowd's most-predicted scorelines. Counts are

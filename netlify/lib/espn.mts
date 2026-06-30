@@ -22,9 +22,13 @@ interface EspnStatusType {
   name?: string // e.g. STATUS_SCHEDULED, STATUS_FULL_TIME, STATUS_FINAL_PEN
   completed?: boolean
 }
+interface EspnStatus {
+  type?: EspnStatusType
+  displayClock?: string // e.g. "67'", "45'+2'", "90'+3'"
+}
 interface EspnCompetition {
   date?: string
-  status?: { type?: EspnStatusType }
+  status?: EspnStatus
   competitors?: EspnCompetitor[]
 }
 interface EspnEvent {
@@ -44,6 +48,10 @@ export interface EspnResult {
   awayScore: number | null
   homePens: number | null
   awayPens: number | null
+  /** ESPN's formatted match clock while the match is underway ("67'", "HT",
+   *  "45'+2'"), for the live-minute display. Null once it's not actively
+   *  clocked (pre-match / full time). */
+  minute: string | null
 }
 
 /** Map ESPN's status to the football-data vocabulary our app uses everywhere
@@ -70,6 +78,22 @@ export function espnDuration(
   if (n.includes("AET") || n.includes("EXTRA") || n.includes("OVERTIME"))
     return "EXTRA_TIME"
   return "REGULAR"
+}
+
+/** The live match clock to display, from ESPN's status. Only meaningful while
+ *  the match is actually being clocked (state "in"): halftime collapses to "HT"
+ *  (ESPN freezes the clock there), and otherwise we pass ESPN's own formatted
+ *  `displayClock` ("67'", "45'+2'") straight through — but only if it carries a
+ *  digit, so a blank/"-" placeholder becomes null and the client falls back to
+ *  its wall-clock estimate. Null for pre-match and full time. */
+export function espnMinute(
+  status: EspnStatus | undefined,
+  state: string | undefined
+): string | null {
+  if (state !== "in") return null
+  if (status?.type?.name === "STATUS_HALFTIME") return "HT"
+  const clock = status?.displayClock?.trim()
+  return clock && /\d/.test(clock) ? clock : null
 }
 
 function toIntOrNull(v: string | number | null | undefined): number | null {
@@ -108,6 +132,7 @@ export function parseEspnScoreboard(body: EspnScoreboard | null): EspnResult[] {
       awayScore: started ? toIntOrNull(away.score) : null,
       homePens,
       awayPens,
+      minute: espnMinute(comp.status, st?.state),
     })
   }
   return out

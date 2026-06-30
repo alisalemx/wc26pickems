@@ -295,9 +295,20 @@ results switch.
 - `espn.mts` (pure, unit-tested in `espn.test.mts`): `parseEspnScoreboard` maps
   ESPN → our vocabulary (`status` FINISHED/IN_PLAY/PAUSED/TIMED via
   `mapEspnStatus`; `duration` REGULAR/EXTRA_TIME/PENALTY_SHOOTOUT via
-  `espnDuration`). It's deliberately defensive (the endpoint is undocumented /
-  ToS-gray): malformed events are skipped, and a scheduled fixture's `0-0` is
-  stored as null, not a real draw.
+  `espnDuration`; the live match clock via `espnMinute`). It's deliberately
+  defensive (the endpoint is undocumented / ToS-gray): malformed events are
+  skipped, and a scheduled fixture's `0-0` is stored as null, not a real draw.
+- **Live match minute (`0015_match_minute.sql`):** `espnMinute` passes ESPN's
+  own formatted `status.displayClock` through (`"67'"`, `"45'+2'"`) while a match
+  is being clocked (state `in`), collapsing halftime to `"HT"`, and is null
+  pre-match / at full time (so a finished row clears it). The sync writes it into
+  `matches.minute` (text, display-only — scoring never reads it) alongside the
+  knockout result. The match list shows it beside the pulsing LIVE dot
+  (`LiveClock` in `MatchCard`), falling back to a wall-clock estimate counted
+  from kickoff when no synced minute is present yet (the first moments after
+  kickoff, a sync gap, or a group match — which isn't ESPN-synced). Because it's
+  only refreshed each sync (~2 min) it can read a touch stale, but it never has
+  the wall-clock estimate's ~15-min halftime drift.
 - Linking is by **exact kickoff instant** (`indexEspnByInstant`) — no two
   knockout rows share a kickoff, and ESPN's kickoff instants + team abbreviations
   match ours, so no ESPN-id map is needed (unlike FD's `KNOCKOUT_FD_ID_TO_NUMBER`).

@@ -322,6 +322,10 @@ export default async (req: Request) => {
           home_pens: er.homePens,
           away_pens: er.awayPens,
           duration: er.duration,
+          // ESPN's live match clock for the card's elapsed-time display. Null
+          // once the match isn't being clocked (full time clears it; the next
+          // FINISHED sync writes null here).
+          minute: er.minute,
         }
         espnKnockout++
       }

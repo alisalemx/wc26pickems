@@ -22,6 +22,7 @@ function m(partial: Partial<MatchRow>): MatchRow {
     home_pens: null,
     away_pens: null,
     duration: "REGULAR",
+    minute: null,
     result_locked: false,
     updated_at: "2026-06-12T20:00:00Z",
     ...partial,

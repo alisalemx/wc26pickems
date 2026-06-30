@@ -4,6 +4,7 @@ import {
   indexEspnByInstant,
   mapEspnStatus,
   espnDuration,
+  espnMinute,
 } from "./espn.mts"
 import type { EspnScoreboard } from "./espn.mts"
 
@@ -14,13 +15,14 @@ function event(
   name: string,
   completed: boolean,
   home: { score?: string | number; shootoutScore?: number },
-  away: { score?: string | number; shootoutScore?: number }
+  away: { score?: string | number; shootoutScore?: number },
+  displayClock?: string
 ): EspnScoreboard["events"] extends (infer E)[] ? E : never {
   return {
     competitions: [
       {
         date,
-        status: { type: { state, name, completed } },
+        status: { type: { state, name, completed }, displayClock },
         competitors: [
           { homeAway: "home", ...home },
           { homeAway: "away", ...away },
@@ -45,6 +47,33 @@ describe("mapEspnStatus", () => {
   it("maps pre / unknown to TIMED", () => {
     expect(mapEspnStatus("pre", "STATUS_SCHEDULED", false)).toBe("TIMED")
     expect(mapEspnStatus(undefined, undefined, undefined)).toBe("TIMED")
+  })
+})
+
+describe("espnMinute", () => {
+  it("passes ESPN's formatted clock through while in-play", () => {
+    expect(espnMinute({ type: { state: "in" }, displayClock: "67'" }, "in")).toBe(
+      "67'"
+    )
+    expect(
+      espnMinute({ type: { state: "in" }, displayClock: "45'+2'" }, "in")
+    ).toBe("45'+2'")
+  })
+  it("collapses halftime to HT regardless of the frozen clock", () => {
+    expect(
+      espnMinute(
+        { type: { state: "in", name: "STATUS_HALFTIME" }, displayClock: "45'" },
+        "in"
+      )
+    ).toBe("HT")
+  })
+  it("is null pre-match and at full time (not being clocked)", () => {
+    expect(espnMinute({ displayClock: "0'" }, "pre")).toBeNull()
+    expect(espnMinute({ displayClock: "90'" }, "post")).toBeNull()
+  })
+  it("is null when the clock is blank or non-numeric", () => {
+    expect(espnMinute({ type: { state: "in" }, displayClock: "-" }, "in")).toBeNull()
+    expect(espnMinute({ type: { state: "in" } }, "in")).toBeNull()
   })
 })
 
@@ -108,15 +137,26 @@ describe("parseEspnScoreboard", () => {
     expect([r.homeScore, r.awayScore]).toEqual([null, null])
   })
 
-  it("keeps live in-progress scores", () => {
+  it("keeps live in-progress scores and the match clock", () => {
     const body: EspnScoreboard = {
       events: [
-        event("2026-07-01T16:00Z", "in", "STATUS_SECOND_HALF", false, { score: "1" }, { score: "0" }),
+        event("2026-07-01T16:00Z", "in", "STATUS_SECOND_HALF", false, { score: "1" }, { score: "0" }, "67'"),
       ],
     }
     const [r] = parseEspnScoreboard(body)
     expect(r.status).toBe("IN_PLAY")
     expect([r.homeScore, r.awayScore]).toEqual([1, 0])
+    expect(r.minute).toBe("67'")
+  })
+
+  it("reports no minute for a finished match (clock cleared)", () => {
+    const body: EspnScoreboard = {
+      events: [
+        event("2026-06-29T17:00Z", "post", "STATUS_FULL_TIME", true, { score: "2" }, { score: "1" }, "90'"),
+      ],
+    }
+    const [r] = parseEspnScoreboard(body)
+    expect(r.minute).toBeNull()
   })
 
   it("skips malformed events (no competitors / no date)", () => {
