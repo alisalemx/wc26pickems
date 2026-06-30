@@ -14,6 +14,7 @@ import { StatCard } from "@/components/StatCard"
 import { EmptyState } from "@/components/EmptyState"
 import { Skeleton } from "@/components/ui/skeleton"
 import { flagEmoji } from "@/lib/flags"
+import { resolveKnockoutTeams } from "@/lib/bracket"
 import { isLocked, ordinal } from "@/lib/format"
 import { scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
@@ -45,7 +46,14 @@ const TIER_GRADIENT = [
 export function MyPredictions() {
   const { session } = useAuth()
   const userId = session?.user.id
-  const { data: matches, isLoading } = useMatches()
+  const { data: rawMatches, isLoading } = useMatches()
+  // Fill knockout TBD slots from feeders client-side (same as the match list),
+  // so the "still to predict" count and the team names stay consistent with the
+  // Matches tab — a resolved knockout fixture is predictable there.
+  const matches = useMemo(
+    () => (rawMatches ? resolveKnockoutTeams(rawMatches) : rawMatches),
+    [rawMatches]
+  )
   const { data: predictions } = useMyPredictions(userId)
   const { data: leaderboard } = useLeaderboard()
 

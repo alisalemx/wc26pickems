@@ -14,6 +14,7 @@ import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dayHeading, dayKey, isLocked } from "@/lib/format"
+import { resolveKnockoutTeams } from "@/lib/bracket"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
 const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
@@ -71,7 +72,16 @@ function SectionDivider({ label }: { label: string }) {
 export function Matches() {
   const { session } = useAuth()
   const userId = session?.user.id
-  const { data: matches, isLoading } = useMatches()
+  const { data: rawMatches, isLoading } = useMatches()
+  // Fill knockout fixtures' TBD slots from their feeders' winners, client-side —
+  // the same derivation the Bracket tab uses — so a R16+ card shows its teams
+  // the moment the feeding matches finish, rather than waiting for football-data
+  // to assign the slot upstream (which lags). Display-only: a stored assignment
+  // always wins, so this only fills slots still null in our table.
+  const matches = useMemo(
+    () => (rawMatches ? resolveKnockoutTeams(rawMatches) : rawMatches),
+    [rawMatches]
+  )
   const { data: predictions } = useMyPredictions(userId)
   const upsert = useUpsertPrediction(userId)
   const [view, setView] = useState<View>("day")
