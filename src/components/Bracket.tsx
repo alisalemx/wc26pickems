@@ -176,7 +176,13 @@ function TinyRow({
       <span className={cn("text-sm leading-none", lost && "grayscale")}>
         {flagEmoji(code)}
       </span>
-      <span className="w-3 text-right text-[11px] tabular-nums">{score ?? ""}</span>
+      {/* leading-none matches the flag span so a present score digit doesn't
+          make a finished-match mini taller than a scoreless one — unequal mini
+          heights desync sibling subtrees and pull the fixed 25%/75% connector
+          bar off the feeder cards. */}
+      <span className="w-3 text-right text-[11px] leading-none tabular-nums">
+        {score ?? ""}
+      </span>
     </div>
   )
 }
