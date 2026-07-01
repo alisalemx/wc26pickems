@@ -5,7 +5,8 @@ import type { ApiMatchLite } from "../lib/link-matches.mts"
 import { isSyncAuthorized } from "../lib/sync-auth.mts"
 import {
   parseEspnScoreboard,
-  indexEspnByInstant,
+  indexEspnByPair,
+  espnPairKey,
   type EspnResult,
 } from "../lib/espn.mts"
 
@@ -195,7 +196,7 @@ export default async (req: Request) => {
     return k - KO_LEAD_MS <= nowMs && nowMs <= k + KO_TRAIL_MS
   })
 
-  let espnByInstant = new Map<number, EspnResult>()
+  let espnByPair = new Map<string, EspnResult>()
   let espnFetched = false
   if (needEspn) {
     // Range the request across every knockout kickoff date (±1 day for the feed's
@@ -215,8 +216,12 @@ export default async (req: Request) => {
     ).catch(() => null)
     if (espnRes?.ok) {
       const espnBody = await espnRes.json().catch(() => null)
-      espnByInstant = indexEspnByInstant(parseEspnScoreboard(espnBody))
-      espnFetched = espnByInstant.size > 0
+      // Link by team pair, not kickoff instant: a delayed knockout keeps its
+      // teams but shifts its start time, and FD (which we key the loop on) can
+      // lag or mis-time that shift. `canonicalTla` folds ESPN's codes into the
+      // same space as our stored ones so a variant TLA still matches.
+      espnByPair = indexEspnByPair(parseEspnScoreboard(espnBody), canonicalTla)
+      espnFetched = espnByPair.size > 0
     }
   }
 
@@ -270,9 +275,27 @@ export default async (req: Request) => {
       m.status === "FINISHED" && (ft.home == null || ft.away == null)
     const regressing = m.status !== "FINISHED" && haveRecordedFinal
 
+    // Resolve each side's canonical code once — used both for storage below and
+    // for the ESPN pair-link. Coalesce to the stored value when the feed hands
+    // back null (see the fixture-field note below).
+    const homeCode = canonicalTla(m.homeTeam?.tla ?? null) ?? cur?.home_code ?? null
+    const awayCode = canonicalTla(m.awayTeam?.tla ?? null) ?? cur?.away_code ?? null
+
+    // Knockout rows link to ESPN by team pair (robust to a delayed kickoff that
+    // shifts the instant) and take BOTH their result AND their kickoff from it:
+    // FD's free tier mis-times delayed knockouts (it kept Mexico–Ecuador an hour
+    // early), which corrupts the prediction lock and the LIVE window, not just
+    // the score. Group rows never touch ESPN.
+    const pairKey = stage !== "GROUP" ? espnPairKey(homeCode, awayCode) : null
+    const er = pairKey ? espnByPair.get(pairKey) : undefined
+
     const fixtureFields = {
       fd_id: m.id,
-      kickoff: m.utcDate,
+      // Knockout kickoff is ESPN's once we've linked the event (FD's can lag a
+      // delay); FD's utcDate is the fallback — group rows, or before ESPN lists
+      // the fixture / while its slot is an unresolved TBD.
+      kickoff:
+        er?.kickoffMs != null ? new Date(er.kickoffMs).toISOString() : m.utcDate,
       stage,
       group_name: m.group ? m.group.replace(/^(GROUP_|Group )/, "") : null,
       matchday: m.matchday ?? null,
@@ -290,8 +313,8 @@ export default async (req: Request) => {
       // Pin the code to one canonical TLA so a team football-data serves under
       // two codes (Uruguay URU/URY) doesn't flip our stored value every sync and
       // make the team_form / in-tournament joins blink out (see canonicalTla).
-      home_code: canonicalTla(m.homeTeam?.tla ?? null) ?? cur?.home_code ?? null,
-      away_code: canonicalTla(m.awayTeam?.tla ?? null) ?? cur?.away_code ?? null,
+      home_code: homeCode,
+      away_code: awayCode,
       updated_at: new Date().toISOString(),
     }
     // Result fields by source:
@@ -309,7 +332,6 @@ export default async (req: Request) => {
     if (lockedIds.has(ourId)) {
       resultFields = {}
     } else if (stage !== "GROUP") {
-      const er = espnByInstant.get(new Date(m.utcDate).getTime())
       const espnFinishedScoreless =
         er?.status === "FINISHED" && (er.homeScore == null || er.awayScore == null)
       const espnRegressing =

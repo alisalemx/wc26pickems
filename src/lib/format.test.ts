@@ -36,12 +36,16 @@ describe("isLive", () => {
     expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs - 1)).toBe(false)
   })
 
-  it("is live once kickoff passes and no final result is in", () => {
+  it("is live once the feed reports the match underway", () => {
     expect(isLive(kickoff, "IN_PLAY", "GROUP", kickoffMs + 60_000)).toBe(true)
+    expect(isLive(kickoff, "PAUSED", "GROUP", kickoffMs + 60_000)).toBe(true)
   })
 
-  it("is live right at kickoff even before the feed flips to IN_PLAY", () => {
-    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs)).toBe(true)
+  it("is NOT live while still TIMED, even after the scheduled kickoff passes", () => {
+    // A delayed kickoff keeps the feed at TIMED past the scheduled time; we must
+    // not pulse LIVE (or show a wall-clock minute) until it actually starts.
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs)).toBe(false)
+    expect(isLive(kickoff, "TIMED", "GROUP", kickoffMs + 12 * 60_000)).toBe(false)
   })
 
   it("is never live once FINISHED, even within the window", () => {

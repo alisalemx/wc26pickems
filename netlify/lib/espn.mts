@@ -16,6 +16,7 @@ interface EspnCompetitor {
   homeAway?: string
   score?: string | number | null
   shootoutScore?: number | null
+  team?: { abbreviation?: string | null } | null
 }
 interface EspnStatusType {
   state?: string // "pre" | "in" | "post"
@@ -42,6 +43,11 @@ export interface EspnScoreboard {
  *  scores/pens already split the way the schema stores them. */
 export interface EspnResult {
   kickoffMs: number
+  /** Team abbreviations ("MEX"/"ECU"), the join key to our knockout rows —
+   *  stable across a kickoff delay, unlike the instant (see indexEspnByPair).
+   *  Null when ESPN omits one, which just makes that event unpairable. */
+  homeCode: string | null
+  awayCode: string | null
   status: string // mapped to our matches.status vocabulary
   duration: "REGULAR" | "EXTRA_TIME" | "PENALTY_SHOOTOUT"
   homeScore: number | null
@@ -126,6 +132,8 @@ export function parseEspnScoreboard(body: EspnScoreboard | null): EspnResult[] {
 
     out.push({
       kickoffMs: ms,
+      homeCode: home.team?.abbreviation?.toUpperCase() ?? null,
+      awayCode: away.team?.abbreviation?.toUpperCase() ?? null,
       status,
       duration: espnDuration(st?.name, hasPens),
       homeScore: started ? toIntOrNull(home.score) : null,
@@ -138,8 +146,34 @@ export function parseEspnScoreboard(body: EspnScoreboard | null): EspnResult[] {
   return out
 }
 
-/** Index results by kickoff-instant epoch ms — the unambiguous join key to our
- *  knockout rows (no two knockout matches share a kickoff instant). */
-export function indexEspnByInstant(results: EspnResult[]): Map<number, EspnResult> {
-  return new Map(results.map((r) => [r.kickoffMs, r]))
+/** An orientation-independent join key for a knockout matchup: the two team
+ *  codes upper-cased and sorted. Unlike the kickoff instant, this survives a
+ *  delay that shifts the start time (the FD-vs-ESPN disagreement that left
+ *  Mexico–Ecuador stored an hour early and orphaned from its ESPN result), and
+ *  it doesn't care which side ESPN calls "home". Each knockout pairing occurs at
+ *  most once (single elimination), so the pair uniquely identifies the match.
+ *  Null when either code is missing (an unresolved slot — unmatchable). */
+export function espnPairKey(
+  a: string | null | undefined,
+  b: string | null | undefined
+): string | null {
+  if (!a || !b) return null
+  return [a.toUpperCase(), b.toUpperCase()].sort().join("-")
+}
+
+/** Index results by team-pair key (see espnPairKey) — the join to our knockout
+ *  rows. `canon` normalizes each code into the same canonical space our stored
+ *  codes use (e.g. Uruguay URY→URU via canonicalTla), so a team ESPN serves
+ *  under a variant code still matches. Events with an unresolved pair are
+ *  skipped. */
+export function indexEspnByPair(
+  results: EspnResult[],
+  canon: (code: string | null) => string | null = (c) => c
+): Map<string, EspnResult> {
+  const map = new Map<string, EspnResult>()
+  for (const r of results) {
+    const key = espnPairKey(canon(r.homeCode), canon(r.awayCode))
+    if (key) map.set(key, r)
+  }
+  return map
 }

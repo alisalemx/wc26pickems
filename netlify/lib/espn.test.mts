@@ -1,12 +1,15 @@
 import { describe, it, expect } from "vitest"
 import {
   parseEspnScoreboard,
-  indexEspnByInstant,
+  indexEspnByPair,
+  espnPairKey,
   mapEspnStatus,
   espnDuration,
   espnMinute,
 } from "./espn.mts"
 import type { EspnScoreboard } from "./espn.mts"
+
+type Side = { score?: string | number; shootoutScore?: number; abbr?: string }
 
 // Fixtures mirror the real shapes captured from ESPN's WC scoreboard feed.
 function event(
@@ -14,19 +17,21 @@ function event(
   state: string,
   name: string,
   completed: boolean,
-  home: { score?: string | number; shootoutScore?: number },
-  away: { score?: string | number; shootoutScore?: number },
+  home: Side,
+  away: Side,
   displayClock?: string
 ): EspnScoreboard["events"] extends (infer E)[] ? E : never {
+  const competitor = (side: string, { abbr, ...rest }: Side) => ({
+    homeAway: side,
+    ...rest,
+    team: abbr ? { abbreviation: abbr } : undefined,
+  })
   return {
     competitions: [
       {
         date,
         status: { type: { state, name, completed }, displayClock },
-        competitors: [
-          { homeAway: "home", ...home },
-          { homeAway: "away", ...away },
-        ],
+        competitors: [competitor("home", home), competitor("away", away)],
       },
     ],
   }
@@ -169,13 +174,59 @@ describe("parseEspnScoreboard", () => {
     expect(parseEspnScoreboard(body)).toEqual([])
   })
 
-  it("indexes by kickoff instant", () => {
-    const results = parseEspnScoreboard({
-      events: [
-        event("2026-06-29T20:30Z", "post", "STATUS_FINAL_PEN", true, { score: "1", shootoutScore: 3 }, { score: "1", shootoutScore: 4 }),
-      ],
+  it("captures team codes (upper-cased), the pair-link key", () => {
+    const [r] = parseEspnScoreboard({
+      events: [event("2026-07-01T02:00Z", "pre", "STATUS_SCHEDULED", false, { score: "0", abbr: "mex" }, { score: "0", abbr: "ecu" })],
     })
-    const idx = indexEspnByInstant(results)
-    expect(idx.get(new Date("2026-06-29T20:30Z").getTime())?.awayPens).toBe(4)
+    expect([r.homeCode, r.awayCode]).toEqual(["MEX", "ECU"])
+  })
+})
+
+describe("espnPairKey", () => {
+  it("is orientation-independent (sorted) and upper-cased", () => {
+    expect(espnPairKey("mex", "ecu")).toBe("ECU-MEX")
+    expect(espnPairKey("ECU", "MEX")).toBe("ECU-MEX")
+  })
+
+  it("is null when either code is missing (an unresolved slot)", () => {
+    expect(espnPairKey("MEX", null)).toBeNull()
+    expect(espnPairKey(undefined, "ECU")).toBeNull()
+  })
+})
+
+describe("indexEspnByPair", () => {
+  const results = parseEspnScoreboard({
+    events: [
+      event("2026-06-29T20:30Z", "post", "STATUS_FINAL_PEN", true, { score: "1", shootoutScore: 3, abbr: "GER" }, { score: "1", shootoutScore: 4, abbr: "PAR" }),
+    ],
+  })
+
+  it("indexes by team pair — the same match links from either orientation", () => {
+    const idx = indexEspnByPair(results)
+    expect(idx.get("GER-PAR")?.awayPens).toBe(4)
+    expect(idx.get(espnPairKey("PAR", "GER") ?? "")?.homeScore).toBe(1)
+  })
+
+  it("links a delayed knockout by its teams regardless of a shifted kickoff", () => {
+    // The Mexico–Ecuador case: FD keyed the row an hour early, but the pair key
+    // is unchanged by the delay, so the ESPN result still joins.
+    const idx = indexEspnByPair(results)
+    expect(idx.get(espnPairKey("GER", "PAR") ?? "")).toBeDefined()
+  })
+
+  it("folds variant codes into the canonical space (Uruguay URY→URU)", () => {
+    const uru = parseEspnScoreboard({
+      events: [event("2026-07-04T18:00Z", "pre", "STATUS_SCHEDULED", false, { abbr: "URY" }, { abbr: "BRA" })],
+    })
+    const idx = indexEspnByPair(uru, (c) => (c === "URY" ? "URU" : c))
+    expect(idx.get("BRA-URU")).toBeDefined()
+    expect(idx.get("BRA-URY")).toBeUndefined()
+  })
+
+  it("skips events with an unresolved pair (a missing code)", () => {
+    const noCodes = parseEspnScoreboard({
+      events: [event("2026-07-01T02:00Z", "pre", "STATUS_SCHEDULED", false, {}, {})],
+    })
+    expect(indexEspnByPair(noCodes).size).toBe(0)
   })
 })

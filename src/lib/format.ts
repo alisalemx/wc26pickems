@@ -54,20 +54,25 @@ export function isLocked(iso: string, now: number = Date.now()): boolean {
 export const MAX_LIVE_MS_GROUP = 2.5 * 60 * 60 * 1000 // ~90'+HT+stoppage+slack
 export const MAX_LIVE_MS_BRACKET = 3.5 * 60 * 60 * 1000 // + extra time + penalties
 
-/** Whether a match should pulse "LIVE". A match is live once kickoff has passed
- *  and until we record a FINISHED result (the card body shows the synced in-play
- *  score alongside the pulse). Critically this is bounded by a per-stage window:
- *  the upstream feed occasionally leaves a finished match stuck at IN_PLAY (never
- *  flipping to FINISHED), which would otherwise pulse LIVE forever. Group games
- *  use a shorter window than the bracket, which can run to extra time and
- *  penalties. Past the window we stop claiming it's live. */
+/** Whether a match should pulse "LIVE". A match is live only once the synced
+ *  feed reports it actually underway (`IN_PLAY`/`PAUSED`), never merely because
+ *  the wall clock passed the *scheduled* kickoff — real kickoffs slip (delays,
+ *  ceremonies) and the feed keeps such a match `TIMED`, so a purely time-based
+ *  check would falsely pulse LIVE (and show a fake elapsed minute) before it
+ *  starts. Still bounded by a per-stage window: the upstream feed occasionally
+ *  leaves a finished match stuck at IN_PLAY (never flipping to FINISHED), which
+ *  would otherwise pulse LIVE forever. Group games use a shorter window than the
+ *  bracket, which can run to extra time and penalties. Past the window we stop
+ *  claiming it's live. Trade-off: because status is only refreshed each sync
+ *  (~2 min), the LIVE pulse can lag the real kickoff by up to that cadence —
+ *  acceptable, and strictly better than falsely flagging a delayed match. */
 export function isLive(
   kickoff: string,
   status: string,
   stage: string,
   now: number = Date.now()
 ): boolean {
-  if (status === "FINISHED") return false
+  if (status !== "IN_PLAY" && status !== "PAUSED") return false
   const start = new Date(kickoff).getTime()
   const window = stage === "GROUP" ? MAX_LIVE_MS_GROUP : MAX_LIVE_MS_BRACKET
   return start <= now && now - start <= window
