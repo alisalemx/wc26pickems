@@ -233,16 +233,16 @@ export function MatchCard({
                 {prediction && (
                   <>
                     <span className="relative text-sm text-muted-foreground">
-                      {/* Lock hangs to the left of "Pick" via absolute
+                      {/* Lock hangs to the right of "Pick" via absolute
                           positioning so it doesn't widen the label column and
                           shift the centered Pick/Live/Result block — a compact
                           "predictions are locked" marker now the header just
                           shows the kickoff time. */}
+                      Pick
                       <Lock
                         aria-label="Locked"
-                        className="absolute right-full top-1/2 mr-1 size-3 -translate-y-1/2"
+                        className="absolute left-full top-1/2 ml-1 size-3 -translate-y-1/2"
                       />
-                      Pick
                     </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {prediction.home_pred}–{prediction.away_pred}
@@ -251,7 +251,11 @@ export function MatchCard({
                 )}
                 {liveScore && (
                   <>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-500">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-500">
+                      <span className="relative flex size-1.5">
+                        <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+                        <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+                      </span>
                       Live
                     </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
@@ -450,16 +454,11 @@ export function MatchCard({
 }
 
 /** Right-slot label for a match in progress (where "Locked" sits otherwise).
- *  A pulsing green dot beside the live match clock (see `LiveClock`). The
- *  `animate-ping` dot is neutralized by the global prefers-reduced-motion
- *  backstop. */
+ *  Just the live match clock (see `LiveClock`) — the pulsing green dot lives
+ *  beside the "Live" score label below, not here. */
 function LiveLabel({ match }: { match: MatchRow }) {
   return (
     <span className="flex items-center gap-1.5 font-medium tabular-nums text-green-600 dark:text-green-500">
-      <span className="relative flex size-1.5">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
-      </span>
       <LiveClock
         minute={match.minute}
         updatedAt={match.updated_at}
