@@ -161,7 +161,9 @@
 /* "Ultramode" sign-in CTA, à la Claude Code's Ultracode slider: a soft green
    gradient over a light base that flows endlessly left → right. The symmetric
    stops let the 200% tile loop seamlessly with no visible jump. Structural
-   outline and offset shadow still come from the Button. */
+   outline and offset shadow still come from the Button. The keyframe is shared
+   with .predict-cta (the Matches-page reminder banner) — same motion, its own
+   gold wash. */
 @keyframes play-flow {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
@@ -217,6 +219,48 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .play-cta::before {
+    animation: none;
+  }
+}
+
+/* The Matches-page "open predictions" reminder banner (PredictReminder): the
+   same endless flow as .play-cta (sharing the play-flow keyframe) washed in
+   faint gold, so it nods at the gold "exact score" badge rather than the
+   sign-in green. Base and text stay on the adaptive card/foreground tokens so
+   the wash works in both schemes; the structural ink outline comes from the
+   component's border utilities. */
+.predict-cta {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--foreground);
+  background-color: var(--card);
+}
+.predict-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(
+    100deg,
+    oklch(0.8 0.16 85 / 0.1),
+    oklch(0.8 0.16 85 / 0.28),
+    oklch(0.82 0.16 85 / 0.4),
+    oklch(0.8 0.16 85 / 0.28),
+    oklch(0.8 0.16 85 / 0.1)
+  );
+  background-size: 200% 100%;
+  animation: play-flow 4s linear infinite;
+  opacity: 0.75;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+/* Like .play-cta: hover deepens the gold rather than speeding the flow up. */
+.predict-cta:hover::before {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .predict-cta::before {
     animation: none;
   }
 }
@@ -324,6 +368,34 @@
   .stage-final {
     animation: none;
   }
+}
+
+/* One-shot highlight on the match card the reminder banner's "Predict next"
+   CTA jumps to (`.match-highlight` in MatchCard): the card's background holds
+   a faint gold, then fades back to the card colour. Drawn on a pseudo-element
+   slotted *behind* the content (isolate + z-index: -1, the .play-cta trick) so
+   it tints only the background, never films over the text and controls — and
+   not on the card itself, whose `animation` slot already runs the `animate-in`
+   entrance (an animation here would replace it, then replay it from scratch
+   when the highlight class is removed). Opacity-only, and under reduced motion
+   the backstop collapses it straight to the transparent end frame. */
+.match-highlight {
+  position: relative;
+  isolation: isolate;
+}
+.match-highlight::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--gold);
+  animation: match-highlight 1s var(--ease-out-cubic) both;
+}
+@keyframes match-highlight {
+  0% { opacity: 0; }
+  15% { opacity: 0.35; }
+  100% { opacity: 0; }
 }
 
 @layer base {

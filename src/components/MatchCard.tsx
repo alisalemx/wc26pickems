@@ -33,6 +33,9 @@ interface Props {
   saving?: boolean
   /** Position in the list — drives the entrance stagger via the --i CSS var. */
   index?: number
+  /** Flash the one-shot gold attention ring (the reminder banner's "Predict
+   *  next" CTA just jumped here). */
+  highlighted?: boolean
 }
 
 export function MatchCard({
@@ -42,6 +45,7 @@ export function MatchCard({
   onSave,
   saving,
   index = 0,
+  highlighted,
 }: Props) {
   const signedIn = ownUserId != null
   const reduceMotion = useReducedMotion()
@@ -153,7 +157,11 @@ export function MatchCard({
 
   return (
     <Card
-      className="gap-0 overflow-hidden py-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in"
+      id={`match-${match.id}`}
+      className={cn(
+        "gap-0 overflow-hidden py-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in",
+        highlighted && "match-highlight"
+      )}
       style={{ "--i": index } as CSSProperties}
     >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-3 text-[13px] text-muted-foreground sm:text-xs">

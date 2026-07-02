@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/hooks/queries"
 import { MatchCard } from "@/components/MatchCard"
 import { PenaltyNote } from "@/components/PenaltyNote"
+import { PredictReminder } from "@/components/PredictReminder"
 import { DayHeader } from "@/components/DayHeader"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
@@ -134,6 +135,26 @@ export function Matches() {
     window.scrollTo({ top: Math.max(0, top) })
   }
 
+  // Jump-and-highlight for the reminder banner's "Predict next" CTA: switch
+  // the view to where the target match lives (its day, or its stage tab), then
+  // flash a one-shot gold ring on its card. The effect runs after commit, so
+  // the target card exists by the time we scroll to it even when the day or
+  // filter just changed.
+  const [highlightId, setHighlightId] = useState<number | null>(null)
+  function goToMatch(m: MatchRow) {
+    if (view === "day") setSelectedDay(dayKey(m.kickoff))
+    else setChosenFilter(STAGE_TO_FILTER[m.stage])
+    setHighlightId(m.id)
+  }
+  useEffect(() => {
+    if (highlightId == null) return
+    document
+      .getElementById(`match-${highlightId}`)
+      ?.scrollIntoView({ block: "center" })
+    const t = setTimeout(() => setHighlightId(null), 2000)
+    return () => clearTimeout(t)
+  }, [highlightId])
+
   // Grouped list for the "all" view, with the stage filter applied.
   const grouped = useMemo(() => {
     const active = FILTERS.find((f) => f.value === filter)!
@@ -173,6 +194,7 @@ export function Matches() {
         index={index}
         prediction={predictions?.[m.id]}
         ownUserId={userId}
+        highlighted={m.id === highlightId}
         saving={upsert.isPending && upsert.variables?.matchId === m.id}
         onSave={(h, a) => handleSave(m.id, h, a)}
       />
@@ -255,6 +277,12 @@ export function Matches() {
               </Button>
             </div>
           )}
+          <PredictReminder
+            matches={matches}
+            predictions={predictions}
+            signedIn={Boolean(userId)}
+            onGoToNext={goToMatch}
+          />
           <PenaltyNote />
           {renderDayMatches(current[1])}
         </div>
@@ -276,6 +304,13 @@ export function Matches() {
           {grouped.length === 0 && (
             <EmptyState>No matches in this stage.</EmptyState>
           )}
+
+          <PredictReminder
+            matches={matches}
+            predictions={predictions}
+            signedIn={Boolean(userId)}
+            onGoToNext={goToMatch}
+          />
 
           <PenaltyNote />
 
