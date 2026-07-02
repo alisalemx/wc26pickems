@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { Skeleton } from "@/components/ui/skeleton"
 import { flagEmoji } from "@/lib/flags"
 import { resolveKnockoutTeams } from "@/lib/bracket"
-import { isLocked, ordinal } from "@/lib/format"
+import { ordinal } from "@/lib/format"
 import { scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
@@ -47,9 +47,8 @@ export function MyPredictions() {
   const { session } = useAuth()
   const userId = session?.user.id
   const { data: rawMatches, isLoading } = useMatches()
-  // Fill knockout TBD slots from feeders client-side (same as the match list),
-  // so the "still to predict" count and the team names stay consistent with the
-  // Matches tab — a resolved knockout fixture is predictable there.
+  // Fill knockout TBD slots from feeders client-side (same as the match list)
+  // so the team names stay consistent with the Matches tab.
   const matches = useMemo(
     () => (rawMatches ? resolveKnockoutTeams(rawMatches) : rawMatches),
     [rawMatches]
@@ -75,34 +74,35 @@ export function MyPredictions() {
 
   const stats = useMemo(() => {
     if (!matches || !predictions)
-      return { made: 0, predictable: 0, points: 0, exact: 0, finished: 0 }
+      return { made: 0, left: 0, points: 0, exact: 0, finished: 0 }
     let made = 0
-    let predictable = 0
+    let left = 0
     let points = 0
     let exact = 0
     let finished = 0
     for (const m of matches) {
-      const teamsKnown = m.home_team != null && m.away_team != null
+      const isFinished =
+        m.status === "FINISHED" && m.home_score != null && m.away_score != null
+      // "Matches left" = every fixture in the tournament not yet played to a
+      // final result (upcoming or in progress), regardless of who's predicted it.
+      if (!isFinished) left++
       const p = predictions[m.id]
-      // "Still to predict" = open matches the user hasn't picked yet, so don't
-      // count ones they've already predicted.
-      if (teamsKnown && !isLocked(m.kickoff) && !p) predictable++
       if (!p) continue
       made++
-      if (m.status === "FINISHED" && m.home_score != null && m.away_score != null) {
+      if (isFinished) {
         finished++
         const s = scorePrediction(
           m.stage,
           p.home_pred,
           p.away_pred,
-          m.home_score,
+          m.home_score!,
           m.away_score!
         )
         points += s.points
         if (s.result === "EXACT") exact++
       }
     }
-    return { made, predictable, points, exact, finished }
+    return { made, left, points, exact, finished }
   }, [matches, predictions])
 
   const [filter, setFilter] = useState<ResultFilter>("all")
@@ -189,10 +189,10 @@ export function MyPredictions() {
               </div>
             </>
           )}
-          {stats.predictable > 0 && (
+          {stats.left > 0 && (
             <p className="mt-3 text-center text-sm text-muted-foreground">
-              {stats.predictable} open{" "}
-              {stats.predictable === 1 ? "match" : "matches"} still to predict.
+              {stats.left} {stats.left === 1 ? "match" : "matches"} left in the
+              tournament.
             </p>
           )}
         </CardContent>
