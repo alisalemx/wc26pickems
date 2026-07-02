@@ -328,6 +328,38 @@ when set, the sync function skips the result fields (status/scores/pens/duration
 for that row but keeps reconciling fixture metadata (teams, kickoff, `fd_id`).
 Unlocking re-opens the row to the API (or, for a knockout row, to ESPN).
 
+### Knockout unlock (`0016_knockout_unlock.sql`)
+A knockout slot's teams live in `matches.home_team`/`away_team`, and the RLS
+insert/update policies require both non-null before a prediction is accepted
+(the lock lifts when the slot is filled). Football-data assigns those slots on
+its own laggy cadence (hours after the feeding matches finish), and the client
+already resolves them instantly for **display** (`resolveKnockoutTeams`,
+`src/lib/bracket.ts`) — so there was a window where a card showed its teams with
+a live Save button while the DB row was still blank, and the write bounced off
+RLS as a misleading "Could not save (match locked?)". This closes it by filling
+the slot **server-side, in our own DB**, from our own results:
+- `fill_ready_knockout_slots()` (SECURITY DEFINER, service-role only) fills each
+  slot whose two feeders have both been FINISHED for a **10-minute settle
+  window**, taking each side from the feeder winner (or SF *loser* for the
+  third-place play-off). Only ever fills a NULL side, so it's idempotent and a
+  real football-data assignment always wins. Its **FEEDERS map mirrors
+  `src/lib/bracket.ts`** (`FEEDERS`/`THIRD_FEEDERS`) and its winner rule mirrors
+  `winnerSide` (90'+ET, shootout only as decider) — keep the SQL and TS in sync.
+- The sync (`sync-results.mts`) calls it via RPC each run **after** the result
+  upserts (best-effort — a failure never fails the result sync; reports
+  `unlocked`). So a slot fills within ~one sync cycle of the settle window
+  elapsing (≈10–12 min after the second feeder's final whistle).
+- The finished match's **own** result is untouched by this — it shows and scores
+  instantly via the normal sync. Only the *unlocking of the next match* waits.
+- `matches.finished_at` (stamped by the `stamp_finished_at` trigger on the
+  transition into FINISHED, cleared on regression) is the stable marker the
+  settle window gates on — `updated_at` is bumped every sync so it can't.
+- **Client companion:** `resolveMatch` tags a client-derived slot with the
+  transient `teams_provisional` flag, and `MatchCard`'s `predictable` gate
+  requires stored (non-provisional) teams — so the Save button can't get ahead
+  of the DB again. The teams still display; the footer reads "Opens shortly"
+  until the server fills the slot.
+
 ### Auth & identity / usernames (`0001_init.sql`, `0002_auth.sql`)
 Sign-in is **Google OAuth only** (email/password was removed). OAuth needs a
 Google client configured in the Supabase dashboard. The React flow lives in
@@ -413,6 +445,7 @@ the Google OAuth client's **Authorized JavaScript origins**.
 ## Gotchas
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
+- **Keep the knockout `FEEDERS` bracket map in sync across `src/lib/bracket.ts` and `fill_ready_knockout_slots()` (`0016`)** — same duplication-by-design as scoring (DB fills the slot / lifts the prediction lock; client fills for display). A wrong feeder pairing sends the wrong team into the next round. See "Knockout unlock".
 - **Use `border-ink` (not plain `border`) for a card/control's structural outline.** Plain `border` resolves to the faint hairline `--border` token; the strong outline is the separate `--ink` token. The two are intentionally different (see the design-system note above).
 - **The sticky `DayHeader` offset (`top-14`) tracks the `h-14` app header in `Layout.tsx`.** If you change the header height, update `DayHeader`'s `top-*` to match or the day strip will misalign.
 - **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.

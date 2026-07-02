@@ -40,6 +40,12 @@ export interface MatchRow {
   minute: string | null
   result_locked: boolean
   updated_at: string
+  /** Client-only, transient (never from the DB): set by resolveKnockoutTeams
+   *  when a knockout slot's teams were derived from feeder winners rather than
+   *  stored. The teams display, but predicting stays locked until the DB itself
+   *  holds them — the RLS insert policy checks the stored teams, so a Save built
+   *  on a client-only guess would be rejected. See src/lib/bracket.ts. */
+  teams_provisional?: boolean
 }
 
 export interface PredictionRow {

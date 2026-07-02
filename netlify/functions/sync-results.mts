@@ -423,6 +423,18 @@ export default async (req: Request) => {
     // Standings are layered on top of match results; never fail the sync for them.
   }
 
+  // Unlock the next knockout round from our own results: fill each slot whose
+  // two feeders have been final for the settle window (see 0016). Runs after the
+  // result upserts above so a just-finalized feeder is visible, and is
+  // best-effort — a failure here never fails the result sync.
+  let unlocked = 0
+  try {
+    const { data, error } = await db.rpc("fill_ready_knockout_slots")
+    if (!error && typeof data === "number") unlocked = data
+  } catch {
+    // Knockout slot-filling is layered on top of results; never fail for it.
+  }
+
   return new Response(
     JSON.stringify({
       received: matches.length,
@@ -432,6 +444,7 @@ export default async (req: Request) => {
       standings,
       espnFetched,
       espnKnockout,
+      unlocked,
     }),
     { status: 200, headers: { "content-type": "application/json" } }
   )

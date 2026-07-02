@@ -96,6 +96,9 @@ export function resolveMatch(
     home_code: m.home_code ?? home?.code ?? null,
     away_team: m.away_team ?? away?.team ?? null,
     away_code: m.away_code ?? away?.code ?? null,
+    // Mark that a side was derived, not stored — the prediction lock (checked
+    // against the stored teams in the DB) is still on until the server fills it.
+    teams_provisional: true,
   }
 }
 

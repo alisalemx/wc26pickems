@@ -82,8 +82,16 @@ export function MatchCard({
         match.home_pens != null &&
         match.away_pens != null &&
         match.home_pens > match.away_pens))
+  // Predicting needs the teams to be STORED in the DB, not just derived on the
+  // client from feeder winners: the RLS insert policy checks the stored teams,
+  // so a Save built on a provisional (client-filled) knockout slot would be
+  // rejected with a confusing "match locked?" error. The teams still display —
+  // only the Save unlocks once the server has filled the slot (see 0016).
   const predictable =
-    !locked && match.home_team != null && match.away_team != null
+    !locked &&
+    match.home_team != null &&
+    match.away_team != null &&
+    !match.teams_provisional
   // Anonymous visitors can see the match but can't enter or save a prediction.
   const canPredict = predictable && signedIn
 
@@ -368,7 +376,14 @@ export function MatchCard({
       {hasFooter && (
       <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
         <div className="flex min-h-6 items-center text-sm text-muted-foreground">
-          {!predictable && !locked && "Awaiting teams"}
+          {!predictable &&
+            !locked &&
+            // Both teams already showing but not yet predictable = a knockout
+            // slot resolved on the client, waiting on the server to store it and
+            // lift the lock. Otherwise the slot's teams genuinely aren't known.
+            (match.home_team != null && match.away_team != null
+              ? "Opens shortly"
+              : "Awaiting teams")}
           {predictable &&
             (prediction ? (
               <motion.span
