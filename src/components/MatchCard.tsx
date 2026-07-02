@@ -240,17 +240,12 @@ export function MatchCard({
               <div className="grid grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-1 leading-none">
                 {prediction && (
                   <>
-                    <span className="relative text-sm text-muted-foreground">
-                      {/* Lock hangs to the right of "Pick" via absolute
-                          positioning so it doesn't widen the label column and
-                          shift the centered Pick/Live/Result block — a compact
-                          "predictions are locked" marker now the header just
-                          shows the kickoff time. */}
+                    {/* Lock sits inline right after "Pick" — a compact
+                        "predictions are locked" marker now the header just
+                        shows the kickoff time. */}
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
                       Pick
-                      <Lock
-                        aria-label="Locked"
-                        className="absolute left-full top-1/2 ml-1 size-3 -translate-y-1/2"
-                      />
+                      <Lock aria-label="Locked" className="size-3" />
                     </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {prediction.home_pred}–{prediction.away_pred}
@@ -260,11 +255,11 @@ export function MatchCard({
                 {liveScore && (
                   <>
                     <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-500">
+                      Live
                       <span className="relative flex size-1.5">
                         <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
                         <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
                       </span>
-                      Live
                     </span>
                     <span className="text-base font-bold tabular-nums text-foreground">
                       {match.home_score}–{match.away_score}
