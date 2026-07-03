@@ -181,13 +181,17 @@ export function ChampionBanner({
           {viewer && !onPodium && (
             <p
               className={cn(
-                "mt-3 text-center text-xs text-muted-foreground",
+                "mt-3 text-center text-sm text-muted-foreground",
                 CONTENT_IN
               )}
               // After the podium sequence (gold content lands at ~720ms).
               style={{ animationDelay: "900ms" }}
             >
-              You finished {ordinal(viewer.position)} of {viewer.total}.
+              You finished{" "}
+              <span className="font-semibold text-foreground">
+                {ordinal(viewer.position)}
+              </span>{" "}
+              of {viewer.total}.
             </p>
           )}
         </div>
