@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react"
-import { Crosshair, Flame, Star, Trophy } from "lucide-react"
+import { Medal, ShieldCheck, WandSparkles } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,7 @@ function AwardRow({
   detail,
 }: {
   i: number
-  icon: typeof Star
+  icon: typeof Medal
   name: string
   recipients: string
   detail: ReactNode
@@ -97,11 +97,9 @@ export function LeagueAwards({
     sharpshooters.length === 0 && !bestCall && everPresent.length === 0
 
   return (
-    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
+    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic gap-2">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Trophy className="size-4" aria-hidden="true" /> League awards
-        </CardTitle>
+<CardTitle className="text-base">Hall of fame</CardTitle>
       </CardHeader>
       <CardContent className="divide-y">
         {empty ? (
@@ -111,7 +109,7 @@ export function LeagueAwards({
             {sharpshooters.length > 0 && (
               <AwardRow
                 i={0}
-                icon={Crosshair}
+                icon={Medal}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
                 detail={`· ${sharpshooters[0].exact_count} exact ${
@@ -122,7 +120,7 @@ export function LeagueAwards({
             {bestCall && (
               <AwardRow
                 i={1}
-                icon={Star}
+                icon={WandSparkles}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
                 detail={`· ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
@@ -131,7 +129,7 @@ export function LeagueAwards({
             {everPresent.length > 0 && (
               <AwardRow
                 i={2}
-                icon={Flame}
+                icon={ShieldCheck}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
                 detail={`· ${everPresent[0].scored_count} scored ${
