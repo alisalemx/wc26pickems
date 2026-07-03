@@ -55,6 +55,12 @@ export function Leaderboard() {
           <ScoringGuide />
         </CardHeader>
         <CardContent className="px-2 sm:px-5">
+          {matches && remainingPoints > 0 && (
+            <p className="mb-3 px-1 text-xs text-muted-foreground">
+              Up to {remainingPoints} pts still up for grabs in the remaining
+              matches.
+            </p>
+          )}
           {isLoading ? (
             <ListSkeleton
               count={5}
@@ -156,12 +162,6 @@ export function Leaderboard() {
                 )
               })}
             </div>
-          )}
-          {matches && remainingPoints > 0 && (
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Up to {remainingPoints} pts still up for grabs in the remaining
-              matches.
-            </p>
           )}
         </CardContent>
       </Card>
