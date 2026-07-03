@@ -10,6 +10,7 @@ import { ChampionBanner } from "@/components/ChampionBanner"
 import { LeagueAwards } from "@/components/LeagueAwards"
 import { MatchCard } from "@/components/MatchCard"
 import { PenaltyNote } from "@/components/PenaltyNote"
+import { StageMultiplierNote } from "@/components/StageMultiplierNote"
 import { PredictReminder } from "@/components/PredictReminder"
 import { DayHeader } from "@/components/DayHeader"
 import { EmptyState } from "@/components/EmptyState"
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dayHeading, dayKey, isLocked } from "@/lib/format"
 import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
+import { STAGE_MULTIPLIER } from "@/lib/scoring"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
 const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
@@ -42,18 +44,25 @@ const STAGE_TO_FILTER: Record<MatchStage, string> = {
   FINAL: "FINAL",
 }
 
-/** Filter tab for the stage the tournament is currently in: the stage of the
- *  earliest match not yet finished — i.e. the one being played or up next.
- *  Defaults to "ALL" before any fixtures load and to the last stage ("Final")
- *  once every match is done. */
-function currentStageFilter(matches: MatchRow[] | undefined): string {
-  if (!matches || matches.length === 0) return "ALL"
+/** The stage the tournament is currently in: the stage of the earliest match
+ *  not yet finished — i.e. the one being played or up next. Null before any
+ *  fixtures load; "FINAL" once every match is done. */
+function currentStage(matches: MatchRow[] | undefined): MatchStage | null {
+  if (!matches || matches.length === 0) return null
   let next: MatchRow | null = null
   for (const m of matches) {
     if (m.status === "FINISHED" || m.status === "CANCELLED") continue
     if (!next || m.kickoff < next.kickoff) next = m
   }
-  return STAGE_TO_FILTER[next?.stage ?? "FINAL"]
+  return next?.stage ?? "FINAL"
+}
+
+/** Filter tab for the stage the tournament is currently in. Defaults to "ALL"
+ *  before any fixtures load and to the last stage ("Final") once every match is
+ *  done. */
+function currentStageFilter(matches: MatchRow[] | undefined): string {
+  const stage = currentStage(matches)
+  return stage ? STAGE_TO_FILTER[stage] : "ALL"
 }
 
 type View = "day" | "all"
@@ -91,6 +100,14 @@ export function Matches() {
     () => tournamentChampion(matches ?? []) != null,
     [matches]
   )
+  // From the Round of 16 on (the first points-multiplied round), the reminder
+  // above the list switches from the penalty note to a "this round is worth
+  // more" note that tracks the stage the tournament has reached. GROUP and R32
+  // are ×1, so they keep the penalty note (noteStage stays null).
+  const noteStage = useMemo(() => {
+    const stage = currentStage(matches)
+    return stage && STAGE_MULTIPLIER[stage] > 1 ? stage : null
+  }, [matches])
   const { data: predictions } = useMyPredictions(userId)
   const upsert = useUpsertPrediction(userId)
   const [view, setView] = useState<View>("day")
@@ -307,7 +324,12 @@ export function Matches() {
             signedIn={Boolean(userId)}
             onGoToNext={goToMatch}
           />
-          {!over && <PenaltyNote />}
+          {!over &&
+            (noteStage ? (
+              <StageMultiplierNote stage={noteStage} />
+            ) : (
+              <PenaltyNote />
+            ))}
           {renderDayMatches(current[1])}
         </div>
       )}
@@ -336,7 +358,12 @@ export function Matches() {
             onGoToNext={goToMatch}
           />
 
-          {!over && <PenaltyNote />}
+          {!over &&
+            (noteStage ? (
+              <StageMultiplierNote stage={noteStage} />
+            ) : (
+              <PenaltyNote />
+            ))}
 
           {grouped.map(([day, dayMatches]) => (
             <section
