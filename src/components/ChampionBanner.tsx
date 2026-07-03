@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { tournamentChampion } from "@/lib/bracket"
 import { competitionRanks } from "@/lib/rank"
 import { flagEmoji } from "@/lib/flags"
+import { ordinal } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MatchRow } from "@/lib/types"
 
@@ -89,6 +90,20 @@ export function ChampionBanner({
     return order.map((i) => top[i]).filter((s) => s != null)
   }, [leaderboard])
 
+  // The viewer's own finish, for the line under the bars when they didn't
+  // make the podium (podium members already see themselves up there).
+  const viewer = useMemo(() => {
+    const uid = session?.user.id
+    if (!uid || !leaderboard?.length) return null
+    const idx = leaderboard.findIndex((r) => r.user_id === uid)
+    if (idx === -1) return null
+    return {
+      position: competitionRanks(leaderboard)[idx],
+      total: leaderboard.length,
+    }
+  }, [session, leaderboard])
+  const onPodium = podium.some((s) => s.row.user_id === session?.user.id)
+
   if (!champion) return null
 
   return (
@@ -163,6 +178,18 @@ export function ChampionBanner({
               )
             })}
           </div>
+          {viewer && !onPodium && (
+            <p
+              className={cn(
+                "mt-3 text-center text-xs text-muted-foreground",
+                CONTENT_IN
+              )}
+              // After the podium sequence (gold content lands at ~720ms).
+              style={{ animationDelay: "900ms" }}
+            >
+              You finished {ordinal(viewer.position)} of {viewer.total}.
+            </p>
+          )}
         </div>
       )}
     </Card>
