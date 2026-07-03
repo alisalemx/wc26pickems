@@ -56,7 +56,7 @@ export function Leaderboard() {
         </CardHeader>
         <CardContent className="px-2 sm:px-5">
           {matches && remainingPoints > 0 && (
-            <p className="mb-3 px-1 text-xs text-muted-foreground">
+            <p className="-mt-1 mb-3 text-center text-xs text-muted-foreground">
               Up to {remainingPoints} pts still up for grabs in the remaining
               matches.
             </p>
