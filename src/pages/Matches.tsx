@@ -17,7 +17,7 @@ import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dayHeading, dayKey, isLocked } from "@/lib/format"
-import { resolveKnockoutTeams } from "@/lib/bracket"
+import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
 const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
@@ -84,6 +84,12 @@ export function Matches() {
   const matches = useMemo(
     () => (rawMatches ? resolveKnockoutTeams(rawMatches) : rawMatches),
     [rawMatches]
+  )
+  // Tournament over: the penalty-shootout reminder is moot once there's
+  // nothing left to predict (same predicate as the banner/awards).
+  const over = useMemo(
+    () => tournamentChampion(matches ?? []) != null,
+    [matches]
   )
   const { data: predictions } = useMyPredictions(userId)
   const upsert = useUpsertPrediction(userId)
@@ -301,7 +307,7 @@ export function Matches() {
             signedIn={Boolean(userId)}
             onGoToNext={goToMatch}
           />
-          <PenaltyNote />
+          {!over && <PenaltyNote />}
           {renderDayMatches(current[1])}
         </div>
       )}
@@ -330,7 +336,7 @@ export function Matches() {
             onGoToNext={goToMatch}
           />
 
-          <PenaltyNote />
+          {!over && <PenaltyNote />}
 
           {grouped.map(([day, dayMatches]) => (
             <section
