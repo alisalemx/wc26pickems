@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react"
-import { Medal, ShieldCheck, WandSparkles } from "lucide-react"
+import { Gem, Goal, Infinity as InfinityIcon } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,7 @@ function AwardRow({
   detail,
 }: {
   i: number
-  icon: typeof Medal
+  icon: typeof Gem
   name: string
   recipients: string
   detail: ReactNode
@@ -109,7 +109,7 @@ export function LeagueAwards({
             {sharpshooters.length > 0 && (
               <AwardRow
                 i={0}
-                icon={Medal}
+                icon={Goal}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
                 detail={`· ${sharpshooters[0].exact_count} exact ${
@@ -120,7 +120,7 @@ export function LeagueAwards({
             {bestCall && (
               <AwardRow
                 i={1}
-                icon={WandSparkles}
+                icon={Gem}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
                 detail={`· ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
@@ -129,7 +129,7 @@ export function LeagueAwards({
             {everPresent.length > 0 && (
               <AwardRow
                 i={2}
-                icon={ShieldCheck}
+                icon={InfinityIcon}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
                 detail={`· ${everPresent[0].scored_count} scored ${
