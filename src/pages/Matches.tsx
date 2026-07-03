@@ -244,7 +244,7 @@ export function Matches() {
   return (
     <div className="space-y-4">
       <ChampionBanner matches={matches} />
-      <LeagueAwards matches={matches} />
+      <LeagueAwards matches={matches} centerTitle />
       <Tabs value={view} onValueChange={(v) => setView(v as View)}>
         <TabsList className="flex w-full">
           <TabsTrigger value="day" className="flex-1">

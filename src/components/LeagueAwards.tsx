@@ -12,6 +12,7 @@ import {
   type NamedExactCall,
 } from "@/lib/awards"
 import { STAGE_LABEL } from "@/lib/scoring"
+import { cn } from "@/lib/utils"
 import type { MatchRow } from "@/lib/types"
 
 /** "@a" / "@a and @b" / "@a, @b and @c". */
@@ -62,8 +63,12 @@ function AwardRow({
  *  a logged-out visitor the card simply doesn't render. */
 export function LeagueAwards({
   matches,
+  centerTitle = false,
 }: {
   matches: MatchRow[] | undefined
+  /** Center the card title (used on the match list, where the card sits
+   *  under the centered champion banner). */
+  centerTitle?: boolean
 }) {
   const { session } = useAuth()
   const champion = useMemo(
@@ -99,7 +104,9 @@ export function LeagueAwards({
   return (
     <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic gap-2">
       <CardHeader>
-<CardTitle className="text-base">Hall of fame</CardTitle>
+<CardTitle className={cn("text-base", centerTitle && "text-center")}>
+          Hall of fame
+        </CardTitle>
       </CardHeader>
       <CardContent className="divide-y">
         {empty ? (
