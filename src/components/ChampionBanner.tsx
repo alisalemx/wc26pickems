@@ -40,7 +40,7 @@ const LINE_IN =
 
 /** The podium sequence: the bars draw up from the floor first (.podium-bar
  *  in index.css, staggered off the column's --i), then each column's content
- *  — crown, handle, points above the bar and the medal on it — reveals as
+ *  — handle and points above the bar and the medal on it — reveals as
  *  ONE linked animation once its bar has finished filling. The two reveal
  *  elements share this class and the same inline animationDelay so they move
  *  as a unit. */
@@ -59,7 +59,7 @@ function contentDelay(enter: number): CSSProperties {
  *  band (`.finale-hero`, the card-scale sibling of `.stage-final`, with its
  *  one-shot sheen) crowns the world champions; below it, on the normal card
  *  surface, a podium celebrates the league's top 3 players with the winner
- *  raised, crowned, and in gold. The leaderboard view isn't readable
+ *  raised in the middle in gold. The leaderboard view isn't readable
  *  anonymously (and this page is public), so that fetch is session-gated and
  *  the banner degrades to the team-only band when the data isn't available. */
 export function ChampionBanner({
@@ -110,10 +110,9 @@ export function ChampionBanner({
       </div>
 
       {podium.length > 0 && (
-        <div className="px-3 py-4 sm:px-6">
+        <div className="p-4">
           <div className="flex items-end justify-center gap-1 sm:gap-4">
             {podium.map(({ row, rank, enter }) => {
-              const isTop = rank === 1
               return (
                 <div
                   key={row.user_id}
@@ -127,11 +126,6 @@ export function ChampionBanner({
                     )}
                     style={contentDelay(enter)}
                   >
-                    {isTop && (
-                      <span className="mb-0.5 text-2xl" aria-hidden="true">
-                        👑
-                      </span>
-                    )}
                     <span
                       title={`@${row.username}`}
                       className={cn(
