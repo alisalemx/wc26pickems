@@ -370,16 +370,17 @@
   }
 }
 
-/* The tournament's closing surface: the champion banner (ChampionBanner, its
-   only user). Deliberately shares the Final stage tag's deep-gold vocabulary
-   (.stage-final) at card scale — same base gradient, embossed light text, and
-   border-box origin (covering the card's 1px ink border ring, the .stage-final
-   rim fix) — so the tournament closes on the same gold it crowned the Final
-   with. Differences from the badge: the sheen is a ONE-SHOT (plays once on
-   load, delayed so it sweeps after the card's entrance settles, then rests)
-   rather than an infinite glint, and it lives on an ::after pseudo-element
-   rather than the card itself — the card's own `animation` slot already runs
-   the tw-animate entrance, which a second animation here would replace (the
+/* The tournament's closing surface: the champion banner's world-champions
+   band (ChampionBanner, its only user). Deliberately shares the Final stage
+   tag's deep-gold vocabulary (.stage-final) scaled up — same base gradient,
+   embossed light text, and border-box origin (the .stage-final rim fix) — so
+   the tournament closes on the same gold it crowned the Final with. The band
+   is kept compact (the player podium below it sits on the plain card surface)
+   so the gold reads as a crown, not a wall. Differences from the badge: the
+   sheen is a ONE-SHOT (plays once on load, delayed so it sweeps after the
+   banner's entrance settles, then rests) rather than an infinite glint, and
+   it lives on an ::after pseudo-element so it never competes with a
+   tw-animate entrance in the element's own `animation` slot (the
    .match-highlight lesson). z-index -1 within the isolated context paints the
    streak above the card's background but behind all content; border-radius
    inherits so the streak never pokes past the rounded corners. final-sheen's
