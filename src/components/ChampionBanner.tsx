@@ -191,7 +191,7 @@ export function ChampionBanner({
               <span className="font-semibold text-foreground">
                 {ordinal(viewer.position)}
               </span>{" "}
-              of {viewer.total}.
+              of {viewer.total}
             </p>
           )}
         </div>
