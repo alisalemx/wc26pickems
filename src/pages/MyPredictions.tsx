@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { flagEmoji } from "@/lib/flags"
 import { resolveKnockoutTeams } from "@/lib/bracket"
 import { ordinal } from "@/lib/format"
+import { competitionRanks } from "@/lib/rank"
 import { scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
@@ -56,17 +57,18 @@ export function MyPredictions() {
   const { data: predictions } = useMyPredictions(userId)
   const { data: leaderboard } = useLeaderboard()
 
-  // Position in the shared leaderboard query — index-based to match exactly
-  // what the user would count on the Leaderboard page (same sorted array,
-  // same cache). Hidden until scoring has actually started (top score > 0),
-  // since before any match is settled everyone is tied at zero and a rank
-  // would just reflect arbitrary profile order.
+  // Position in the shared leaderboard query, using the same standard
+  // competition ranking (shared position on a full tie) as the Leaderboard
+  // page. Hidden until scoring has actually started (top score > 0), since
+  // before any match is settled everyone is tied at zero and a rank would
+  // just reflect arbitrary profile order.
   const rank = useMemo(() => {
     if (!leaderboard || !userId) return null
     if ((leaderboard[0]?.total_points ?? 0) === 0) return null
     const idx = leaderboard.findIndex((r) => r.user_id === userId)
     if (idx === -1) return null
-    return { position: idx + 1, total: leaderboard.length }
+    const ranks = competitionRanks(leaderboard)
+    return { position: ranks[idx], total: leaderboard.length }
   }, [leaderboard, userId])
 
   // Medal gradient for the top 3; undefined (→ neutral text) for 4th and below.

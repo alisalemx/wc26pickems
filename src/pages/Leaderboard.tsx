@@ -1,6 +1,8 @@
+import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { useAuth } from "@/hooks/useAuth"
 import { useLeaderboard } from "@/hooks/queries"
+import { competitionRanks } from "@/lib/rank"
 import {
   Card,
   CardContent,
@@ -24,6 +26,9 @@ export function Leaderboard() {
   const { session } = useAuth()
   const { data, isLoading } = useLeaderboard()
   const reduceMotion = useReducedMotion()
+  // Standard competition ranking: fully tied rows share a rank (e.g. two
+  // players tied at 1st both show 🥇, the next player is 3rd).
+  const ranks = useMemo(() => competitionRanks(data ?? []), [data])
 
   return (
     <Card>
@@ -68,6 +73,7 @@ export function Leaderboard() {
 
             {data?.map((row, i) => {
               const isMe = row.user_id === session?.user.id
+              const rank = ranks[i]
               return (
                 <motion.div
                   key={row.user_id}
@@ -97,7 +103,7 @@ export function Leaderboard() {
                   )}
                 >
                   <span className="text-center font-medium">
-                    {MEDALS[i] ?? i + 1}
+                    {MEDALS[rank - 1] ?? rank}
                   </span>
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 truncate font-medium">

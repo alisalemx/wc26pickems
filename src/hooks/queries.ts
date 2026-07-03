@@ -84,6 +84,15 @@ export function useLeaderboard() {
         .select("*")
         .order("total_points", { ascending: false })
         .order("exact_count", { ascending: false })
+        .order("outcome_count", { ascending: false })
+        // Fewest misses: with points/exacts/outcomes tied, fewer scored
+        // predictions means fewer misses, so the more accurate player ranks
+        // ahead. Only finished matches count, so open picks don't hurt.
+        .order("scored_count", { ascending: true })
+        // Not a ranking criterion — fully tied rows share a rank (see
+        // src/lib/rank.ts) — just keeps their order stable across refetches
+        // so the layout animation doesn't shuffle them arbitrarily.
+        .order("username", { ascending: true })
       if (error) throw error
       return data as LeaderboardRow[]
     },

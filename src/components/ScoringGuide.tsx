@@ -232,6 +232,56 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
               </p>
             </div>
           </section>
+
+          {/* Leaderboard tie-breakers */}
+          <section className="space-y-2">
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                Leaderboard tie-breakers
+              </h3>
+              <p>Tied on points? Ranks are decided in this order:</p>
+            </div>
+            {/* Tailwind's preflight strips <ol> numbering, so numbers are
+                explicit. */}
+            <ol className="space-y-1.5 text-xs">
+              <li className="flex items-center gap-2">
+                <span className="font-semibold tabular-nums text-foreground">
+                  1.
+                </span>
+                <Badge variant="gold" className="px-1 py-0 text-[10px]">
+                  Exct
+                </Badge>
+                <span className="font-medium text-foreground">
+                  More exact scores
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-semibold tabular-nums text-foreground">
+                  2.
+                </span>
+                <Badge variant="default" className="px-1 py-0 text-[10px]">
+                  Outc
+                </Badge>
+                <span className="font-medium text-foreground">
+                  More correct outcomes
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-semibold tabular-nums text-foreground">
+                  3.
+                </span>
+                <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                  Miss
+                </Badge>
+                <span className="font-medium text-foreground">
+                  Fewer misses
+                </span>
+              </li>
+            </ol>
+            <p className="text-xs">
+              Still tied on all three? The players share the same position.
+            </p>
+          </section>
         </div>
       </DialogContent>
     </Dialog>
