@@ -14,7 +14,7 @@ import { StatCard } from "@/components/StatCard"
 import { EmptyState } from "@/components/EmptyState"
 import { Skeleton } from "@/components/ui/skeleton"
 import { flagEmoji } from "@/lib/flags"
-import { resolveKnockoutTeams } from "@/lib/bracket"
+import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
 import { ordinal } from "@/lib/format"
 import { competitionRanks } from "@/lib/rank"
 import { remainingMaxPoints, scorePrediction } from "@/lib/scoring"
@@ -112,6 +112,11 @@ export function MyPredictions() {
     [matches]
   )
 
+  const champion = useMemo(
+    () => tournamentChampion(matches ?? []),
+    [matches]
+  )
+
   const [filter, setFilter] = useState<ResultFilter>("all")
 
   const finishedWithPicks = useMemo(() => {
@@ -152,6 +157,19 @@ export function MyPredictions() {
         : finishedWithPicks.filter(({ scored }) => scored.result === filter),
     [finishedWithPicks, filter]
   )
+
+  // The viewer's boldest correct call: the EXACT pick worth the most points
+  // (tie broken by latest kickoff — finishedWithPicks is already sorted
+  // newest-first, so a strict `>` keeps the first, latest-kickoff match on a
+  // points tie).
+  const bestCall = useMemo(() => {
+    let best: (typeof finishedWithPicks)[number] | undefined
+    for (const item of finishedWithPicks) {
+      if (item.scored.result !== "EXACT") continue
+      if (!best || item.scored.points > best.scored.points) best = item
+    }
+    return best
+  }, [finishedWithPicks])
 
   return (
     <div className="space-y-4">
@@ -196,12 +214,24 @@ export function MyPredictions() {
               </div>
             </>
           )}
-          {stats.left > 0 && (
+          {!champion && stats.left > 0 && (
             <p className="mt-3 text-center text-sm text-muted-foreground">
               {stats.left} {stats.left === 1 ? "match" : "matches"} left in the
               tournament, up to {remainingPoints}{" "}
               {remainingPoints === 1 ? "pt" : "pts"} still up for grabs.
             </p>
+          )}
+          {champion && (
+            <div className="mt-4 text-center">
+              <p className="text-sm font-medium">Tournament complete</p>
+              {bestCall && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Best call: {bestCall.m.home_team} {bestCall.m.home_score}-
+                  {bestCall.m.away_score} {bestCall.m.away_team}, +
+                  {bestCall.scored.points} pts
+                </p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

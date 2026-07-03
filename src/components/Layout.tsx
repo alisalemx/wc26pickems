@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -10,6 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { useMatches } from "@/hooks/queries"
+import { tournamentChampion } from "@/lib/bracket"
 import { Button } from "@/components/ui/button"
 import { GoogleIcon } from "@/components/GoogleIcon"
 import { cn } from "@/lib/utils"
@@ -25,14 +27,16 @@ type NavItem = {
 // Leaderboard and Me only appear once signed in (tapping Leaderboard while logged
 // out still routes to /login via ProtectedRoute, but we keep the bar uncluttered
 // for visitors).
-const PUBLIC_NAV: NavItem[] = [
-  { to: "/", label: "Matches", icon: CalendarDays, end: true },
-  { to: "/tournament", label: "Tournament", icon: Network },
-]
-const MEMBER_NAV: NavItem[] = [
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/me", label: "Me", icon: User },
-]
+const MATCHES_NAV: NavItem = { to: "/", label: "Matches", icon: CalendarDays, end: true }
+const TOURNAMENT_NAV: NavItem = { to: "/tournament", label: "Tournament", icon: Network }
+const LEADERBOARD_NAV: NavItem = { to: "/leaderboard", label: "Leaderboard", icon: Trophy }
+const ME_NAV: NavItem = { to: "/me", label: "Me", icon: User }
+
+const PUBLIC_NAV: NavItem[] = [MATCHES_NAV, TOURNAMENT_NAV]
+const MEMBER_NAV: NavItem[] = [LEADERBOARD_NAV, ME_NAV]
+// Once the tournament is over the final standings are the main event, so the
+// Leaderboard moves up to second place.
+const FINALE_NAV: NavItem[] = [MATCHES_NAV, LEADERBOARD_NAV, TOURNAMENT_NAV, ME_NAV]
 
 export function Layout() {
   const { session, profile, signOut, signInWithGoogle } = useAuth()
@@ -50,7 +54,16 @@ export function Layout() {
     }
   }
 
-  const items: NavItem[] = [...PUBLIC_NAV, ...(session ? MEMBER_NAV : [])]
+  const { data: matches } = useMatches()
+  const over = useMemo(
+    () => tournamentChampion(matches ?? []) != null,
+    [matches]
+  )
+  const items: NavItem[] = session
+    ? over
+      ? FINALE_NAV
+      : [...PUBLIC_NAV, ...MEMBER_NAV]
+    : PUBLIC_NAV
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">

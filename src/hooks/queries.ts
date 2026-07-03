@@ -76,9 +76,14 @@ export function useMyPredictions(userId: string | undefined) {
   })
 }
 
-export function useLeaderboard() {
+/** `enabled` lets a caller on a public page (e.g. ChampionBanner on Matches)
+ *  keep the fetch off for anonymous visitors — the leaderboard view isn't
+ *  granted to `anon`, so an ungated query would just error. Defaults to true;
+ *  existing callers (all behind ProtectedRoute) are unchanged. */
+export function useLeaderboard(enabled: boolean = true) {
   return useQuery({
     queryKey: ["leaderboard"],
+    enabled,
     queryFn: async (): Promise<LeaderboardRow[]> => {
       const { data, error } = await supabase
         .from("leaderboard")
@@ -113,6 +118,26 @@ export function usePlayerScoredPredictions(userId: string | undefined) {
         .from("scored_predictions")
         .select("*")
         .eq("user_id", userId!)
+      if (error) throw error
+      return data as ScoredPredictionRow[]
+    },
+  })
+}
+
+/** Every player's scored, revealed picks in one call — powers the League
+ *  awards on the final-standings Leaderboard. RLS (security_invoker) still
+ *  applies: rows for other players are only visible once their match has
+ *  kicked off. `enabled` lets the caller keep this off until the tournament
+ *  is actually over (see tournamentChampion), so it isn't fetched mid-season. */
+export function useAllScoredPredictions(enabled: boolean) {
+  return useQuery({
+    queryKey: ["scored-predictions", "all"],
+    enabled,
+    queryFn: async (): Promise<ScoredPredictionRow[]> => {
+      const { data, error } = await supabase
+        .from("scored_predictions")
+        .select("*")
+        .not("points", "is", null)
       if (error) throw error
       return data as ScoredPredictionRow[]
     },

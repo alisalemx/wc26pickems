@@ -370,6 +370,75 @@
   }
 }
 
+/* The tournament's closing surface: the champion banner's world-champions
+   band (ChampionBanner, its only user). Deliberately shares the Final stage
+   tag's deep-gold vocabulary (.stage-final) scaled up — same base gradient,
+   embossed light text, and border-box origin (the .stage-final rim fix) — so
+   the tournament closes on the same gold it crowned the Final with. The band
+   is kept compact (the player podium below it sits on the plain card surface)
+   so the gold reads as a crown, not a wall. Differences from the badge: the
+   sheen is a ONE-SHOT (plays once on load, delayed so it sweeps after the
+   banner's entrance settles, then rests) rather than an infinite glint, and
+   it lives on an ::after pseudo-element so it never competes with a
+   tw-animate entrance in the element's own `animation` slot (the
+   .match-highlight lesson). z-index -1 within the isolated context paints the
+   streak above the card's background but behind all content; border-radius
+   inherits so the streak never pokes past the rounded corners. final-sheen's
+   second background-position layer value is simply ignored on this
+   single-layer pseudo. Both keyframe endpoints park the streak off-screen, so
+   during the pre-play delay (backwards fill) and at rest it's the clean gold;
+   the global reduced-motion backstop collapses the play itself to an
+   invisible instant, so no extra reduced-motion block is needed. */
+.finale-hero {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  background-origin: border-box;
+  color: oklch(0.98 0.02 95);
+  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
+}
+.finale-hero::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 65%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: -150% 0;
+  animation: final-sheen 1.9s var(--ease-in-out-quart) 400ms 1 both;
+}
+
+/* The finale podium's bars (ChampionBanner, its only user): each bar fills
+   upward from the floor as its column enters. Transform-only (scaleY from 0,
+   origin bottom) so it never triggers layout; the column's inline --i is
+   inherited, so the same stagger that cascades the columns delays each fill,
+   plus a beat so the bar rises as its column lands. The medal riding the bar
+   is a SIBLING of this element, not a child — a child would squash with the
+   scale — and fades in separately on the stagger after. `both` fill holds
+   scaleY(0) during the delay and rests at full height; under reduced motion
+   the global backstop collapses the play to an instant at full height. */
+@keyframes podium-fill {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.podium-bar {
+  transform-origin: bottom;
+  /* Slower than the UI's base beat on purpose: a rare one-shot reveal, and
+     the fill reads as the podium being built rather than a snap. */
+  animation: podium-fill calc(var(--duration-base) * 1.75) var(--ease-out-cubic)
+    both;
+  animation-delay: calc(min(var(--i, 0), 6) * 45ms + 120ms);
+  will-change: transform;
+}
+
 /* One-shot highlight on the match card the reminder banner's "Predict next"
    CTA jumps to (`.match-highlight` in MatchCard): the card's background holds
    a faint gold, then fades back to the card colour. Drawn on a pseudo-element
