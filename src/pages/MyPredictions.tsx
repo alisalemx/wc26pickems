@@ -214,7 +214,7 @@ export function MyPredictions() {
               </div>
             </>
           )}
-          {stats.left > 0 && (
+          {!champion && stats.left > 0 && (
             <p className="mt-3 text-center text-sm text-muted-foreground">
               {stats.left} {stats.left === 1 ? "match" : "matches"} left in the
               tournament, up to {remainingPoints}{" "}
@@ -222,16 +222,16 @@ export function MyPredictions() {
             </p>
           )}
           {champion && rank && (
-            <div className="mt-3 text-center text-sm text-muted-foreground">
-              <p>
+            <div className="mt-4 border-t pt-3 text-center">
+              <p className="text-sm font-medium">
                 Tournament complete. You finished {ordinal(rank.position)} of{" "}
                 {rank.total}.
               </p>
               {bestCall && (
-                <p className="mt-1">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   Best call: {bestCall.m.home_team} {bestCall.m.home_score}-
                   {bestCall.m.away_score} {bestCall.m.away_team}, +
-                  {bestCall.scored.points} pts.
+                  {bestCall.scored.points} pts
                 </p>
               )}
             </div>
