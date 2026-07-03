@@ -221,12 +221,9 @@ export function MyPredictions() {
               {remainingPoints === 1 ? "pt" : "pts"} still up for grabs.
             </p>
           )}
-          {champion && rank && (
+          {champion && (
             <div className="mt-4 text-center">
-              <p className="text-sm font-medium">
-                Tournament complete. You finished {ordinal(rank.position)} of{" "}
-                {rank.total}.
-              </p>
+              <p className="text-sm font-medium">Tournament complete.</p>
               {bestCall && (
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Best call: {bestCall.m.home_team} {bestCall.m.home_score}-
