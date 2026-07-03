@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react"
+import { CalendarCheck, Target, Sparkles, Trophy } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,38 +21,35 @@ function handles(usernames: string[]): string {
   return `${tagged.slice(0, -1).join(", ")} and ${tagged[tagged.length - 1]}`
 }
 
-/** One award row: an emoji medallion tile, the award's name, who won it and
- *  the stat behind it. Cascades in via .stagger-in (`--i` set by the caller). */
+/** One award row: a small icon, the award's name, who won it and the stat
+ *  behind it. Cascades in via .stagger-in (`--i` set by the caller). */
 function AwardRow({
   i,
-  emoji,
+  icon: Icon,
   name,
   recipients,
   detail,
 }: {
   i: number
-  emoji: string
+  icon: typeof Target
   name: string
   recipients: string
   detail: ReactNode
 }) {
   return (
     <div
-      className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3"
+      className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
       style={{ "--i": i } as CSSProperties}
     >
-      <span
-        className="grid size-11 shrink-0 place-items-center rounded-md border border-ink bg-gold/20 text-xl shadow-brutal-sm"
-        aria-hidden="true"
-      >
-        {emoji}
-      </span>
+      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div className="min-w-0">
         <div className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
           {name}
         </div>
-        <div className="truncate text-sm font-semibold">{recipients}</div>
-        <div className="text-xs text-muted-foreground">{detail}</div>
+        <div className="truncate text-sm font-semibold">
+          {recipients}{" "}
+          <span className="font-normal text-muted-foreground">{detail}</span>
+        </div>
       </div>
     </div>
   )
@@ -102,10 +100,10 @@ export function LeagueAwards({
     <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <span aria-hidden="true">🏅</span> League awards
+          <Trophy className="size-4" aria-hidden="true" /> League awards
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="divide-y">
         {empty ? (
           <EmptyState className="py-6">Awards aren't in yet.</EmptyState>
         ) : (
@@ -113,10 +111,10 @@ export function LeagueAwards({
             {sharpshooters.length > 0 && (
               <AwardRow
                 i={0}
-                emoji="🎯"
+                icon={Target}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
-                detail={`${sharpshooters[0].exact_count} exact ${
+                detail={`· ${sharpshooters[0].exact_count} exact ${
                   sharpshooters[0].exact_count === 1 ? "score" : "scores"
                 }`}
               />
@@ -124,19 +122,19 @@ export function LeagueAwards({
             {bestCall && (
               <AwardRow
                 i={1}
-                emoji="🔮"
+                icon={Sparkles}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
-                detail={`called ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
+                detail={`· ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
               />
             )}
             {everPresent.length > 0 && (
               <AwardRow
                 i={2}
-                emoji="🗓️"
+                icon={CalendarCheck}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
-                detail={`${everPresent[0].scored_count} scored ${
+                detail={`· ${everPresent[0].scored_count} scored ${
                   everPresent[0].scored_count === 1
                     ? "prediction"
                     : "predictions"
