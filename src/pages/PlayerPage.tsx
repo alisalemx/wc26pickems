@@ -22,10 +22,20 @@ import { flagEmoji } from "@/lib/flags"
 import { resolveKnockoutTeams } from "@/lib/bracket"
 import { ordinal } from "@/lib/format"
 import { competitionRanks } from "@/lib/rank"
+import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
 import type { ResultType } from "@/lib/types"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
+
+// Metal fill matched to each medal emoji (`.rank-metal-*` in index.css), the
+// same treatment as the /me rank reveal. Indexed by position - 1; 4th place
+// and below fall back to neutral foreground (no class).
+const TIER_GRADIENT = [
+  "rank-metal rank-metal-gold", // 🥇 gold
+  "rank-metal rank-metal-silver", // 🥈 silver
+  "rank-metal rank-metal-bronze", // 🥉 bronze
+]
 
 // Settled-match filters, same idiom as MyPredictions.
 type ResultFilter = "all" | ResultType
@@ -69,6 +79,9 @@ export function PlayerPage() {
     const ranks = competitionRanks(leaderboard)
     return { position: ranks[idx], total: leaderboard.length }
   }, [leaderboard, userId, playerRow])
+
+  // Medal gradient for the top 3; undefined (neutral text) for 4th and below.
+  const rankGradient = rank ? TIER_GRADIENT[rank.position - 1] : undefined
 
   const settled = useMemo(() => {
     if (!scoredRows) return []
@@ -137,13 +150,21 @@ export function PlayerPage() {
           </div>
           {rank && (
             <div className="mb-4 text-center">
-              <div className="flex items-center justify-center gap-1 leading-none">
+              <div className="rank-pop flex items-center justify-center gap-1 leading-none">
                 {MEDALS[rank.position - 1] && (
                   <span className="text-3xl" aria-hidden="true">
                     {MEDALS[rank.position - 1]}
                   </span>
                 )}
-                <span className="text-3xl font-semibold tabular-nums text-foreground">
+                <span
+                  className={cn(
+                    "text-3xl font-semibold tabular-nums",
+                    rankGradient
+                      ? "bg-clip-text text-transparent [-webkit-background-clip:text] rank-sheen"
+                      : "text-foreground",
+                    rankGradient
+                  )}
+                >
                   {ordinal(rank.position)} Place
                 </span>
               </div>
