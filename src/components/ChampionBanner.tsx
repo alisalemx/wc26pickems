@@ -111,6 +111,12 @@ export function ChampionBanner({
 
       {podium.length > 0 ? (
         <div className="px-3 pt-3 pb-4 sm:px-6">
+          <p
+            className={`mb-3 text-center text-xs text-muted-foreground ${LINE_IN}`}
+            style={{ "--i": 2 } as CSSProperties}
+          >
+            Final standings are in. Thanks for playing. ⚽
+          </p>
           <div className="flex items-end justify-center gap-1 sm:gap-4">
             {podium.map(({ row, rank, enter }) => {
               const isTop = rank === 1
@@ -169,16 +175,6 @@ export function ChampionBanner({
               )
             })}
           </div>
-          <p
-            className={cn(
-              "mt-3 text-center text-xs text-muted-foreground",
-              CONTENT_IN
-            )}
-            // Last in the sequence: after the winner's content has landed.
-            style={{ animationDelay: "900ms" }}
-          >
-            Final standings are in. Thanks for playing. ⚽
-          </p>
         </div>
       ) : (
         <p className="px-5 py-3 text-center text-xs text-muted-foreground">
