@@ -222,7 +222,7 @@ export function MyPredictions() {
             </p>
           )}
           {champion && rank && (
-            <div className="mt-4 border-t pt-3 text-center">
+            <div className="mt-4 text-center">
               <p className="text-sm font-medium">
                 Tournament complete. You finished {ordinal(rank.position)} of{" "}
                 {rank.total}.
