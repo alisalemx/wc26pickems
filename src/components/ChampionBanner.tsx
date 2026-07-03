@@ -19,11 +19,12 @@ const TIER_GRADIENT = [
   "rank-metal rank-metal-bronze",
 ]
 
-// Podium bar height + tint per rank. The winner's bar is tallest and gold.
+// Podium bar height + tint per rank: gold, silver, bronze (soft washes of
+// the rank-metal palette; the winner's bar is tallest).
 const BAR = [
   "h-20 bg-gold/40",
-  "h-14 bg-muted",
-  "h-10 bg-muted",
+  "h-14 bg-[#a8a8a8]/35",
+  "h-10 bg-[#d8812d]/25",
 ]
 
 /** The tw-animate idiom for each cascading element: fade/slide in, delayed
@@ -31,6 +32,11 @@ const BAR = [
  *  fill holds the hidden start frame during the delay). */
 const LINE_IN =
   "animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+
+/** The podium columns rise from further down for a more theatrical entrance
+ *  (same idiom, bigger travel). */
+const COLUMN_IN =
+  "animate-in fade-in-0 slide-in-from-bottom-8 duration-[var(--duration-base)] ease-out-cubic stagger-in"
 
 /** Champion banner for the match list: renders once the final (match 104)
  *  has a decided result, and stays invisible before then. A compact deep-gold
@@ -73,7 +79,7 @@ export function ChampionBanner({
     <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-quint gap-0 overflow-hidden border-ink py-0">
       <div className="finale-hero flex flex-col items-center gap-1 px-5 py-4 text-center">
         <span
-          className={`text-4xl ${LINE_IN}`}
+          className={`text-6xl ${LINE_IN}`}
           style={{ "--i": 0 } as CSSProperties}
           aria-hidden="true"
         >
@@ -83,7 +89,7 @@ export function ChampionBanner({
           className={`text-lg font-semibold ${LINE_IN}`}
           style={{ "--i": 1 } as CSSProperties}
         >
-          {champion.team} are world champions.
+          {champion.team} are world champions
         </p>
       </div>
 
@@ -97,7 +103,7 @@ export function ChampionBanner({
                   key={row.user_id}
                   className={cn(
                     "flex min-w-0 flex-1 flex-col items-center sm:max-w-36",
-                    LINE_IN
+                    COLUMN_IN
                   )}
                   style={{ "--i": enter } as CSSProperties}
                 >
@@ -112,8 +118,7 @@ export function ChampionBanner({
                   <span
                     title={`@${row.username}`}
                     className={cn(
-                      "rank-sheen max-w-full truncate bg-clip-text font-bold text-transparent [-webkit-background-clip:text]",
-                      isTop ? "text-base" : "text-sm",
+                      "rank-sheen max-w-full truncate text-sm font-bold bg-clip-text text-transparent [-webkit-background-clip:text]",
                       TIER_GRADIENT[rank - 1]
                     )}
                   >
@@ -121,9 +126,6 @@ export function ChampionBanner({
                   </span>
                   <span className="text-sm font-semibold tabular-nums">
                     {row.total_points} pts
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {row.exact_count} exact
                   </span>
                   <div
                     className={cn(
