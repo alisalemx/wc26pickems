@@ -12,7 +12,6 @@ import { competitionRanks } from "@/lib/rank"
 import {
   pickBestSingleCall,
   pickEverPresent,
-  pickLeagueWinners,
   pickSharpshooters,
   type NamedExactCall,
 } from "@/lib/awards"
@@ -57,7 +56,6 @@ export function Leaderboard() {
 
   // Rank-1 players (a full tie shares the title), for the league-winner line
   // shown once the tournament is over. Shared with ChampionBanner.
-  const winners = useMemo(() => pickLeagueWinners(data ?? []), [data])
 
   // League awards data only fetches once the tournament is over (`over`
   // gates the query itself, not just the render, so it costs nothing mid-season).
@@ -93,17 +91,6 @@ export function Leaderboard() {
           <ScoringGuide />
         </CardHeader>
         <CardContent className="px-2 sm:px-5">
-          {over && winners.length > 0 && (
-            <p className="mb-3 text-center text-sm font-medium text-foreground">
-              🏆{" "}
-              {winners.length === 1
-                ? `@${winners[0].username} wins the league with ${winners[0].total_points} pts.`
-                : `${winners
-                    .map((w) => `@${w.username}`)
-                    .join(", ")
-                    .replace(/, ([^,]*)$/, " and $1")} share the title with ${winners[0].total_points} pts.`}
-            </p>
-          )}
           {isLoading ? (
             <ListSkeleton
               count={5}
