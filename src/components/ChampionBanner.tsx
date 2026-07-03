@@ -24,10 +24,12 @@ const TIER_GRADIENT = [
 // static wrapper; the tint is on the inner .podium-bar fill that scales up
 // from the floor (see index.css).
 const BAR_HEIGHT = ["h-20", "h-14", "h-10"]
+// Angled like the rank-metal fills (deep at the edges, a lighter band
+// through the middle) so each bar reads as a soft slab of its medal's metal.
 const BAR_TINT = [
-  "bg-linear-to-t from-gold/50 to-gold/15",
-  "bg-linear-to-t from-[#a8a8a8]/45 to-[#a8a8a8]/10",
-  "bg-linear-to-t from-[#d8812d]/35 to-[#d8812d]/10",
+  "bg-linear-135 from-gold/55 via-gold/20 to-gold/45",
+  "bg-linear-135 from-[#a8a8a8]/50 via-[#a8a8a8]/12 to-[#a8a8a8]/40",
+  "bg-linear-135 from-[#d8812d]/40 via-[#d8812d]/10 to-[#d8812d]/30",
 ]
 
 /** The tw-animate idiom for each cascading element: fade/slide in, delayed
@@ -175,12 +177,12 @@ export function ChampionBanner({
             // Last in the sequence: after the winner's content has landed.
             style={{ animationDelay: "900ms" }}
           >
-            Final standings are in. Thanks for playing.
+            Final standings are in. Thanks for playing. ⚽
           </p>
         </div>
       ) : (
         <p className="px-5 py-3 text-center text-xs text-muted-foreground">
-          Final standings are in. Thanks for playing.
+          Final standings are in. Thanks for playing. ⚽
         </p>
       )}
     </Card>
