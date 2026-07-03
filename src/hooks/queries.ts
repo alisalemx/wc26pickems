@@ -76,9 +76,14 @@ export function useMyPredictions(userId: string | undefined) {
   })
 }
 
-export function useLeaderboard() {
+/** `enabled` lets a caller on a public page (e.g. ChampionBanner on Matches)
+ *  keep the fetch off for anonymous visitors — the leaderboard view isn't
+ *  granted to `anon`, so an ungated query would just error. Defaults to true;
+ *  existing callers (all behind ProtectedRoute) are unchanged. */
+export function useLeaderboard(enabled: boolean = true) {
   return useQuery({
     queryKey: ["leaderboard"],
+    enabled,
     queryFn: async (): Promise<LeaderboardRow[]> => {
       const { data, error } = await supabase
         .from("leaderboard")

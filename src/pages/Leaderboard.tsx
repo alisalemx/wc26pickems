@@ -12,6 +12,7 @@ import { competitionRanks } from "@/lib/rank"
 import {
   pickBestSingleCall,
   pickEverPresent,
+  pickLeagueWinners,
   pickSharpshooters,
   type NamedExactCall,
 } from "@/lib/awards"
@@ -54,12 +55,9 @@ export function Leaderboard() {
   )
   const over = champion != null
 
-  // Rank-1 players (competitionRanks shares a rank on a full tie), for the
-  // league-winner line shown once the tournament is over.
-  const winners = useMemo(
-    () => (data ?? []).filter((_, i) => ranks[i] === 1),
-    [data, ranks]
-  )
+  // Rank-1 players (a full tie shares the title), for the league-winner line
+  // shown once the tournament is over. Shared with ChampionBanner.
+  const winners = useMemo(() => pickLeagueWinners(data ?? []), [data])
 
   // League awards data only fetches once the tournament is over (`over`
   // gates the query itself, not just the render, so it costs nothing mid-season).

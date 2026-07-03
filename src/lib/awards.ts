@@ -1,4 +1,13 @@
+import { competitionRanks } from "./rank"
 import type { LeaderboardRow, ScoredPredictionRow } from "./types"
+
+/** The league winner(s): every player sharing rank 1 under standard
+ *  competition ranking (a full tie shares the title). Rows must already be
+ *  in leaderboard order, as served by useLeaderboard. Empty input -> empty. */
+export function pickLeagueWinners(rows: LeaderboardRow[]): LeaderboardRow[] {
+  const ranks = competitionRanks(rows)
+  return rows.filter((_, i) => ranks[i] === 1)
+}
 
 /** Sharpshooter: the player(s) with the most EXACT results (`exact_count` on
  *  the leaderboard row). Ties are listed together. Empty input -> empty. */
