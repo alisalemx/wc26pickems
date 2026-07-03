@@ -88,28 +88,31 @@ export function ChampionBanner({
       </div>
 
       {podium.length > 0 ? (
-        <div className="px-4 pt-5 pb-4 sm:px-6">
-          <div className="flex items-end justify-center gap-2 sm:gap-4">
+        <div className="px-1.5 pt-5 pb-4 sm:px-6">
+          <div className="flex items-end justify-center gap-1 sm:gap-4">
             {podium.map(({ row, rank, enter }) => {
               const isTop = rank === 1
               return (
                 <div
                   key={row.user_id}
                   className={cn(
-                    "flex w-24 flex-col items-center sm:w-32",
+                    "flex min-w-0 flex-1 flex-col items-center sm:max-w-36",
                     LINE_IN
                   )}
                   style={{ "--i": enter } as CSSProperties}
                 >
                   {isTop && (
-                    <span className="mb-0.5 text-2xl" aria-hidden="true">
+                    <span
+                      className="rank-pop mb-0.5 text-2xl"
+                      aria-hidden="true"
+                    >
                       👑
                     </span>
                   )}
                   <span
                     title={`@${row.username}`}
                     className={cn(
-                      "max-w-full truncate bg-clip-text font-bold text-transparent [-webkit-background-clip:text]",
+                      "rank-sheen max-w-full truncate bg-clip-text font-bold text-transparent [-webkit-background-clip:text]",
                       isTop ? "text-base" : "text-sm",
                       TIER_GRADIENT[rank - 1]
                     )}
