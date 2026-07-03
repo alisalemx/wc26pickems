@@ -24,7 +24,11 @@ const TIER_GRADIENT = [
 // static wrapper; the tint is on the inner .podium-bar fill that scales up
 // from the floor (see index.css).
 const BAR_HEIGHT = ["h-20", "h-14", "h-10"]
-const BAR_TINT = ["bg-gold/40", "bg-[#a8a8a8]/35", "bg-[#d8812d]/25"]
+const BAR_TINT = [
+  "bg-linear-to-t from-gold/50 to-gold/15",
+  "bg-linear-to-t from-[#a8a8a8]/45 to-[#a8a8a8]/10",
+  "bg-linear-to-t from-[#d8812d]/35 to-[#d8812d]/10",
+]
 
 /** The tw-animate idiom for each cascading element: fade/slide in, delayed
  *  by the inline `--i` index via the shared .stagger-in utility (backwards
