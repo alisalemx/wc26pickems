@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react"
-import { CalendarCheck, Target, Sparkles, Trophy } from "lucide-react"
+import { Crosshair, Flame, Star, Trophy } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,7 @@ function AwardRow({
   detail,
 }: {
   i: number
-  icon: typeof Target
+  icon: typeof Star
   name: string
   recipients: string
   detail: ReactNode
@@ -41,7 +41,7 @@ function AwardRow({
       className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
       style={{ "--i": i } as CSSProperties}
     >
-      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div className="min-w-0">
         <div className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
           {name}
@@ -111,7 +111,7 @@ export function LeagueAwards({
             {sharpshooters.length > 0 && (
               <AwardRow
                 i={0}
-                icon={Target}
+                icon={Crosshair}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
                 detail={`· ${sharpshooters[0].exact_count} exact ${
@@ -122,7 +122,7 @@ export function LeagueAwards({
             {bestCall && (
               <AwardRow
                 i={1}
-                icon={Sparkles}
+                icon={Star}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
                 detail={`· ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
@@ -131,7 +131,7 @@ export function LeagueAwards({
             {everPresent.length > 0 && (
               <AwardRow
                 i={2}
-                icon={CalendarCheck}
+                icon={Flame}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
                 detail={`· ${everPresent[0].scored_count} scored ${
