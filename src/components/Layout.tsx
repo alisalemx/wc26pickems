@@ -6,7 +6,6 @@ import {
   Network,
   Trophy,
   User,
-  Shield,
   LogOut,
   type LucideIcon,
 } from "lucide-react"
@@ -51,13 +50,7 @@ export function Layout() {
     }
   }
 
-  const items: NavItem[] = [
-    ...PUBLIC_NAV,
-    ...(session ? MEMBER_NAV : []),
-    ...(profile?.is_admin
-      ? [{ to: "/admin", label: "Admin", icon: Shield }]
-      : []),
-  ]
+  const items: NavItem[] = [...PUBLIC_NAV, ...(session ? MEMBER_NAV : [])]
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
