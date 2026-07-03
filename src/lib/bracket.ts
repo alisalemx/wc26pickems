@@ -102,6 +102,23 @@ export function resolveMatch(
   }
 }
 
+/** The tournament winner, once the final (match 104) has a decided result:
+ *  the final's winnerSide team. Null until then (no final row, unfinished,
+ *  or a level 90'+ET with no shootout recorded yet) — and null too if the
+ *  winning side's team name is somehow missing, so we never render a "TBD"
+ *  champion. The single predicate every finale surface gates on. */
+export function tournamentChampion(
+  matches: MatchRow[]
+): { team: string; code: string | null } | null {
+  const final = matches.find((m) => m.id === FINAL_ID)
+  if (!final) return null
+  const w = winnerSide(final)
+  if (!w) return null
+  const { team, code } = sideTeam(final, w)
+  if (!team) return null
+  return { team, code }
+}
+
 /** Return `matches` with every knockout row's empty team slots filled from its
  *  feeders' results (group rows pass through untouched). Lets the match list
  *  show a knockout fixture's teams the moment its feeders finish — the same

@@ -119,6 +119,26 @@ export function usePlayerScoredPredictions(userId: string | undefined) {
   })
 }
 
+/** Every player's scored, revealed picks in one call — powers the League
+ *  awards on the final-standings Leaderboard. RLS (security_invoker) still
+ *  applies: rows for other players are only visible once their match has
+ *  kicked off. `enabled` lets the caller keep this off until the tournament
+ *  is actually over (see tournamentChampion), so it isn't fetched mid-season. */
+export function useAllScoredPredictions(enabled: boolean) {
+  return useQuery({
+    queryKey: ["scored-predictions", "all"],
+    enabled,
+    queryFn: async (): Promise<ScoredPredictionRow[]> => {
+      const { data, error } = await supabase
+        .from("scored_predictions")
+        .select("*")
+        .not("points", "is", null)
+      if (error) throw error
+      return data as ScoredPredictionRow[]
+    },
+  })
+}
+
 /** Everyone's predictions for a single match — only returns rows the RLS
  *  policy allows (i.e. after kickoff, plus always your own). */
 export function useRevealedPredictions(matchId: number, enabled: boolean) {

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest"
-import { resolveKnockoutTeams, resolveMatch, winnerSide } from "./bracket"
+import {
+  FINAL_ID,
+  resolveKnockoutTeams,
+  resolveMatch,
+  tournamentChampion,
+  winnerSide,
+} from "./bracket"
 import type { MatchRow } from "./types"
 
 // A match row with sensible defaults; override what each case needs.
@@ -150,6 +156,75 @@ describe("resolveMatch", () => {
     const r = resolveMatch(byId, 103)!
     expect(r.home_team).toBe("France") // loser of 101
     expect(r.away_team).toBe("Portugal") // loser of 102
+  })
+})
+
+describe("tournamentChampion", () => {
+  it("returns null when there's no final row", () => {
+    expect(tournamentChampion([m({ id: 1, stage: "GROUP" })])).toBeNull()
+  })
+
+  it("returns null while the final is unfinished", () => {
+    const final = m({
+      id: FINAL_ID,
+      stage: "FINAL",
+      status: "TIMED",
+      home_team: "Brazil",
+      home_code: "BRA",
+      away_team: "Argentina",
+      away_code: "ARG",
+    })
+    expect(tournamentChampion([final])).toBeNull()
+  })
+
+  it("crowns the home team on a decided 90'+ET result", () => {
+    const final = m({
+      id: FINAL_ID,
+      stage: "FINAL",
+      status: "FINISHED",
+      home_team: "Brazil",
+      home_code: "BRA",
+      away_team: "Argentina",
+      away_code: "ARG",
+      home_score: 2,
+      away_score: 1,
+    })
+    expect(tournamentChampion([final])).toEqual({ team: "Brazil", code: "BRA" })
+  })
+
+  it("crowns the away team when a 1-1 is decided on penalties", () => {
+    const final = m({
+      id: FINAL_ID,
+      stage: "FINAL",
+      status: "FINISHED",
+      home_team: "Brazil",
+      home_code: "BRA",
+      away_team: "Argentina",
+      away_code: "ARG",
+      home_score: 1,
+      away_score: 1,
+      home_pens: 3,
+      away_pens: 4,
+    })
+    expect(tournamentChampion([final])).toEqual({
+      team: "Argentina",
+      code: "ARG",
+    })
+  })
+
+  it("returns null for a level 1-1 final with no shootout recorded yet", () => {
+    const final = m({
+      id: FINAL_ID,
+      stage: "FINAL",
+      status: "FINISHED",
+      home_team: "Brazil",
+      home_code: "BRA",
+      away_team: "Argentina",
+      away_code: "ARG",
+      home_score: 1,
+      away_score: 1,
+    })
+    expect(tournamentChampion([final])).toBeNull()
   })
 })
 
