@@ -148,9 +148,23 @@ export function Matches() {
   }
   useEffect(() => {
     if (highlightId == null) return
-    document
-      .getElementById(`match-${highlightId}`)
-      ?.scrollIntoView({ block: "center" })
+    const el = document.getElementById(`match-${highlightId}`)
+    if (el) {
+      // Not scrollIntoView: on iOS Safari a programmatic scrollIntoView can
+      // shift the visual viewport and leave the fixed bottom nav floating
+      // mid-page. window.scrollTo scrolls the layout viewport, which fixed
+      // elements track, matching goToDay's approach above.
+      const HEADER_OFFSET = 56 // h-14 app header
+      const NAV_OFFSET = 64 // approx height of the fixed bottom tab bar
+      const rect = el.getBoundingClientRect()
+      const visibleHeight = window.innerHeight - HEADER_OFFSET - NAV_OFFSET
+      const top =
+        window.scrollY +
+        rect.top -
+        HEADER_OFFSET -
+        (visibleHeight - rect.height) / 2
+      window.scrollTo({ top: Math.max(0, top) })
+    }
     const t = setTimeout(() => setHighlightId(null), 2000)
     return () => clearTimeout(t)
   }, [highlightId])
