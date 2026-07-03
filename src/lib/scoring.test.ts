@@ -3,6 +3,7 @@ import {
   STAGE_MULTIPLIER,
   maxPoints,
   scorePrediction,
+  remainingMaxPoints,
 } from "./scoring"
 
 // Mirrors supabase/migrations/0001_init.sql stage_multiplier() — if this
@@ -88,5 +89,46 @@ describe("scorePrediction", () => {
       points: 0,
       result: "MISS",
     })
+  })
+})
+
+describe("remainingMaxPoints", () => {
+  it("returns 0 for an empty array", () => {
+    expect(remainingMaxPoints([])).toBe(0)
+  })
+
+  it("returns 0 when all matches are finished with scores", () => {
+    expect(
+      remainingMaxPoints([
+        { stage: "GROUP", status: "FINISHED", home_score: 1, away_score: 0 },
+        { stage: "FINAL", status: "FINISHED", home_score: 2, away_score: 1 },
+      ])
+    ).toBe(0)
+  })
+
+  it("sums max points for unfinished matches only (3 + 12 = 15)", () => {
+    expect(
+      remainingMaxPoints([
+        { stage: "GROUP", status: "SCHEDULED", home_score: null, away_score: null },
+        { stage: "FINAL", status: "SCHEDULED", home_score: null, away_score: null },
+        { stage: "QF", status: "FINISHED", home_score: 1, away_score: 1 },
+      ])
+    ).toBe(15)
+  })
+
+  it("counts a FINISHED match with a null score as unfinished", () => {
+    expect(
+      remainingMaxPoints([
+        { stage: "GROUP", status: "FINISHED", home_score: null, away_score: 0 },
+      ])
+    ).toBe(3)
+  })
+
+  it("counts an IN_PLAY match with scores set as unfinished", () => {
+    expect(
+      remainingMaxPoints([
+        { stage: "SF", status: "IN_PLAY", home_score: 1, away_score: 0 },
+      ])
+    ).toBe(9)
   })
 })

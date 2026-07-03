@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { useAuth } from "@/hooks/useAuth"
-import { useLeaderboard } from "@/hooks/queries"
+import { useLeaderboard, useMatches } from "@/hooks/queries"
 import { competitionRanks } from "@/lib/rank"
 import {
   Card,
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { ScoringGuide } from "@/components/ScoringGuide"
+import { remainingMaxPoints } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
@@ -25,10 +26,15 @@ const COLS =
 export function Leaderboard() {
   const { session } = useAuth()
   const { data, isLoading } = useLeaderboard()
+  const { data: matches } = useMatches()
   const reduceMotion = useReducedMotion()
   // Standard competition ranking: fully tied rows share a rank (e.g. two
   // players tied at 1st both show 🥇, the next player is 3rd).
   const ranks = useMemo(() => competitionRanks(data ?? []), [data])
+  const remainingPoints = useMemo(
+    () => remainingMaxPoints(matches ?? []),
+    [matches]
+  )
 
   return (
     <Card>
@@ -131,6 +137,12 @@ export function Leaderboard() {
               )
             })}
           </div>
+        )}
+        {matches && remainingPoints > 0 && (
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Up to {remainingPoints} pts still up for grabs in the remaining
+            matches.
+          </p>
         )}
       </CardContent>
     </Card>

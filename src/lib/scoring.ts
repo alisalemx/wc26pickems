@@ -52,6 +52,24 @@ export function maxPoints(stage: MatchStage): number {
   return EXACT_BASE * STAGE_MULTIPLIER[stage]
 }
 
+/** Max points a player could still add: the exact-score value of every match
+ *  not yet played to a final result (upcoming or in progress). Uses the same
+ *  finished test as the rest of the app. Display-only, like everything here. */
+export function remainingMaxPoints(
+  matches: {
+    stage: MatchStage
+    status: string
+    home_score: number | null
+    away_score: number | null
+  }[]
+): number {
+  return matches.reduce((sum, m) => {
+    const isFinished =
+      m.status === "FINISHED" && m.home_score != null && m.away_score != null
+    return isFinished ? sum : sum + maxPoints(m.stage)
+  }, 0)
+}
+
 const sign = (n: number) => (n > 0 ? 1 : n < 0 ? -1 : 0)
 
 /**

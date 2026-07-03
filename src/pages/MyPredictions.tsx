@@ -17,7 +17,7 @@ import { flagEmoji } from "@/lib/flags"
 import { resolveKnockoutTeams } from "@/lib/bracket"
 import { ordinal } from "@/lib/format"
 import { competitionRanks } from "@/lib/rank"
-import { scorePrediction } from "@/lib/scoring"
+import { remainingMaxPoints, scorePrediction } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
 import type { ResultType } from "@/lib/types"
@@ -107,6 +107,11 @@ export function MyPredictions() {
     return { made, left, points, exact, finished }
   }, [matches, predictions])
 
+  const remainingPoints = useMemo(
+    () => remainingMaxPoints(matches ?? []),
+    [matches]
+  )
+
   const [filter, setFilter] = useState<ResultFilter>("all")
 
   const finishedWithPicks = useMemo(() => {
@@ -194,7 +199,8 @@ export function MyPredictions() {
           {stats.left > 0 && (
             <p className="mt-3 text-center text-sm text-muted-foreground">
               {stats.left} {stats.left === 1 ? "match" : "matches"} left in the
-              tournament.
+              tournament, up to {remainingPoints}{" "}
+              {remainingPoints === 1 ? "pt" : "pts"} still up for grabs.
             </p>
           )}
         </CardContent>
