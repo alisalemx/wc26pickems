@@ -257,7 +257,7 @@ export function TeamDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 overflow-y-auto sm:max-w-md">
+      <DialogContent className="top-[5dvh] max-h-[90dvh] translate-y-0 overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-center gap-2">
             <span className="text-2xl leading-none">{flagEmoji(code)}</span>
@@ -301,7 +301,7 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
           <Info className="size-3.5" /> Compare
         </Button>
       </DialogTrigger>
-      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="top-[5dvh] max-h-[90dvh] translate-y-0 overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Comparison</DialogTitle>
           <DialogDescription className="sr-only">

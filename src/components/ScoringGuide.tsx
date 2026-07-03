@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { ResultBadge } from "@/components/ResultBadge"
 import { flagEmoji } from "@/lib/flags"
 import {
   EXACT_BASE,
@@ -46,7 +47,7 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
           <Info className="size-3.5" aria-hidden /> Scoring system
         </DialogTrigger>
       )}
-      <DialogContent className="top-[5%] max-h-[90vh] translate-y-0 gap-4 overflow-y-auto">
+      <DialogContent className="top-[5dvh] max-h-[90dvh] translate-y-0 gap-4 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Scoring system</DialogTitle>
           <DialogDescription className="sr-only">
@@ -54,39 +55,37 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 text-sm text-muted-foreground">
+        <div className="space-y-8 text-pretty text-sm text-muted-foreground">
           {/* Per-match points */}
-          <ul className="space-y-1.5 text-xs">
-            <li className="flex items-center gap-2">
-              <Badge variant="gold" className="w-9">
-                +{EXACT_BASE}
-              </Badge>
-              <span className="font-medium text-foreground">Exact score</span>
-              both numbers right
-            </li>
-            <li className="flex items-center gap-2">
-              <Badge variant="default" className="w-9">
-                +{OUTCOME_BASE}
-              </Badge>
-              <span className="font-medium text-foreground">Right outcome</span>
-              correct winner or draw
-            </li>
-            <li className="flex items-center gap-2">
-              <Badge variant="secondary" className="w-9">
-                0
-              </Badge>
-              <span className="font-medium text-foreground">Miss</span>
-            </li>
-          </ul>
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+              Points per match
+            </h3>
+            <ul className="space-y-1.5 text-xs">
+              <li className="flex items-center gap-2">
+                <ResultBadge result="EXACT" points={EXACT_BASE} />
+                exact final score
+              </li>
+              <li className="flex items-center gap-2">
+                <ResultBadge result="OUTCOME" points={OUTCOME_BASE} />
+                right winner or draw, wrong score
+              </li>
+              <li className="flex items-center gap-2">
+                <ResultBadge result="MISS" points={0} />
+                wrong result
+              </li>
+            </ul>
+          </section>
 
           {/* Stage multipliers */}
           <section className="space-y-2">
             <div className="space-y-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
                 Point multipliers
               </h3>
               <p>
-                Later rounds are worth more points, up to ×4 in the Final.
+                Points are multiplied by the stage of the match. The deeper
+                the round, the more a correct pick is worth.
               </p>
             </div>
             <div className="overflow-hidden rounded-md border border-ink">
@@ -145,12 +144,13 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
           {/* Knockout stage / penalty shootouts */}
           <section className="space-y-2">
             <div className="space-y-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-                Scoring in case of penalties
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                Penalty shootouts
               </h3>
               <p>
-                Penalty shootouts do not count towards a prediction; only the
-                score after 90 minutes and extra time does. For example:
+                If a knockout match goes to penalties, your prediction is
+                judged on the score after extra time. The shootout only decides
+                who advances, never your points. For example:
               </p>
             </div>
             <div className="space-y-4 pt-1">
@@ -187,12 +187,10 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
                   <span className="w-12 rounded border border-border py-0.5 text-center font-medium tabular-nums text-foreground">
                     1-1
                   </span>
-                  <Badge variant="gold" className="w-9">
-                    +{EXACT_BASE * EXAMPLE_MULT}
-                  </Badge>
-                  <span className="font-medium text-foreground">
-                    Exact score
-                  </span>
+                  <ResultBadge
+                    result="EXACT"
+                    points={EXACT_BASE * EXAMPLE_MULT}
+                  />
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-16 font-medium text-foreground">
@@ -201,32 +199,25 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
                   <span className="w-12 rounded border border-border py-0.5 text-center font-medium tabular-nums text-foreground">
                     2-2
                   </span>
-                  <Badge variant="default" className="w-9">
-                    +{OUTCOME_BASE * EXAMPLE_MULT}
-                  </Badge>
-                  <span className="font-medium text-foreground">
-                    Right outcome
-                  </span>
+                  <ResultBadge
+                    result="OUTCOME"
+                    points={OUTCOME_BASE * EXAMPLE_MULT}
+                  />
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-16 font-medium text-foreground">
                     Player 3
+                    <span className="ml-0.5 align-super text-[9px] text-muted-foreground">
+                      *
+                    </span>
                   </span>
                   <span className="w-12 rounded border border-border py-0.5 text-center font-medium tabular-nums text-foreground">
                     2-1
                   </span>
-                  <Badge variant="secondary" className="w-9">
-                    0
-                  </Badge>
-                  <span className="font-medium text-foreground">
-                    Miss
-                    <span className="align-super text-[9px] text-muted-foreground">
-                      *
-                    </span>
-                  </span>
+                  <ResultBadge result="MISS" points={0} />
                 </li>
               </ul>
-              <p className="text-xs">
+              <p>
                 * Player 3 misses on points, even though they correctly picked
                 Argentina to advance, since the penalty shootout doesn't count.
               </p>
@@ -236,10 +227,10 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
           {/* Leaderboard tie-breakers */}
           <section className="space-y-2">
             <div className="space-y-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
                 Leaderboard tie-breakers
               </h3>
-              <p>Tied on points? Ranks are decided in this order:</p>
+              <p>Ties on points are broken in this order:</p>
             </div>
             {/* Tailwind's preflight strips <ol> numbering, so numbers are
                 explicit. */}
@@ -248,39 +239,25 @@ export function ScoringGuide({ trigger }: { trigger?: ReactNode }) {
                 <span className="font-semibold tabular-nums text-foreground">
                   1.
                 </span>
-                <Badge variant="gold" className="px-1 py-0 text-[10px]">
-                  Exct
-                </Badge>
-                <span className="font-medium text-foreground">
-                  More exact scores
-                </span>
+                <ResultBadge result="EXACT" />
+                more exact scores
               </li>
               <li className="flex items-center gap-2">
                 <span className="font-semibold tabular-nums text-foreground">
                   2.
                 </span>
-                <Badge variant="default" className="px-1 py-0 text-[10px]">
-                  Outc
-                </Badge>
-                <span className="font-medium text-foreground">
-                  More correct outcomes
-                </span>
+                <ResultBadge result="OUTCOME" />
+                more correct outcomes
               </li>
               <li className="flex items-center gap-2">
                 <span className="font-semibold tabular-nums text-foreground">
                   3.
                 </span>
-                <Badge variant="secondary" className="px-1 py-0 text-[10px]">
-                  Miss
-                </Badge>
-                <span className="font-medium text-foreground">
-                  Fewer misses
-                </span>
+                <ResultBadge result="MISS" />
+                fewer misses
               </li>
             </ol>
-            <p className="text-xs">
-              Still tied on all three? The players share the same position.
-            </p>
+            <p>Still tied on all three? The players share the rank.</p>
           </section>
         </div>
       </DialogContent>
