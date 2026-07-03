@@ -370,6 +370,51 @@
   }
 }
 
+/* The tournament's closing surface: the champion banner (ChampionBanner, its
+   only user). Deliberately shares the Final stage tag's deep-gold vocabulary
+   (.stage-final) at card scale — same base gradient, embossed light text, and
+   border-box origin (covering the card's 1px ink border ring, the .stage-final
+   rim fix) — so the tournament closes on the same gold it crowned the Final
+   with. Differences from the badge: the sheen is a ONE-SHOT (plays once on
+   load, delayed so it sweeps after the card's entrance settles, then rests)
+   rather than an infinite glint, and it lives on an ::after pseudo-element
+   rather than the card itself — the card's own `animation` slot already runs
+   the tw-animate entrance, which a second animation here would replace (the
+   .match-highlight lesson). z-index -1 within the isolated context paints the
+   streak above the card's background but behind all content; border-radius
+   inherits so the streak never pokes past the rounded corners. final-sheen's
+   second background-position layer value is simply ignored on this
+   single-layer pseudo. Both keyframe endpoints park the streak off-screen, so
+   during the pre-play delay (backwards fill) and at rest it's the clean gold;
+   the global reduced-motion backstop collapses the play itself to an
+   invisible instant, so no extra reduced-motion block is needed. */
+.finale-hero {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  background-origin: border-box;
+  color: oklch(0.98 0.02 95);
+  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
+}
+.finale-hero::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 65%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: -150% 0;
+  animation: final-sheen 1.9s var(--ease-in-out-quart) 400ms 1 both;
+}
+
 /* One-shot highlight on the match card the reminder banner's "Predict next"
    CTA jumps to (`.match-highlight` in MatchCard): the card's background holds
    a faint gold, then fades back to the card colour. Drawn on a pseudo-element
