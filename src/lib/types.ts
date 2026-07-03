@@ -140,6 +140,20 @@ export interface GroupStandingRow {
   updated_at: string
 }
 
+/** One row of the scored_predictions view (security_invoker: RLS already
+ *  filtered it to rows the viewer may see). points/result_type are null for
+ *  revealed-but-unfinished matches. */
+export interface ScoredPredictionRow {
+  user_id: string
+  match_id: number
+  stage: MatchStage
+  kickoff: string
+  home_pred: number
+  away_pred: number
+  points: number | null
+  result_type: ResultType | null
+}
+
 /** One scoreline and how many players predicted it for a match — anonymous
  *  aggregate from the `prediction_distributions` RPC (no user identity).
  *  `predictors` is the match's total predictor count: the RPC truncates to the

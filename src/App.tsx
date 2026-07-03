@@ -11,6 +11,7 @@ import { Welcome } from "@/pages/Welcome"
 import { Matches } from "@/pages/Matches"
 import { Leaderboard } from "@/pages/Leaderboard"
 import { MyPredictions } from "@/pages/MyPredictions"
+import { PlayerPage } from "@/pages/PlayerPage"
 import { Tournament } from "@/pages/Tournament"
 import { Admin } from "@/pages/Admin"
 
@@ -35,6 +36,7 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="me" element={<MyPredictions />} />
+              <Route path="player/:userId" element={<PlayerPage />} />
               <Route element={<AdminRoute />}>
                 <Route path="admin" element={<Admin />} />
               </Route>
