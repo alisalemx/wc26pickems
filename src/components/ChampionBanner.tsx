@@ -104,7 +104,7 @@ export function ChampionBanner({
       </div>
 
       {podium.length > 0 ? (
-        <div className="px-1.5 pt-5 pb-4 sm:px-6">
+        <div className="px-3 pt-3 pb-4 sm:px-6">
           <div className="flex items-end justify-center gap-1 sm:gap-4">
             {podium.map(({ row, rank, enter }) => {
               const isTop = rank === 1
