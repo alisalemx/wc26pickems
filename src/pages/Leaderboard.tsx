@@ -2,19 +2,9 @@ import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
-import {
-  useAllScoredPredictions,
-  useLeaderboard,
-  useMatches,
-} from "@/hooks/queries"
+import { useLeaderboard, useMatches } from "@/hooks/queries"
 import { tournamentChampion } from "@/lib/bracket"
 import { competitionRanks } from "@/lib/rank"
-import {
-  pickBestSingleCall,
-  pickEverPresent,
-  pickSharpshooters,
-  type NamedExactCall,
-} from "@/lib/awards"
 import {
   Card,
   CardContent,
@@ -24,8 +14,9 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
+import { LeagueAwards } from "@/components/LeagueAwards"
 import { ScoringGuide } from "@/components/ScoringGuide"
-import { remainingMaxPoints, STAGE_LABEL } from "@/lib/scoring"
+import { remainingMaxPoints } from "@/lib/scoring"
 import { cn } from "@/lib/utils"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
@@ -53,33 +44,6 @@ export function Leaderboard() {
     [matches]
   )
   const over = champion != null
-
-  // Rank-1 players (a full tie shares the title), for the league-winner line
-  // shown once the tournament is over. Shared with ChampionBanner.
-
-  // League awards data only fetches once the tournament is over (`over`
-  // gates the query itself, not just the render, so it costs nothing mid-season).
-  const { data: allScored } = useAllScoredPredictions(over)
-  const usernameById = useMemo(
-    () => new Map((data ?? []).map((r) => [r.user_id, r.username])),
-    [data]
-  )
-  const sharpshooters = useMemo(
-    () => (over ? pickSharpshooters(data ?? []) : []),
-    [over, data]
-  )
-  const everPresent = useMemo(
-    () => (over ? pickEverPresent(data ?? []) : []),
-    [over, data]
-  )
-  const bestCall = useMemo(() => {
-    if (!over || !allScored) return null
-    const named: NamedExactCall[] = allScored.map((r) => ({
-      ...r,
-      username: usernameById.get(r.user_id) ?? "player",
-    }))
-    return pickBestSingleCall(named)
-  }, [over, allScored, usernameById])
 
   return (
     <div className="space-y-4">
@@ -202,52 +166,7 @@ export function Leaderboard() {
         </CardContent>
       </Card>
 
-      {over && (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
-          <CardHeader>
-            <CardTitle className="text-base">League awards</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {sharpshooters.length === 0 && !bestCall && everPresent.length === 0 ? (
-              <EmptyState className="py-6">Awards aren't in yet.</EmptyState>
-            ) : (
-              <>
-                {sharpshooters.length > 0 && (
-                  <p>
-                    <span className="font-semibold">Sharpshooter:</span>{" "}
-                    {sharpshooters
-                      .map((s) => `@${s.username}`)
-                      .join(", ")}{" "}
-                    with {sharpshooters[0].exact_count} exact{" "}
-                    {sharpshooters[0].exact_count === 1 ? "score" : "scores"}.
-                  </p>
-                )}
-                {bestCall && (
-                  <p>
-                    <span className="font-semibold">Best single call:</span>{" "}
-                    @{bestCall.username} called {bestCall.home_pred}-
-                    {bestCall.away_pred} in the {STAGE_LABEL[bestCall.stage]},
-                    +{bestCall.points} pts.
-                  </p>
-                )}
-                {everPresent.length > 0 && (
-                  <p>
-                    <span className="font-semibold">Ever-present:</span>{" "}
-                    {everPresent
-                      .map((s) => `@${s.username}`)
-                      .join(", ")}{" "}
-                    with {everPresent[0].scored_count} scored{" "}
-                    {everPresent[0].scored_count === 1
-                      ? "prediction"
-                      : "predictions"}
-                    .
-                  </p>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <LeagueAwards matches={matches} />
     </div>
   )
 }

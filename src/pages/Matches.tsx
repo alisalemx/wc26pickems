@@ -7,6 +7,7 @@ import {
   useUpsertPrediction,
 } from "@/hooks/queries"
 import { ChampionBanner } from "@/components/ChampionBanner"
+import { LeagueAwards } from "@/components/LeagueAwards"
 import { MatchCard } from "@/components/MatchCard"
 import { PenaltyNote } from "@/components/PenaltyNote"
 import { PredictReminder } from "@/components/PredictReminder"
@@ -243,6 +244,7 @@ export function Matches() {
   return (
     <div className="space-y-4">
       <ChampionBanner matches={matches} />
+      <LeagueAwards matches={matches} />
       <Tabs value={view} onValueChange={(v) => setView(v as View)}>
         <TabsList className="flex w-full">
           <TabsTrigger value="day" className="flex-1">
