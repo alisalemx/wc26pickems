@@ -7,7 +7,7 @@ import { TeamDisplay } from "@/components/TeamDisplay"
 import { Whistle } from "@/components/Whistle"
 import { flagEmoji } from "@/lib/flags"
 import { STAGE_SHORT } from "@/lib/scoring"
-import { kickoffTime, shortDate, isLive } from "@/lib/format"
+import { kickoffTime, shortDayHeading, isLive } from "@/lib/format"
 import { FEEDERS, FINAL_ID, THIRD_ID, resolveMatch, winnerSide } from "@/lib/bracket"
 import type { MatchRow, MatchStage } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -103,7 +103,7 @@ function MatchFull({ m }: { m: MatchRow }) {
       style={{ width: FULL_W }}
     >
       <div className="flex items-center justify-between border-b border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        <span>{shortDate(m.kickoff)}</span>
+        <span>{shortDayHeading(m.kickoff)}</span>
         {live ? (
           <LiveTag />
         ) : finished ? (
