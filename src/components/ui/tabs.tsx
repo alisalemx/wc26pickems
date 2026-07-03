@@ -85,6 +85,12 @@ function TabsTrigger({
       {isActive && (
         <motion.span
           layoutId={`${layoutId}-active`}
+          // Only animate the pill when the selection changes. Without this,
+          // any layout shift around the strip (e.g. a banner mounting above
+          // it) re-measures the pill and springs it to its new position while
+          // the rest of the strip jumps instantly — the pill looks like it
+          // falls into place on its own.
+          layoutDependency={activeValue}
           aria-hidden
           className="bg-background border-ink absolute inset-0 rounded-md border"
           transition={

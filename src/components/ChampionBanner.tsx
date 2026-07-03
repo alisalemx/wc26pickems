@@ -32,10 +32,21 @@ const BAR_TINT = ["bg-gold/40", "bg-[#a8a8a8]/35", "bg-[#d8812d]/25"]
 const LINE_IN =
   "animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
 
-/** The podium columns rise from further down for a more theatrical entrance
- *  (same idiom, bigger travel). */
-const COLUMN_IN =
-  "animate-in fade-in-0 slide-in-from-bottom-8 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+/** The podium sequence: the bars draw up from the floor first (.podium-bar
+ *  in index.css, staggered off the column's --i), then each column's content
+ *  — crown, handle, points above the bar and the medal on it — reveals as
+ *  ONE linked animation once its bar has finished filling. The two reveal
+ *  elements share this class and the same inline animationDelay so they move
+ *  as a unit. */
+const CONTENT_IN =
+  "animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic"
+
+/** When a column's content may enter: its bar's stagger delay plus the bar's
+ *  fill time. MUST mirror .podium-bar in index.css (delay
+ *  `min(--i, 6) * 45ms + 120ms`, duration `--duration-base * 1.75` = 420ms). */
+function contentDelay(enter: number): CSSProperties {
+  return { animationDelay: `${Math.min(enter, 6) * 45 + 120 + 420}ms` }
+}
 
 /** Champion banner for the match list: renders once the final (match 104)
  *  has a decided result, and stays invisible before then. A compact deep-gold
@@ -100,32 +111,34 @@ export function ChampionBanner({
               return (
                 <div
                   key={row.user_id}
-                  className={cn(
-                    "flex min-w-0 flex-1 flex-col items-center sm:max-w-36",
-                    COLUMN_IN
-                  )}
+                  className="flex min-w-0 flex-1 flex-col items-center sm:max-w-36"
                   style={{ "--i": enter } as CSSProperties}
                 >
-                  {isTop && (
-                    <span
-                      className="rank-pop mb-0.5 text-2xl"
-                      aria-hidden="true"
-                    >
-                      👑
-                    </span>
-                  )}
-                  <span
-                    title={`@${row.username}`}
+                  <div
                     className={cn(
-                      "rank-sheen max-w-full truncate text-sm font-bold bg-clip-text text-transparent [-webkit-background-clip:text]",
-                      TIER_GRADIENT[rank - 1]
+                      "flex w-full min-w-0 flex-col items-center",
+                      CONTENT_IN
                     )}
+                    style={contentDelay(enter)}
                   >
-                    @{row.username}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {row.total_points} pts
-                  </span>
+                    {isTop && (
+                      <span className="mb-0.5 text-2xl" aria-hidden="true">
+                        👑
+                      </span>
+                    )}
+                    <span
+                      title={`@${row.username}`}
+                      className={cn(
+                        "rank-sheen max-w-full truncate text-sm font-bold bg-clip-text text-transparent [-webkit-background-clip:text]",
+                        TIER_GRADIENT[rank - 1]
+                      )}
+                    >
+                      @{row.username}
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {row.total_points} pts
+                    </span>
+                  </div>
                   <div
                     className={cn("relative mt-2 w-full", BAR_HEIGHT[rank - 1])}
                   >
@@ -136,8 +149,11 @@ export function ChampionBanner({
                       )}
                     />
                     <span
-                      className={`absolute inset-x-0 top-1 text-center text-xl ${LINE_IN}`}
-                      style={{ "--i": enter + 1 } as CSSProperties}
+                      className={cn(
+                        "absolute inset-x-0 top-1 text-center text-xl",
+                        CONTENT_IN
+                      )}
+                      style={contentDelay(enter)}
                       aria-hidden="true"
                     >
                       {MEDALS[rank - 1]}
@@ -148,8 +164,12 @@ export function ChampionBanner({
             })}
           </div>
           <p
-            className={`mt-3 text-center text-xs text-muted-foreground ${LINE_IN}`}
-            style={{ "--i": 5 } as CSSProperties}
+            className={cn(
+              "mt-3 text-center text-xs text-muted-foreground",
+              CONTENT_IN
+            )}
+            // Last in the sequence: after the winner's content has landed.
+            style={{ animationDelay: "900ms" }}
           >
             Final standings are in. Thanks for playing.
           </p>

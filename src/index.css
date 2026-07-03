@@ -431,8 +431,11 @@
 }
 .podium-bar {
   transform-origin: bottom;
-  animation: podium-fill var(--duration-base) var(--ease-out-cubic) both;
-  animation-delay: calc(min(var(--i, 0), 6) * 45ms + 80ms);
+  /* Slower than the UI's base beat on purpose: a rare one-shot reveal, and
+     the fill reads as the podium being built rather than a snap. */
+  animation: podium-fill calc(var(--duration-base) * 1.75) var(--ease-out-cubic)
+    both;
+  animation-delay: calc(min(var(--i, 0), 6) * 45ms + 120ms);
   will-change: transform;
 }
 
