@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { useLeaderboard } from "@/hooks/queries"
 import { competitionRanks } from "@/lib/rank"
@@ -26,6 +27,7 @@ export function Leaderboard() {
   const { session } = useAuth()
   const { data, isLoading } = useLeaderboard()
   const reduceMotion = useReducedMotion()
+  const navigate = useNavigate()
   // Standard competition ranking: fully tied rows share a rank (e.g. two
   // players tied at 1st both show 🥇, the next player is 3rd).
   const ranks = useMemo(() => competitionRanks(data ?? []), [data])
@@ -96,9 +98,18 @@ export function Leaderboard() {
                           y: { duration: 0.18, delay: Math.min(i, 8) * 0.03 },
                         }
                   }
+                  onClick={() => navigate(`/player/${row.user_id}`)}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      if (e.key === " ") e.preventDefault()
+                      navigate(`/player/${row.user_id}`)
+                    }
+                  }}
                   className={cn(
                     COLS,
-                    "border-b px-1 py-2 text-sm last:border-b-0",
+                    "cursor-pointer border-b px-1 py-2 text-sm transition-colors last:border-b-0 hover:bg-muted/50 active:bg-foreground/10 focus-visible:outline-2 focus-visible:outline-ring",
                     isMe && "bg-primary/10 border-l-2 border-l-primary"
                   )}
                 >

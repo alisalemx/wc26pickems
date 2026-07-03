@@ -18,6 +18,7 @@ import type {
   PredictionDistributionRow,
   PredictionRow,
   RevealedPrediction,
+  ScoredPredictionRow,
   TeamFormRow,
 } from "@/lib/types"
 
@@ -97,6 +98,24 @@ export function useLeaderboard() {
       return data as LeaderboardRow[]
     },
     refetchInterval: 60_000,
+  })
+}
+
+/** A player's revealed, scored picks straight from the scored_predictions
+ *  view. RLS (security_invoker) means: for another player you get only
+ *  post-kickoff picks; for yourself, everything. */
+export function usePlayerScoredPredictions(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["scored-predictions", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<ScoredPredictionRow[]> => {
+      const { data, error } = await supabase
+        .from("scored_predictions")
+        .select("*")
+        .eq("user_id", userId!)
+      if (error) throw error
+      return data as ScoredPredictionRow[]
+    },
   })
 }
 
