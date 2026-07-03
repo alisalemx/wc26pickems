@@ -19,13 +19,12 @@ const TIER_GRADIENT = [
   "rank-metal rank-metal-bronze",
 ]
 
-// Podium bar height + tint per rank: gold, silver, bronze (soft washes of
-// the rank-metal palette; the winner's bar is tallest).
-const BAR = [
-  "h-20 bg-gold/40",
-  "h-14 bg-[#a8a8a8]/35",
-  "h-10 bg-[#d8812d]/25",
-]
+// Podium bar height and tint per rank: gold, silver, bronze (soft washes of
+// the rank-metal palette; the winner's bar is tallest). Height sits on the
+// static wrapper; the tint is on the inner .podium-bar fill that scales up
+// from the floor (see index.css).
+const BAR_HEIGHT = ["h-20", "h-14", "h-10"]
+const BAR_TINT = ["bg-gold/40", "bg-[#a8a8a8]/35", "bg-[#d8812d]/25"]
 
 /** The tw-animate idiom for each cascading element: fade/slide in, delayed
  *  by the inline `--i` index via the shared .stagger-in utility (backwards
@@ -128,12 +127,21 @@ export function ChampionBanner({
                     {row.total_points} pts
                   </span>
                   <div
-                    className={cn(
-                      "mt-2 flex w-full items-start justify-center rounded-t-sm border border-b-0 border-ink pt-1 text-xl",
-                      BAR[rank - 1]
-                    )}
+                    className={cn("relative mt-2 w-full", BAR_HEIGHT[rank - 1])}
                   >
-                    <span aria-hidden="true">{MEDALS[rank - 1]}</span>
+                    <div
+                      className={cn(
+                        "podium-bar absolute inset-0 rounded-t-sm border border-b-0 border-ink",
+                        BAR_TINT[rank - 1]
+                      )}
+                    />
+                    <span
+                      className={`absolute inset-x-0 top-1 text-center text-xl ${LINE_IN}`}
+                      style={{ "--i": enter + 1 } as CSSProperties}
+                      aria-hidden="true"
+                    >
+                      {MEDALS[rank - 1]}
+                    </span>
                   </div>
                 </div>
               )

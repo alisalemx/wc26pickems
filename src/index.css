@@ -416,6 +416,26 @@
   animation: final-sheen 1.9s var(--ease-in-out-quart) 400ms 1 both;
 }
 
+/* The finale podium's bars (ChampionBanner, its only user): each bar fills
+   upward from the floor as its column enters. Transform-only (scaleY from 0,
+   origin bottom) so it never triggers layout; the column's inline --i is
+   inherited, so the same stagger that cascades the columns delays each fill,
+   plus a beat so the bar rises as its column lands. The medal riding the bar
+   is a SIBLING of this element, not a child — a child would squash with the
+   scale — and fades in separately on the stagger after. `both` fill holds
+   scaleY(0) during the delay and rests at full height; under reduced motion
+   the global backstop collapses the play to an instant at full height. */
+@keyframes podium-fill {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.podium-bar {
+  transform-origin: bottom;
+  animation: podium-fill var(--duration-base) var(--ease-out-cubic) both;
+  animation-delay: calc(min(var(--i, 0), 6) * 45ms + 80ms);
+  will-change: transform;
+}
+
 /* One-shot highlight on the match card the reminder banner's "Predict next"
    CTA jumps to (`.match-highlight` in MatchCard): the card's background holds
    a faint gold, then fades back to the card colour. Drawn on a pseudo-element
