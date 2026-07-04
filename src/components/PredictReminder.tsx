@@ -23,11 +23,18 @@ export function PredictReminder({
   if (!signedIn) return null
   if (!matches || !predictions) return null
 
+  // Mirror MatchCard's `predictable` gate: a knockout slot whose teams were
+  // derived client-side from feeder winners (`teams_provisional`) shows its
+  // teams but isn't saveable yet — the DB row is still blank, so RLS rejects a
+  // pick. Counting it here made the banner say "1 match open, predict next"
+  // while the card itself read "Opens shortly". Exclude those until the server
+  // fills the slot.
   const open = matches.filter(
     (m) =>
       !isLocked(m.kickoff) &&
       m.home_team != null &&
       m.away_team != null &&
+      !m.teams_provisional &&
       !predictions[m.id]
   )
 
