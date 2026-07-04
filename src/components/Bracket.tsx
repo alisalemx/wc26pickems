@@ -300,7 +300,12 @@ export function Bracket() {
   const query = useMatches()
   const matches = query.data
   const isLoading = query.isLoading
-  const [activeDepth, setActiveDepth] = useState(0)
+  // The focused round is derived, not stored: a user's explicit pick (`chosen`)
+  // wins, but until they pick one we default to the round that's actually in
+  // play — the first round not yet fully finished (R32 done → R16, then QF, SF,
+  // Final as each completes), falling back to the Final once all are decided.
+  // Same philosophy as the Groups/Bracket tab default in `Tournament.tsx`.
+  const [chosen, setChosen] = useState<number | null>(null)
 
   // Fit-to-width: measure the container and stretch the four inter-round gaps so
   // the fixed-size cards spread across the full width instead of huddling at
@@ -327,16 +332,35 @@ export function Bracket() {
 
   useEffect(() => () => roRef.current?.disconnect(), [])
 
-  const { byId, hasKnockout } = useMemo(() => {
+  const { byId, hasKnockout, defaultDepth } = useMemo(() => {
     const byId = new Map<number, MatchRow>()
     let hasKnockout = false
+    const total = new Map<MatchStage, number>()
+    const finished = new Map<MatchStage, number>()
     for (const m of matches ?? []) {
       if (m.stage === "GROUP") continue
       byId.set(m.id, m)
       hasKnockout = true
+      total.set(m.stage, (total.get(m.stage) ?? 0) + 1)
+      if (m.status === "FINISHED")
+        finished.set(m.stage, (finished.get(m.stage) ?? 0) + 1)
     }
-    return { byId, hasKnockout }
+    // Advance the default focus as rounds complete: the first round with an
+    // unfinished (or not-yet-seeded) match, or the Final once every round is
+    // done. Recomputed on each 60s refetch, so the focus moves the moment a
+    // round's last match goes final (for anyone who hasn't picked a round).
+    let defaultDepth = ROUND_NAV[ROUND_NAV.length - 1].depth
+    for (const { stage, depth } of ROUND_NAV) {
+      const t = total.get(stage) ?? 0
+      if (t === 0 || (finished.get(stage) ?? 0) < t) {
+        defaultDepth = depth
+        break
+      }
+    }
+    return { byId, hasKnockout, defaultDepth }
   }, [matches])
+
+  const activeDepth = chosen ?? defaultDepth
 
   if (isLoading) {
     return <ListSkeleton count={6} itemClassName="h-20 w-full" />
@@ -352,7 +376,7 @@ export function Bracket() {
       <SegmentedControl
         layoutId="bracket-round-active"
         value={activeDepth}
-        onChange={setActiveDepth}
+        onChange={setChosen}
         options={ROUND_NAV.map(({ stage, depth }) => ({
           value: depth,
           label: STAGE_SHORT[stage],
