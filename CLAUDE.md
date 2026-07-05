@@ -23,8 +23,9 @@ npm run generate-schedule   # regenerate scripts/data/matches-2026.json
 
 After code changes, validate with `npm run typecheck`, `npm run lint`, and
 `npm test`. Test coverage is currently limited to the pure helpers
-(`src/lib/scoring.test.ts`, `src/lib/format.test.ts`, `src/lib/form.test.ts`)
-and the sync match-linker (`netlify/lib/link-matches.test.mts`).
+(`src/lib/*.test.ts` — scoring, format, form, standings, bracket, rank, awards,
+links) and the sync-side pure modules (`netlify/lib/link-matches.test.mts`,
+`espn.test.mts`, `sync-auth.test.mts`).
 
 To run the scheduled sync function locally: `netlify functions:invoke sync-results`.
 
@@ -143,7 +144,28 @@ The Leaderboard's `ScoringGuide` modal (the green **"Scoring system"** link,
 legend, the stage-multiplier table, and a penalty-shootout worked example
 (Brazil 1–1 Argentina, decided on penalties) showing how only the 90'+ET score
 counts. All point values derive from the `scoring.ts` constants, so it tracks
-any change there automatically.
+any change there automatically. It also documents the leaderboard tie-breakers
+(below). `remainingMaxPoints()` (`scoring.ts`, display-only like the rest) sums
+the exact-score value of every match not yet finished — the "up to N pts still
+up for grabs" line on the Leaderboard and `/me`.
+
+### Leaderboard ranking & tie-breakers (`src/lib/rank.ts`)
+The leaderboard query (`useLeaderboard`) sorts by total points → most exact
+scores → most correct outcomes → **fewest scored predictions** (with the first
+three tied, fewer scored predictions means fewer misses) → username (not a
+ranking criterion — just keeps fully-tied rows stable across refetches so the
+layout animation doesn't shuffle them). `competitionRanks()` (`rank.ts`,
+unit-tested) then assigns standard competition ("1224") ranks over that order:
+rows tied on all four criteria share a rank. Every surface that shows a
+position (Leaderboard, `/me` rank reveal, PlayerPage, the finale podium) uses
+it, so shared ranks agree everywhere.
+
+### Player pages (`/player/:userId`)
+Leaderboard rows link to a per-player page showing their revealed picks —
+`usePlayerScoredPredictions` reads the `scored_predictions` view directly, and
+RLS (`security_invoker`) means you only get another player's post-kickoff rows
+(all of your own). Renders their rank (via `competitionRanks`), stat cards, and
+a settled-picks list with the same All/Outcome/Exact/Miss filter idiom as `/me`.
 
 ### Anti-cheat via Row Level Security (`0001_init.sql`)
 Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
@@ -360,6 +382,38 @@ the slot **server-side, in our own DB**, from our own results:
   of the DB again. The teams still display; the footer reads "Opens shortly"
   until the server fills the slot.
 
+### Tournament finale (`tournamentChampion`, `src/lib/bracket.ts`)
+`tournamentChampion(matches)` is the **single predicate every finale surface
+gates on**: it returns the winning team of the final (match 104, judged by
+`winnerSide` — 90'+ET, shootout only as decider) or null while the tournament
+is live. Once it resolves:
+- **ChampionBanner** (match list): a deep-gold band (`.finale-hero` in
+  `src/index.css`, the card-scale sibling of `.stage-final` with a one-shot
+  sheen) crowns the champions, above a **player podium** of the league's top 3
+  (2nd–1st–3rd, medal-metal handles via the `rank-metal-*` gradients, bars
+  filling from the floor via `.podium-bar` — its delay/duration is mirrored in
+  `contentDelay()` in the component; keep them in sync). Off-podium viewers get
+  a "You finished Nth of M" line. The leaderboard isn't readable anonymously
+  and the match list is public, so the fetch is session-gated and the banner
+  degrades to the team-only band when signed out.
+- **LeagueAwards** ("Hall of fame", on the match list and the Leaderboard):
+  Sharpshooter (most exact scores), Best single call (highest-points exact,
+  earlier kickoff breaks ties), Ever-present (most scored predictions) — pure
+  pickers in `src/lib/awards.ts` (unit-tested), fed by
+  `useAllScoredPredictions` (every player's revealed scored picks in one query,
+  enabled only once the tournament is over).
+- The Leaderboard retitles to **"Final standings"**, `/me` shows a "Tournament
+  complete" wrap with the viewer's own best call, and the signed-in **nav
+  reorders** to Matches, Leaderboard, Tournament, Me (`FINALE_NAV` in
+  `Layout.tsx`).
+
+Related match-list notes while the tournament is live: **PenaltyNote** (the
+dismissable penalties-don't-score reminder) shows through the group stage and
+R32, and **StageMultiplierNote** replaces it from the R16 on — "this round is
+worth ×N", tracking the current stage, with the dismissal stored per-stage in
+localStorage so it reappears each round. Both stop rendering once
+`tournamentChampion` resolves.
+
 ### Auth & identity / usernames (`0001_init.sql`, `0002_auth.sql`)
 Sign-in is **Google OAuth only** (email/password was removed). OAuth needs a
 Google client configured in the Supabase dashboard. The React flow lives in
@@ -393,14 +447,18 @@ name) rendered as `@handle` everywhere.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
 
 ### Routing (`src/App.tsx`)
-The app shell is **public**: Matches (index) and Standings render for anonymous
+The app shell is **public**: Matches (index) and Tournament render for anonymous
 visitors (backed by the public `matches` grant above). `RequireUsername` lets
 anonymous visitors through but funnels a signed-in user to `/welcome` until they
 pick a handle. `ProtectedRoute` (session required, `src/hooks/useAuth.tsx`) gates
-Leaderboard, MyPredictions (`/me`), and Admin; `AdminRoute` further gates
-`/admin`. `/welcome` needs a session but no handle; `/login` is open.
-Pages: Matches (index), Leaderboard, Standings, MyPredictions (`/me`), Admin,
-Login, Welcome (`/welcome`).
+Leaderboard, MyPredictions (`/me`), PlayerPage (`/player/:userId`), and Admin;
+`AdminRoute` further gates `/admin`. `/welcome` needs a session but no handle;
+`/login` is open. Pages: Matches (index), Leaderboard, Tournament (`/tournament`
+— the renamed Standings page; `/standings` redirects there), MyPredictions
+(`/me`), PlayerPage (`/player/:userId`), Admin, Login, Welcome (`/welcome`).
+The **Admin tab is hidden from the bottom nav** (route still reachable by URL),
+and once the tournament ends the signed-in nav reorders to Matches, Leaderboard,
+Tournament, Me (see "Tournament finale").
 
 ### Hosting & parallel deploys (`netlify.toml`, `wrangler.jsonc`)
 The frontend is a static Vite SPA reading **directly from Supabase**, so the same

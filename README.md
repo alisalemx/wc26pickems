@@ -21,6 +21,15 @@ function** for result syncing.
   exact score **3 pts**, correct outcome (W/D/L) **1 pt**, multiplied by stage
   (R16/QF/3rd ×2, SF ×3, Final ×4). Knockouts are judged on the
   **90'+extra-time** score; penalty shootouts are shown but never scored.
+  Leaderboard ties break on most exact scores, then most correct outcomes,
+  then fewest misses; players still level after all that share a rank.
+- **See how everyone's doing:** each leaderboard row links to a player page of
+  their revealed picks (another player's pick is visible only once its match
+  has kicked off).
+- **A proper finale:** once the final is decided, the app wraps the season — a
+  champions banner with a player podium for the league's top 3, a "Hall of
+  fame" awards card (most exact scores, best single call, most predictions
+  scored), and the leaderboard settles into the final standings.
 - **Results sync** every 2 minutes during the tournament — group results and
   official standings from football-data.org, **knockout** results from ESPN
   (whose feed reports the clean 90'+extra-time score and the shootout separately,
@@ -199,7 +208,7 @@ src/
   components/       MatchCard, Layout, shared atoms, ui/ (shadcn)
   hooks/            useAuth, TanStack Query data hooks
   lib/              supabase client, scoring, formatting, types (+ unit tests)
-  pages/            Login, Welcome, Matches, Leaderboard, Standings, MyPredictions, Admin
+  pages/            Login, Welcome, Matches, Leaderboard, Tournament, MyPredictions, PlayerPage, Admin
 netlify/functions/  sync-results.mts (scheduled result fetcher)
 netlify/lib/        link-matches.mts, espn.mts (knockout results), sync-auth.mts (+ unit tests)
 scripts/            generate-schedule.ts, seed-matches.ts, fd-shared.ts, teams.ts
