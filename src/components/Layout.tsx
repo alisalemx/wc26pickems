@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useMatches } from "@/hooks/queries"
 import { tournamentChampion } from "@/lib/bracket"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { GoogleIcon } from "@/components/GoogleIcon"
 import { cn } from "@/lib/utils"
 
@@ -39,7 +40,7 @@ const MEMBER_NAV: NavItem[] = [LEADERBOARD_NAV, ME_NAV]
 const FINALE_NAV: NavItem[] = [MATCHES_NAV, LEADERBOARD_NAV, TOURNAMENT_NAV, ME_NAV]
 
 export function Layout() {
-  const { session, profile, signOut, signInWithGoogle } = useAuth()
+  const { session, profile, loading, signOut, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [signingIn, setSigningIn] = useState(false)
 
@@ -76,7 +77,13 @@ export function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {session ? (
+          {loading ? (
+            // Hold the auth area with a skeleton until getSession() resolves.
+            // Rendering off `session` alone flashed "Sign in to play" for a beat
+            // before the restored session loaded and flipped it to signed-in.
+            // Width roughly matches the sign-in button so it doesn't shift.
+            <Skeleton className="h-5 w-24 rounded-md" aria-hidden />
+          ) : session ? (
             <>
               {profile && (
                 <span className="text-sm font-medium tracking-tight">
