@@ -17,7 +17,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { dayHeading, dayKey, isLocked } from "@/lib/format"
+import { dayHeading, dayKey, isLocked, shortDate } from "@/lib/format"
 import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
 import { STAGE_MULTIPLIER } from "@/lib/scoring"
 import type { MatchRow, MatchStage } from "@/lib/types"
@@ -140,6 +140,21 @@ export function Matches() {
     ([key]) => key === (selectedDay ?? defaultDay)
   )
   const current = dayIndex >= 0 ? days[dayIndex] : null
+
+  // The day the "jump" button lands on: today when it has fixtures, otherwise
+  // the next upcoming match day (the day strip only lists days that have
+  // matches, so an off day like today is never a cell of its own). The label
+  // reads "Jump to today" only when today truly is that day, otherwise it names
+  // the next match's date ("Jump to Jul 9") — so it never promises "today" and
+  // lands elsewhere.
+  const jumpTarget = days.find(([key]) => key >= todayKey)
+  const jumpTargetDay = jumpTarget?.[0]
+  const jumpLabel =
+    jumpTargetDay === todayKey
+      ? "Jump to today"
+      : jumpTarget
+        ? `Jump to ${shortDate(jumpTarget[1][0].kickoff)}`
+        : ""
 
   // Switching days should bring the day strip up flush beneath the app header,
   // rather than retaining the previous scroll position. The DayHeader sticks at
@@ -305,16 +320,14 @@ export function Matches() {
             prevDisabled={dayIndex <= 0}
             nextDisabled={dayIndex >= days.length - 1}
           />
-          {current[0] !== todayKey && days.some(([k]) => k >= todayKey) && (
+          {jumpTargetDay && current[0] !== jumpTargetDay && (
             <div className="text-center">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  goToDay(days.find(([k]) => k >= todayKey)![0])
-                }
+                onClick={() => goToDay(jumpTargetDay)}
               >
-                Jump to today
+                {jumpLabel}
               </Button>
             </div>
           )}
