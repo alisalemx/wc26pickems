@@ -23,38 +23,6 @@ export function pairKey(a: string, b: string): string {
   return [a, b].sort().join("-")
 }
 
-/** One meeting re-expressed from a single team's perspective, ready for a
- *  ResultRow-style row: W/D/L outcome (a shootout counts as a draw), goals
- *  for/against, with the date and competition passed through. */
-export interface H2hPerspectiveRow {
-  date: string
-  competition: string
-  gf: number
-  ga: number
-  outcome: "W" | "D" | "L"
-}
-
-/** Re-expresses each meeting from `code`'s perspective. The outcome is judged
- *  on home_score/away_score only — a shootout counts as a draw (pens never
- *  affect W/D/L, matching how the app scores). Meeting order is preserved. */
-export function perspectiveMeetings(
-  meetings: H2hMeeting[],
-  code: string
-): H2hPerspectiveRow[] {
-  return meetings.map((m) => {
-    const isHome = m.home === code
-    const gf = isHome ? m.home_score : m.away_score
-    const ga = isHome ? m.away_score : m.home_score
-    return {
-      date: m.date,
-      competition: m.competition,
-      gf,
-      ga,
-      outcome: gf > ga ? "W" : gf < ga ? "L" : "D",
-    }
-  })
-}
-
 /** Tally of a `codeA`-relative W/D/L across a list of meetings, judged on
  *  home_score/away_score only — a penalty shootout always counts as a draw,
  *  never affecting the W/D/L tally (pens are display-only, like scoring). */
