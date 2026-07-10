@@ -13,6 +13,7 @@ import {
 import type { TournamentResult } from "@/lib/form"
 import type {
   GroupStandingRow,
+  HeadToHeadRow,
   LeaderboardRow,
   MatchRow,
   PredictionDistributionRow,
@@ -21,6 +22,7 @@ import type {
   ScoredPredictionRow,
   TeamFormRow,
 } from "@/lib/types"
+import type { H2hMeeting } from "@/lib/h2h"
 
 export function useMatches() {
   return useQuery({
@@ -211,6 +213,26 @@ export function useTeamForm() {
     },
     select: (rows) =>
       Object.fromEntries(rows.map((r) => [r.code, r])) as Record<string, TeamFormRow>,
+    staleTime: 60 * 60_000,
+  })
+}
+
+/** Knockout-only head-to-head history for every team pair with any recorded
+ *  meetings, keyed by the canonical `pair_key` (see src/lib/h2h.ts). Static
+ *  like team_form, so it's cached an hour and public-readable. */
+export function useHeadToHead() {
+  return useQuery({
+    queryKey: ["head-to-head"],
+    queryFn: async (): Promise<HeadToHeadRow[]> => {
+      const { data, error } = await supabase.from("head_to_head").select("*")
+      if (error) throw error
+      return data as HeadToHeadRow[]
+    },
+    select: (rows) =>
+      Object.fromEntries(rows.map((r) => [r.pair_key, r.meetings])) as Record<
+        string,
+        H2hMeeting[]
+      >,
     staleTime: 60 * 60_000,
   })
 }

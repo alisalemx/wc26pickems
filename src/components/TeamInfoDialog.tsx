@@ -16,12 +16,15 @@ import { TeamDisplay } from "./TeamDisplay"
 import { flagEmoji } from "@/lib/flags"
 import { shortDayHeading, kickoffTime } from "@/lib/format"
 import {
+  useHeadToHead,
   useTeamForm,
   useTournamentResults,
   useUpcomingMatches,
 } from "@/hooks/queries"
 import type { MatchRow, TeamFormMatch, TeamHonor } from "@/lib/types"
 import type { Outcome, TournamentResult } from "@/lib/form"
+import { pairKey, summarizeMeetings, type H2hMeeting } from "@/lib/h2h"
+import { shortDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const STAGE_SHORT: Record<string, string> = {
@@ -182,6 +185,76 @@ function FormSections({
           </li>
         ))}
       </Section>
+    </div>
+  )
+}
+
+function MeetingRow({ meeting }: { meeting: H2hMeeting }) {
+  const pens =
+    meeting.home_pens != null && meeting.away_pens != null
+      ? ` (${meeting.home_pens}-${meeting.away_pens} pens)`
+      : ""
+  return (
+    <li className="flex items-center gap-2 border-b border-border py-1.5 text-sm last:border-b-0">
+      <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+        {shortDate(meeting.date)}
+      </span>
+      <span className="min-w-0 truncate tabular-nums">
+        {meeting.home} {meeting.home_score}-{meeting.away_score} {meeting.away}
+        {pens}
+      </span>
+      <span className="ml-auto whitespace-nowrap text-xs text-muted-foreground">
+        {meeting.competition}
+      </span>
+    </li>
+  )
+}
+
+/** Full-width knockout-only head-to-head history below the two TeamPanels in
+ *  the two-team Compare modal — symmetric across both teams, so it can't live
+ *  inside the per-team FormSections. Hidden entirely for group-stage matches
+ *  (see TeamInfoDialog). */
+function HeadToHeadSection({
+  homeCode,
+  homeName,
+  awayCode,
+  awayName,
+}: {
+  homeCode: string | null
+  homeName: string | null
+  awayCode: string | null
+  awayName: string | null
+}) {
+  const h2hByPair = useHeadToHead().data
+  const meetings =
+    homeCode && awayCode ? h2hByPair?.[pairKey(homeCode, awayCode)] ?? [] : []
+
+  return (
+    <div className="mt-6 space-y-1.5 border-t border-border pt-6">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Head to head (last 15 years)
+      </h4>
+      {meetings.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No meetings in the last 15 years.
+        </p>
+      ) : (
+        <>
+          {homeCode && awayCode && (
+            <p className="text-sm text-muted-foreground">
+              {(() => {
+                const { winsA, draws, winsB } = summarizeMeetings(meetings, homeCode)
+                return `${homeName ?? homeCode} ${winsA}W · ${draws}D · ${awayName ?? awayCode} ${winsB}W`
+              })()}
+            </p>
+          )}
+          <ul>
+            {meetings.map((m, i) => (
+              <MeetingRow key={i} meeting={m} />
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   )
 }
@@ -351,6 +424,15 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
                 {homePanel}
                 {awayPanel}
               </div>
+
+              {match.stage !== "GROUP" && (
+                <HeadToHeadSection
+                  homeCode={match.home_code}
+                  homeName={match.home_team}
+                  awayCode={match.away_code}
+                  awayName={match.away_team}
+                />
+              )}
             </>
           )
         })()}

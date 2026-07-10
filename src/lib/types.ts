@@ -140,6 +140,15 @@ export interface GroupStandingRow {
   updated_at: string
 }
 
+/** Static head-to-head history for a pair of teams, keyed by the canonical
+ *  `pair_key` (see src/lib/h2h.ts `pairKey`). Knockout meetings only, last 15
+ *  years — see 0017_head_to_head.sql. */
+export interface HeadToHeadRow {
+  pair_key: string
+  meetings: import("./h2h").H2hMeeting[]
+  updated_at: string
+}
+
 /** One row of the scored_predictions view (security_invoker: RLS already
  *  filtered it to rows the viewer may see). points/result_type are null for
  *  revealed-but-unfinished matches. */

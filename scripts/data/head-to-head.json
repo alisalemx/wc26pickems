@@ -1,0 +1,493 @@
+{
+  "ARG-BEL": {
+    "meetings": [
+      {
+        "date": "2014-07-05",
+        "competition": "World Cup QF",
+        "home": "ARG",
+        "away": "BEL",
+        "home_score": 1,
+        "away_score": 0
+      }
+    ]
+  },
+  "ARG-ESP": {
+    "meetings": [
+      {
+        "date": "2018-03-27",
+        "competition": "Friendly",
+        "home": "ESP",
+        "away": "ARG",
+        "home_score": 6,
+        "away_score": 1
+      }
+    ]
+  },
+  "ARG-FRA": {
+    "meetings": [
+      {
+        "date": "2022-12-18",
+        "competition": "World Cup Final",
+        "home": "ARG",
+        "away": "FRA",
+        "home_score": 3,
+        "away_score": 3,
+        "home_pens": 4,
+        "away_pens": 2
+      },
+      {
+        "date": "2018-06-30",
+        "competition": "World Cup R16",
+        "home": "FRA",
+        "away": "ARG",
+        "home_score": 4,
+        "away_score": 3
+      }
+    ]
+  },
+  "ARG-NOR": {
+    "meetings": []
+  },
+  "ARG-SUI": {
+    "meetings": [
+      {
+        "date": "2014-07-01",
+        "competition": "World Cup R16",
+        "home": "ARG",
+        "away": "SUI",
+        "home_score": 1,
+        "away_score": 0
+      },
+      {
+        "date": "2012-02-29",
+        "competition": "Friendly",
+        "home": "SUI",
+        "away": "ARG",
+        "home_score": 1,
+        "away_score": 3
+      }
+    ]
+  },
+  "BEL-ESP": {
+    "meetings": [
+      {
+        "date": "2016-09-01",
+        "competition": "Friendly",
+        "home": "BEL",
+        "away": "ESP",
+        "home_score": 0,
+        "away_score": 2
+      }
+    ]
+  },
+  "BEL-FRA": {
+    "meetings": [
+      {
+        "date": "2021-10-07",
+        "competition": "Nations League SF",
+        "home": "BEL",
+        "away": "FRA",
+        "home_score": 2,
+        "away_score": 3
+      },
+      {
+        "date": "2018-07-10",
+        "competition": "World Cup SF",
+        "home": "FRA",
+        "away": "BEL",
+        "home_score": 1,
+        "away_score": 0
+      },
+      {
+        "date": "2015-06-07",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "BEL",
+        "home_score": 3,
+        "away_score": 4
+      },
+      {
+        "date": "2011-11-15",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "BEL",
+        "home_score": 2,
+        "away_score": 1
+      }
+    ]
+  },
+  "BEL-NOR": {
+    "meetings": [
+      {
+        "date": "2016-06-05",
+        "competition": "Friendly",
+        "home": "BEL",
+        "away": "NOR",
+        "home_score": 3,
+        "away_score": 2
+      }
+    ]
+  },
+  "BEL-SUI": {
+    "meetings": [
+      {
+        "date": "2018-11-19",
+        "competition": "Nations League",
+        "home": "SUI",
+        "away": "BEL",
+        "home_score": 5,
+        "away_score": 2
+      },
+      {
+        "date": "2018-10-13",
+        "competition": "Nations League",
+        "home": "BEL",
+        "away": "SUI",
+        "home_score": 0,
+        "away_score": 0
+      },
+      {
+        "date": "2016-05-28",
+        "competition": "Friendly",
+        "home": "SUI",
+        "away": "BEL",
+        "home_score": 1,
+        "away_score": 2
+      }
+    ]
+  },
+  "ENG-ESP": {
+    "meetings": [
+      {
+        "date": "2024-07-14",
+        "competition": "Euro 2024 Final",
+        "home": "ESP",
+        "away": "ENG",
+        "home_score": 2,
+        "away_score": 1
+      },
+      {
+        "date": "2018-10-15",
+        "competition": "Nations League",
+        "home": "ESP",
+        "away": "ENG",
+        "home_score": 2,
+        "away_score": 3
+      },
+      {
+        "date": "2018-09-08",
+        "competition": "Nations League",
+        "home": "ENG",
+        "away": "ESP",
+        "home_score": 1,
+        "away_score": 2
+      },
+      {
+        "date": "2011-11-12",
+        "competition": "Friendly",
+        "home": "ENG",
+        "away": "ESP",
+        "home_score": 1,
+        "away_score": 0
+      }
+    ]
+  },
+  "ENG-FRA": {
+    "meetings": [
+      {
+        "date": "2022-12-10",
+        "competition": "World Cup QF",
+        "home": "ENG",
+        "away": "FRA",
+        "home_score": 1,
+        "away_score": 2
+      },
+      {
+        "date": "2017-06-13",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "ENG",
+        "home_score": 3,
+        "away_score": 2
+      },
+      {
+        "date": "2015-11-17",
+        "competition": "Friendly",
+        "home": "ENG",
+        "away": "FRA",
+        "home_score": 2,
+        "away_score": 0
+      },
+      {
+        "date": "2012-06-11",
+        "competition": "Euro 2012 Group",
+        "home": "FRA",
+        "away": "ENG",
+        "home_score": 1,
+        "away_score": 1
+      }
+    ]
+  },
+  "BEL-ENG": {
+    "meetings": [
+      {
+        "date": "2024-03-26",
+        "competition": "Friendly",
+        "home": "ENG",
+        "away": "BEL",
+        "home_score": 2,
+        "away_score": 2
+      },
+      {
+        "date": "2020-11-15",
+        "competition": "Nations League",
+        "home": "BEL",
+        "away": "ENG",
+        "home_score": 2,
+        "away_score": 0
+      },
+      {
+        "date": "2020-10-11",
+        "competition": "Nations League",
+        "home": "ENG",
+        "away": "BEL",
+        "home_score": 2,
+        "away_score": 1
+      },
+      {
+        "date": "2018-07-14",
+        "competition": "World Cup Third Place",
+        "home": "BEL",
+        "away": "ENG",
+        "home_score": 2,
+        "away_score": 0
+      },
+      {
+        "date": "2018-06-28",
+        "competition": "World Cup Group",
+        "home": "BEL",
+        "away": "ENG",
+        "home_score": 1,
+        "away_score": 0
+      }
+    ]
+  },
+  "ENG-NOR": {
+    "meetings": [
+      {
+        "date": "2014-09-03",
+        "competition": "Friendly",
+        "home": "ENG",
+        "away": "NOR",
+        "home_score": 1,
+        "away_score": 0
+      },
+      {
+        "date": "2012-05-26",
+        "competition": "Friendly",
+        "home": "NOR",
+        "away": "ENG",
+        "home_score": 0,
+        "away_score": 1
+      }
+    ]
+  },
+  "ARG-ENG": {
+    "meetings": []
+  },
+  "ENG-SUI": {
+    "meetings": [
+      {
+        "date": "2024-07-06",
+        "competition": "Euro 2024 QF",
+        "home": "SUI",
+        "away": "ENG",
+        "home_score": 1,
+        "away_score": 1,
+        "home_pens": 3,
+        "away_pens": 5
+      },
+      {
+        "date": "2022-03-26",
+        "competition": "Friendly",
+        "home": "ENG",
+        "away": "SUI",
+        "home_score": 2,
+        "away_score": 1
+      }
+    ]
+  },
+  "ESP-FRA": {
+    "meetings": [
+      {
+        "date": "2025-06-05",
+        "competition": "Nations League SF",
+        "home": "ESP",
+        "away": "FRA",
+        "home_score": 5,
+        "away_score": 4
+      },
+      {
+        "date": "2021-10-10",
+        "competition": "Nations League Final",
+        "home": "ESP",
+        "away": "FRA",
+        "home_score": 1,
+        "away_score": 2
+      },
+      {
+        "date": "2017-03-28",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "ESP",
+        "home_score": 0,
+        "away_score": 2
+      },
+      {
+        "date": "2014-09-04",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "ESP",
+        "home_score": 1,
+        "away_score": 0
+      },
+      {
+        "date": "2013-03-26",
+        "competition": "WC Qualifier",
+        "home": "FRA",
+        "away": "ESP",
+        "home_score": 0,
+        "away_score": 1
+      },
+      {
+        "date": "2012-10-16",
+        "competition": "WC Qualifier",
+        "home": "ESP",
+        "away": "FRA",
+        "home_score": 1,
+        "away_score": 1
+      },
+      {
+        "date": "2012-06-23",
+        "competition": "Euro 2012 QF",
+        "home": "ESP",
+        "away": "FRA",
+        "home_score": 2,
+        "away_score": 0
+      }
+    ]
+  },
+  "ESP-NOR": {
+    "meetings": [
+      {
+        "date": "2023-10-15",
+        "competition": "Euro Qualifier",
+        "home": "NOR",
+        "away": "ESP",
+        "home_score": 0,
+        "away_score": 1
+      },
+      {
+        "date": "2023-03-25",
+        "competition": "Euro Qualifier",
+        "home": "ESP",
+        "away": "NOR",
+        "home_score": 3,
+        "away_score": 0
+      }
+    ]
+  },
+  "ESP-SUI": {
+    "meetings": [
+      {
+        "date": "2022-09-24",
+        "competition": "Nations League",
+        "home": "ESP",
+        "away": "SUI",
+        "home_score": 1,
+        "away_score": 2
+      },
+      {
+        "date": "2022-06-09",
+        "competition": "Nations League",
+        "home": "SUI",
+        "away": "ESP",
+        "home_score": 0,
+        "away_score": 1
+      },
+      {
+        "date": "2021-07-02",
+        "competition": "Euro 2020 QF",
+        "home": "SUI",
+        "away": "ESP",
+        "home_score": 1,
+        "away_score": 1,
+        "home_pens": 1,
+        "away_pens": 3
+      },
+      {
+        "date": "2020-11-14",
+        "competition": "Nations League",
+        "home": "SUI",
+        "away": "ESP",
+        "home_score": 1,
+        "away_score": 1
+      },
+      {
+        "date": "2020-10-10",
+        "competition": "Nations League",
+        "home": "ESP",
+        "away": "SUI",
+        "home_score": 1,
+        "away_score": 0
+      }
+    ]
+  },
+  "FRA-NOR": {
+    "meetings": [
+      {
+        "date": "2014-05-27",
+        "competition": "Friendly",
+        "home": "FRA",
+        "away": "NOR",
+        "home_score": 4,
+        "away_score": 0
+      }
+    ]
+  },
+  "FRA-SUI": {
+    "meetings": [
+      {
+        "date": "2021-06-28",
+        "competition": "Euro 2020 R16",
+        "home": "FRA",
+        "away": "SUI",
+        "home_score": 3,
+        "away_score": 3,
+        "home_pens": 4,
+        "away_pens": 5
+      }
+    ]
+  },
+  "NOR-SUI": {
+    "meetings": [
+      {
+        "date": "2013-09-10",
+        "competition": "WC Qualifier",
+        "home": "NOR",
+        "away": "SUI",
+        "home_score": 0,
+        "away_score": 2
+      },
+      {
+        "date": "2012-10-12",
+        "competition": "WC Qualifier",
+        "home": "SUI",
+        "away": "NOR",
+        "home_score": 1,
+        "away_score": 1
+      }
+    ]
+  },
+  "_notes": "Window: 2011-07-10 through 2026-06-10 (2026 World Cup, which began 2026-06-11, excluded). Sources: Wikipedia team-results pages (e.g. France/England/Spain/Belgium/Argentina/Switzerland/Norway national football team results, by decade), ESPN match pages, UEFA.com match reports, Sky Sports, Al Jazeera, and general web search cross-checks (11v11.com and worldfootball.net head-to-head pages were consulted via search snippets but blocked direct fetch/scraping, so match-by-match data came from ESPN/UEFA/news-report corroboration instead). Home/away reflects the officially listed home side for neutral-venue tournament matches (World Cup, Euros, Nations League finals) per the source reports, not true venue nationality. Pairs with zero meetings found in the window (ARG-NOR, ARG-ENG) were checked specifically for friendlies and none turned up (their only historical meetings predate 2011). Some entries carry residual uncertainty and should be spot-checked before relying on them for anything with real stakes: the exact home/away designation and venue for FRA-BEL 2015-06-07 (billed 'Belgium 4-3 France' by some outlets, played in Paris - recorded here as France home, 3-4); BEL-SUI 2016-05-28 home/away; ESP-FRA 2025-06-05 venue (Stuttgart, unconfirmed); and whether ESP-SUI, ESP-FRA, or FRA-BEL have any additional low-profile friendlies in gap years (2018-2019, 2023-2024) that didn't surface in search results. NOR-SUI's two 2012/2013 matches were initially reported by some sources as 'friendly' and others as 2014 WC qualifying Group E fixtures; treated here as WC Qualifiers per the Group E schedule."
+}
