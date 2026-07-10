@@ -23,8 +23,7 @@ import {
 } from "@/hooks/queries"
 import type { MatchRow, TeamFormMatch, TeamHonor } from "@/lib/types"
 import type { Outcome, TournamentResult } from "@/lib/form"
-import { pairKey, summarizeMeetings, type H2hMeeting } from "@/lib/h2h"
-import { shortDate } from "@/lib/format"
+import { pairKey, perspectiveMeetings, type H2hPerspectiveRow } from "@/lib/h2h"
 import { cn } from "@/lib/utils"
 
 const STAGE_SHORT: Record<string, string> = {
@@ -131,21 +130,62 @@ function Section({
   )
 }
 
+/** Per-team head-to-head rows passed into a panel's sections: the opponent's
+ *  name (for the section title) plus each past meeting from this panel's
+ *  team's perspective. Only supplied in the two-team Compare modal, and only
+ *  for knockout matches (see TeamInfoDialog). */
+interface PanelH2h {
+  opponentName: string
+  rows: H2hPerspectiveRow[]
+}
+
+/** Meeting date with the year — head-to-head spans 15 years, so the month/day
+ *  formats used elsewhere would be ambiguous: "Nov 16, 2022". Parsed at noon,
+ *  not via new Date(iso): a bare YYYY-MM-DD parses as UTC midnight, which
+ *  toLocaleDateString renders as the previous day in western timezones. */
+function meetingDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 /** The form/results/honours sections — shared by the tabbed single-team view
  *  and the (tab-less) two-team comparison. */
 function FormSections({
   pre,
   tournament,
   honors,
+  h2h,
   className,
 }: {
   pre: TeamFormMatch[]
   tournament: TournamentResult[]
   honors: TeamHonor[]
+  h2h?: PanelH2h
   className?: string
 }) {
   return (
     <div className={cn("space-y-6", className)}>
+      {h2h && (
+        <Section
+          title={`vs. ${h2h.opponentName} (last 15 years)`}
+          empty={h2h.rows.length === 0}
+        >
+          {h2h.rows.map((r, i) => (
+            <ResultRow
+              key={i}
+              outcome={r.outcome}
+              gf={r.gf}
+              ga={r.ga}
+              opponent={meetingDate(r.date)}
+              label={r.competition}
+            />
+          ))}
+        </Section>
+      )}
+
       <Section title="This tournament" empty={tournament.length === 0}>
         {[...tournament].reverse().map((r) => (
           <ResultRow
@@ -189,82 +229,13 @@ function FormSections({
   )
 }
 
-function MeetingRow({ meeting }: { meeting: H2hMeeting }) {
-  const pens =
-    meeting.home_pens != null && meeting.away_pens != null
-      ? ` (${meeting.home_pens}-${meeting.away_pens} pens)`
-      : ""
-  return (
-    <li className="flex items-center gap-2 border-b border-border py-1.5 text-sm last:border-b-0">
-      <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-        {shortDate(meeting.date)}
-      </span>
-      <span className="min-w-0 truncate tabular-nums">
-        {meeting.home} {meeting.home_score}-{meeting.away_score} {meeting.away}
-        {pens}
-      </span>
-      <span className="ml-auto whitespace-nowrap text-xs text-muted-foreground">
-        {meeting.competition}
-      </span>
-    </li>
-  )
-}
-
-/** Full-width knockout-only head-to-head history below the two TeamPanels in
- *  the two-team Compare modal — symmetric across both teams, so it can't live
- *  inside the per-team FormSections. Hidden entirely for group-stage matches
- *  (see TeamInfoDialog). */
-function HeadToHeadSection({
-  homeCode,
-  homeName,
-  awayCode,
-  awayName,
-}: {
-  homeCode: string | null
-  homeName: string | null
-  awayCode: string | null
-  awayName: string | null
-}) {
-  const h2hByPair = useHeadToHead().data
-  const meetings =
-    homeCode && awayCode ? h2hByPair?.[pairKey(homeCode, awayCode)] ?? [] : []
-
-  return (
-    <div className="mt-6 space-y-1.5 border-t border-border pt-6">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Head to head (last 15 years)
-      </h4>
-      {meetings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No meetings in the last 15 years.
-        </p>
-      ) : (
-        <>
-          {homeCode && awayCode && (
-            <p className="text-sm text-muted-foreground">
-              {(() => {
-                const { winsA, draws, winsB } = summarizeMeetings(meetings, homeCode)
-                return `${homeName ?? homeCode} ${winsA}W · ${draws}D · ${awayName ?? awayCode} ${winsB}W`
-              })()}
-            </p>
-          )}
-          <ul>
-            {meetings.map((m, i) => (
-              <MeetingRow key={i} meeting={m} />
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  )
-}
-
 function TeamPanel({
   name,
   code,
   pre,
   tournament,
   honors,
+  h2h,
   showUpcoming = false,
   className,
   headerClassName,
@@ -274,6 +245,7 @@ function TeamPanel({
   pre: TeamFormMatch[]
   tournament: TournamentResult[]
   honors: TeamHonor[]
+  h2h?: PanelH2h
   /** Show Form/Upcoming tabs. Off in the two-team comparison, which is already
    *  busy enough side-by-side — there it renders just the form sections. */
   showUpcoming?: boolean
@@ -281,7 +253,7 @@ function TeamPanel({
   headerClassName?: string
 }) {
   const sections = (
-    <FormSections pre={pre} tournament={tournament} honors={honors} />
+    <FormSections pre={pre} tournament={tournament} honors={honors} h2h={h2h} />
   )
 
   return (
@@ -359,8 +331,23 @@ export function TeamDetailDialog({
 export function TeamInfoDialog({ match }: { match: MatchRow }) {
   const formByCode = useTeamForm().data
   const tourByCode = useTournamentResults()
+  const h2hByPair = useHeadToHead().data
 
   const formFor = (code: string | null) => (code ? formByCode?.[code] : undefined)
+
+  // Head-to-head shows in the knockout only, and each panel gets the meetings
+  // from its own team's perspective, titled after the opponent.
+  const meetings =
+    match.stage !== "GROUP" && match.home_code && match.away_code
+      ? h2hByPair?.[pairKey(match.home_code, match.away_code)] ?? []
+      : null
+  const h2hFor = (
+    ownCode: string | null,
+    opponentName: string | null
+  ): PanelH2h | undefined =>
+    meetings && ownCode && opponentName
+      ? { opponentName, rows: perspectiveMeetings(meetings, ownCode) }
+      : undefined
 
   return (
     <Dialog>
@@ -390,6 +377,7 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.home_code)?.results ?? []}
               tournament={match.home_code ? tourByCode[match.home_code] ?? [] : []}
               honors={formFor(match.home_code)?.honors ?? []}
+              h2h={h2hFor(match.home_code, match.away_team)}
               headerClassName="hidden sm:flex"
             />
           )
@@ -400,6 +388,7 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.away_code)?.results ?? []}
               tournament={match.away_code ? tourByCode[match.away_code] ?? [] : []}
               honors={formFor(match.away_code)?.honors ?? []}
+              h2h={h2hFor(match.away_code, match.home_team)}
               headerClassName="hidden sm:flex"
             />
           )
@@ -424,15 +413,6 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
                 {homePanel}
                 {awayPanel}
               </div>
-
-              {match.stage !== "GROUP" && (
-                <HeadToHeadSection
-                  homeCode={match.home_code}
-                  homeName={match.home_team}
-                  awayCode={match.away_code}
-                  awayName={match.away_team}
-                />
-              )}
             </>
           )
         })()}
