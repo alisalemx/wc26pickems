@@ -167,10 +167,13 @@ function FormSections({
           title="Head-to-head (last 15 years)"
           empty={h2h.length === 0}
         >
-          <li className="pb-1 text-sm font-medium tabular-nums">
-            {h2h.filter((r) => r.outcome === "W").length}W ·{" "}
-            {h2h.filter((r) => r.outcome === "D").length}D ·{" "}
-            {h2h.filter((r) => r.outcome === "L").length}L
+          <li className="flex items-center gap-3 pb-1 text-sm font-medium tabular-nums">
+            {(["W", "D", "L"] as const).map((o) => (
+              <span key={o} className="flex items-center gap-1.5">
+                <FormPill outcome={o} />
+                {h2h.filter((r) => r.outcome === o).length}
+              </span>
+            ))}
           </li>
           {h2h.map((r, i) => (
             <ResultRow
