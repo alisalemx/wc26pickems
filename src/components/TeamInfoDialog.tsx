@@ -167,6 +167,11 @@ function FormSections({
           title="Head-to-head (last 15 years)"
           empty={h2h.length === 0}
         >
+          <li className="pb-1 text-sm font-medium tabular-nums">
+            {h2h.filter((r) => r.outcome === "W").length}W ·{" "}
+            {h2h.filter((r) => r.outcome === "D").length}D ·{" "}
+            {h2h.filter((r) => r.outcome === "L").length}L
+          </li>
           {h2h.map((r, i) => (
             <ResultRow
               key={i}
