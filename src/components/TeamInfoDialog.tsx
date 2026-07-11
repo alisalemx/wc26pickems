@@ -23,7 +23,7 @@ import {
 } from "@/hooks/queries"
 import type { MatchRow, TeamFormMatch, TeamHonor } from "@/lib/types"
 import type { Outcome, TournamentResult } from "@/lib/form"
-import { pairKey, summarizeMeetings } from "@/lib/h2h"
+import { pairKey, perspectiveMeetings, type H2hPerspectiveRow } from "@/lib/h2h"
 import { cn } from "@/lib/utils"
 
 const STAGE_SHORT: Record<string, string> = {
@@ -130,22 +130,57 @@ function Section({
   )
 }
 
+/** Meeting date with the year — head-to-head spans 15 years, so the month/day
+ *  formats used elsewhere would be ambiguous: "Nov 16, 2022". Parsed at noon,
+ *  not via new Date(iso): a bare YYYY-MM-DD parses as UTC midnight, which
+ *  toLocaleDateString renders as the previous day in western timezones. */
+function meetingDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 /** The form/results/honours sections — shared by the tabbed single-team view
  *  and the (tab-less) two-team comparison. */
 function FormSections({
   pre,
   tournament,
   honors,
+  h2h,
   className,
 }: {
   pre: TeamFormMatch[]
   tournament: TournamentResult[]
   honors: TeamHonor[]
+  /** Head-to-head meetings from this panel's team's perspective. Only
+   *  supplied in the two-team Compare modal, and only for knockout matches
+   *  (see TeamInfoDialog). */
+  h2h?: H2hPerspectiveRow[]
   className?: string
 }) {
   return (
     <div className={cn("space-y-6", className)}>
-      <Section title="This tournament" empty={tournament.length === 0}>
+      {h2h && (
+        <Section
+          title="Head-to-head (last 15 years)"
+          empty={h2h.length === 0}
+        >
+          {h2h.map((r, i) => (
+            <ResultRow
+              key={i}
+              outcome={r.outcome}
+              gf={r.gf}
+              ga={r.ga}
+              opponent={meetingDate(r.date)}
+              label={r.competition}
+            />
+          ))}
+        </Section>
+      )}
+
+      <Section title="Form (tournament)" empty={tournament.length === 0}>
         {[...tournament].reverse().map((r) => (
           <ResultRow
             key={r.matchId}
@@ -158,7 +193,7 @@ function FormSections({
         ))}
       </Section>
 
-      <Section title="Last 5 (pre-tournament)" empty={pre.length === 0}>
+      <Section title="Form (pre-tournament)" empty={pre.length === 0}>
         {[...pre].reverse().map((r, i) => (
           <ResultRow
             key={i}
@@ -188,70 +223,13 @@ function FormSections({
   )
 }
 
-/** Aggregate head-to-head record between the two compared teams over the last
- *  15 years: wins each plus draws (shootout games count as draws, judged on the
- *  90'+ET score like scoring). Knockout Compare modal only. A structural box,
- *  so it takes the ink outline like other cards. */
-function HeadToHeadBox({
-  homeName,
-  homeCode,
-  awayName,
-  awayCode,
-  winsHome,
-  winsAway,
-  draws,
-  hasMeetings,
-  className,
-}: {
-  homeName: string
-  homeCode: string | null
-  awayName: string
-  awayCode: string | null
-  winsHome: number
-  winsAway: number
-  draws: number
-  hasMeetings: boolean
-  className?: string
-}) {
-  return (
-    <div className={cn("rounded-lg border border-ink p-3", className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Head-to-head <span className="normal-case">(last 15 years)</span>
-      </h4>
-      {hasMeetings ? (
-        <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-          <div>
-            <div className="text-xs text-muted-foreground">
-              {flagEmoji(homeCode)} {homeName} wins
-            </div>
-            <div className="text-xl font-bold tabular-nums">{winsHome}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">
-              {flagEmoji(awayCode)} {awayName} wins
-            </div>
-            <div className="text-xl font-bold tabular-nums">{winsAway}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Draws</div>
-            <div className="text-xl font-bold tabular-nums">{draws}</div>
-          </div>
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-muted-foreground">
-          No meetings in the last 15 years
-        </p>
-      )}
-    </div>
-  )
-}
-
 function TeamPanel({
   name,
   code,
   pre,
   tournament,
   honors,
+  h2h,
   showUpcoming = false,
   className,
   headerClassName,
@@ -261,6 +239,7 @@ function TeamPanel({
   pre: TeamFormMatch[]
   tournament: TournamentResult[]
   honors: TeamHonor[]
+  h2h?: H2hPerspectiveRow[]
   /** Show Form/Upcoming tabs. Off in the two-team comparison, which is already
    *  busy enough side-by-side — there it renders just the form sections. */
   showUpcoming?: boolean
@@ -268,7 +247,7 @@ function TeamPanel({
   headerClassName?: string
 }) {
   const sections = (
-    <FormSections pre={pre} tournament={tournament} honors={honors} />
+    <FormSections pre={pre} tournament={tournament} honors={honors} h2h={h2h} />
   )
 
   return (
@@ -350,28 +329,14 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
 
   const formFor = (code: string | null) => (code ? formByCode?.[code] : undefined)
 
-  // Head-to-head shows in the knockout only. The record is judged from the
-  // home team's perspective (winsA = home wins).
+  // Head-to-head shows in the knockout only, and each panel gets the meetings
+  // from its own team's perspective.
   const meetings =
     match.stage !== "GROUP" && match.home_code && match.away_code
       ? h2hByPair?.[pairKey(match.home_code, match.away_code)] ?? []
       : null
-  const summary =
-    meetings && match.home_code ? summarizeMeetings(meetings, match.home_code) : null
-  const h2hBox = (className?: string) =>
-    summary && (
-      <HeadToHeadBox
-        homeName={match.home_team ?? "Home"}
-        homeCode={match.home_code}
-        awayName={match.away_team ?? "Away"}
-        awayCode={match.away_code}
-        winsHome={summary.winsA}
-        winsAway={summary.winsB}
-        draws={summary.draws}
-        hasMeetings={(meetings?.length ?? 0) > 0}
-        className={className}
-      />
-    )
+  const h2hFor = (ownCode: string | null): H2hPerspectiveRow[] | undefined =>
+    meetings && ownCode ? perspectiveMeetings(meetings, ownCode) : undefined
 
   return (
     <Dialog>
@@ -401,7 +366,8 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.home_code)?.results ?? []}
               tournament={match.home_code ? tourByCode[match.home_code] ?? [] : []}
               honors={formFor(match.home_code)?.honors ?? []}
-              headerClassName="hidden"
+              h2h={h2hFor(match.home_code)}
+              headerClassName="hidden sm:flex"
             />
           )
           const awayPanel = (
@@ -411,14 +377,12 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.away_code)?.results ?? []}
               tournament={match.away_code ? tourByCode[match.away_code] ?? [] : []}
               honors={formFor(match.away_code)?.honors ?? []}
-              headerClassName="hidden"
+              h2h={h2hFor(match.away_code)}
+              headerClassName="hidden sm:flex"
             />
           )
           return (
             <>
-              {/* Mobile: head-to-head once above the team tabs */}
-              {h2hBox("sm:hidden")}
-
               {/* Mobile: switch between teams with a segmented control */}
               <Tabs defaultValue="home" className="gap-4 sm:hidden">
                 <TabsList className="w-full">
@@ -433,24 +397,8 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
                 <TabsContent value="away">{awayPanel}</TabsContent>
               </Tabs>
 
-              {/* Desktop: the two team headers on their own row, the
-                  head-to-head box spanning both columns beneath them, then the
-                  two panels' sections side by side. The panels' built-in
-                  headers stay hidden so the headers can live in this row. */}
-              <div className="hidden gap-x-8 gap-y-4 sm:grid sm:grid-cols-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl leading-none">
-                    {flagEmoji(match.home_code)}
-                  </span>
-                  <span className="font-semibold">{match.home_team ?? "TBD"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl leading-none">
-                    {flagEmoji(match.away_code)}
-                  </span>
-                  <span className="font-semibold">{match.away_team ?? "TBD"}</span>
-                </div>
-                {h2hBox("sm:col-span-2")}
+              {/* Desktop: both teams side by side */}
+              <div className="hidden gap-8 sm:grid sm:grid-cols-2">
                 {homePanel}
                 {awayPanel}
               </div>

@@ -1,10 +1,50 @@
 import { describe, expect, it } from "vitest"
-import { pairKey, summarizeMeetings, type H2hMeeting } from "./h2h"
+import {
+  pairKey,
+  perspectiveMeetings,
+  summarizeMeetings,
+  type H2hMeeting,
+} from "./h2h"
 
 describe("pairKey", () => {
   it("sorts codes alphabetically regardless of input order", () => {
     expect(pairKey("SUI", "ARG")).toBe("ARG-SUI")
     expect(pairKey("ARG", "SUI")).toBe("ARG-SUI")
+  })
+})
+
+describe("perspectiveMeetings", () => {
+  it("re-expresses meetings from one team's view, shootout as a draw", () => {
+    const meetings: H2hMeeting[] = [
+      {
+        date: "2022-11-16",
+        competition: "Friendly",
+        home: "ARG",
+        away: "SUI",
+        home_score: 2,
+        away_score: 0,
+      },
+      {
+        date: "2018-07-01",
+        competition: "World Cup R16",
+        home: "SUI",
+        away: "ARG",
+        home_score: 1,
+        away_score: 1,
+        home_pens: 4,
+        away_pens: 3,
+      },
+    ]
+    expect(perspectiveMeetings(meetings, "SUI")).toEqual([
+      { date: "2022-11-16", competition: "Friendly", gf: 0, ga: 2, outcome: "L" },
+      {
+        date: "2018-07-01",
+        competition: "World Cup R16",
+        gf: 1,
+        ga: 1,
+        outcome: "D",
+      },
+    ])
   })
 })
 
