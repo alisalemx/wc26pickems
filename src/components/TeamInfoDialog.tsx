@@ -194,7 +194,9 @@ function FormSections({
  *  so it takes the ink outline like other cards. */
 function HeadToHeadBox({
   homeName,
+  homeCode,
   awayName,
+  awayCode,
   winsHome,
   winsAway,
   draws,
@@ -202,7 +204,9 @@ function HeadToHeadBox({
   className,
 }: {
   homeName: string
+  homeCode: string | null
   awayName: string
+  awayCode: string | null
   winsHome: number
   winsAway: number
   draws: number
@@ -212,22 +216,25 @@ function HeadToHeadBox({
   return (
     <div className={cn("rounded-lg border border-ink p-3", className)}>
       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Head-to-head{" "}
-        <span className="font-normal normal-case">(last 15 years)</span>
+        Head-to-head <span className="normal-case">(last 15 years)</span>
       </h4>
       {hasMeetings ? (
         <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
           <div>
+            <div className="text-xs text-muted-foreground">
+              {flagEmoji(homeCode)} {homeName} wins
+            </div>
             <div className="text-xl font-bold tabular-nums">{winsHome}</div>
-            <div className="text-xs text-muted-foreground">{homeName} wins</div>
           </div>
           <div>
+            <div className="text-xs text-muted-foreground">
+              {flagEmoji(awayCode)} {awayName} wins
+            </div>
             <div className="text-xl font-bold tabular-nums">{winsAway}</div>
-            <div className="text-xs text-muted-foreground">{awayName} wins</div>
           </div>
           <div>
-            <div className="text-xl font-bold tabular-nums">{draws}</div>
             <div className="text-xs text-muted-foreground">Draws</div>
+            <div className="text-xl font-bold tabular-nums">{draws}</div>
           </div>
         </div>
       ) : (
@@ -355,7 +362,9 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
     summary && (
       <HeadToHeadBox
         homeName={match.home_team ?? "Home"}
+        homeCode={match.home_code}
         awayName={match.away_team ?? "Away"}
+        awayCode={match.away_code}
         winsHome={summary.winsA}
         winsAway={summary.winsB}
         draws={summary.draws}
@@ -392,7 +401,7 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.home_code)?.results ?? []}
               tournament={match.home_code ? tourByCode[match.home_code] ?? [] : []}
               honors={formFor(match.home_code)?.honors ?? []}
-              headerClassName="hidden sm:flex"
+              headerClassName="hidden"
             />
           )
           const awayPanel = (
@@ -402,11 +411,14 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               pre={formFor(match.away_code)?.results ?? []}
               tournament={match.away_code ? tourByCode[match.away_code] ?? [] : []}
               honors={formFor(match.away_code)?.honors ?? []}
-              headerClassName="hidden sm:flex"
+              headerClassName="hidden"
             />
           )
           return (
             <>
+              {/* Mobile: head-to-head once above the team tabs */}
+              {h2hBox("sm:hidden")}
+
               {/* Mobile: switch between teams with a segmented control */}
               <Tabs defaultValue="home" className="gap-4 sm:hidden">
                 <TabsList className="w-full">
@@ -417,21 +429,30 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
                     {flagEmoji(match.away_code)} {match.away_team ?? "Away"}
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="home" className="space-y-4">
-                  {homePanel}
-                  {h2hBox()}
-                </TabsContent>
-                <TabsContent value="away" className="space-y-4">
-                  {awayPanel}
-                  {h2hBox()}
-                </TabsContent>
+                <TabsContent value="home">{homePanel}</TabsContent>
+                <TabsContent value="away">{awayPanel}</TabsContent>
               </Tabs>
 
-              {/* Desktop: both teams side by side, head-to-head below both */}
-              <div className="hidden gap-8 sm:grid sm:grid-cols-2">
+              {/* Desktop: the two team headers on their own row, the
+                  head-to-head box spanning both columns beneath them, then the
+                  two panels' sections side by side. The panels' built-in
+                  headers stay hidden so the headers can live in this row. */}
+              <div className="hidden gap-x-8 gap-y-4 sm:grid sm:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl leading-none">
+                    {flagEmoji(match.home_code)}
+                  </span>
+                  <span className="font-semibold">{match.home_team ?? "TBD"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl leading-none">
+                    {flagEmoji(match.away_code)}
+                  </span>
+                  <span className="font-semibold">{match.away_team ?? "TBD"}</span>
+                </div>
+                {h2hBox("sm:col-span-2")}
                 {homePanel}
                 {awayPanel}
-                {h2hBox("sm:col-span-2")}
               </div>
             </>
           )
