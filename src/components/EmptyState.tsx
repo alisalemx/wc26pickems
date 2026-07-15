@@ -13,7 +13,7 @@ export function EmptyState({
   return (
     <p
       className={cn(
-        "py-12 text-center text-sm text-muted-foreground",
+        "py-12 text-center text-sm text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
         className
       )}
     >

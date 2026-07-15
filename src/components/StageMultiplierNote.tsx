@@ -36,6 +36,7 @@ const STAGE_COPY: Partial<Record<MatchStage, string>> = {
  *  scoring dialog the Leaderboard uses. */
 export function StageMultiplierNote({ stage }: { stage: MatchStage }) {
   const [dismissedStage, setDismissedStage] = useState(readDismissed)
+  const [closing, setClosing] = useState(false)
   // Reappears when the round advances: a stale dismissal (an earlier stage) no
   // longer matches the current one, so the note shows again for the new round.
   if (dismissedStage === stage) return null
@@ -49,32 +50,50 @@ export function StageMultiplierNote({ stage }: { stage: MatchStage }) {
     } catch {
       // Storage may be unavailable (private mode); dismiss for this session only.
     }
-    setDismissedStage(stage)
+    setClosing(true)
   }
 
   return (
-    <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-9 duration-[var(--duration-base)] ease-out-cubic">
-      <Info />
-      <AlertDescription>
-        <p>
-          {copy} ×{STAGE_MULTIPLIER[stage]} the points.{" "}
-          <ScoringGuide
-            trigger={
-              <button className="rounded-sm -mx-1 px-1 font-medium text-primary underline underline-offset-2 transition-colors duration-[var(--duration-fast)] hover:no-underline active:bg-foreground/10">
-                See scoring system
-              </button>
-            }
-          />
-        </p>
-      </AlertDescription>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss reminder"
-        className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground transition-colors duration-[var(--duration-fast)] hover:text-foreground active:bg-foreground/10"
-      >
-        <X className="size-4" aria-hidden />
-      </button>
-    </Alert>
+    // Reuses the grid-rows collapse idiom (see RevealedPicks in MatchCard) so
+    // dismissal collapses the space instead of unmounting instantly. Under
+    // reduced motion the global backstop makes the transition near-instant,
+    // but transitionend still fires and the note still unmounts.
+    <div
+      className="grid transition-[grid-template-rows,opacity] duration-[var(--duration-exit)] ease-in-out-quart"
+      style={{ gridTemplateRows: closing ? "0fr" : "1fr", opacity: closing ? 0 : 1 }}
+      onTransitionEnd={(e) => {
+        // transitionend fires per property; guard on the target/property so the
+        // opacity leg (same duration here) can't unmount before grid-rows settles.
+        if (e.target === e.currentTarget && e.propertyName === "grid-template-rows") {
+          setDismissedStage(stage)
+        }
+      }}
+    >
+      <div className="overflow-hidden">
+        <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-9 duration-[var(--duration-base)] ease-out-cubic">
+          <Info />
+          <AlertDescription>
+            <p>
+              {copy} ×{STAGE_MULTIPLIER[stage]} the points.{" "}
+              <ScoringGuide
+                trigger={
+                  <button className="rounded-sm -mx-1 px-1 font-medium text-primary underline underline-offset-2 transition-colors duration-[var(--duration-fast)] hover:no-underline active:bg-foreground/10">
+                    See scoring system
+                  </button>
+                }
+              />
+            </p>
+          </AlertDescription>
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Dismiss reminder"
+            className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground transition-colors duration-[var(--duration-fast)] hover:text-foreground active:bg-foreground/10"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+        </Alert>
+      </div>
+    </div>
   )
 }

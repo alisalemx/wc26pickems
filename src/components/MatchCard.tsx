@@ -272,9 +272,15 @@ export function MatchCard({
                         <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
                       </span>
                     </span>
-                    <span className="text-base font-bold tabular-nums text-foreground">
+                    <motion.span
+                      key={`${match.home_score}-${match.away_score}`}
+                      initial={reduceMotion ? false : { scale: 0.85 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+                      className="text-base font-bold tabular-nums text-foreground"
+                    >
                       {match.home_score}–{match.away_score}
-                    </span>
+                    </motion.span>
                   </>
                 )}
                 {finished && (
@@ -315,9 +321,15 @@ export function MatchCard({
           ) : liveScore ? (
             // Visitor, match in progress: the running score (the header's
             // pulsing elapsed clock already flags that it's live).
-            <span className="text-2xl font-bold tabular-nums">
+            <motion.span
+              key={`${match.home_score}-${match.away_score}`}
+              initial={reduceMotion ? false : { scale: 0.85 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+              className="text-2xl font-bold tabular-nums"
+            >
               {match.home_score}–{match.away_score}
-            </span>
+            </motion.span>
           ) : (
             // Visitor, upcoming match: nothing to show yet.
             <span className="px-3 text-sm font-medium text-muted-foreground">
