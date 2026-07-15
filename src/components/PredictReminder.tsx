@@ -1,5 +1,7 @@
-import { ChevronRight, Zap } from "lucide-react"
+import { ChevronRight, Trophy, Zap } from "lucide-react"
+import { FINAL_ID } from "@/lib/bracket"
 import { isLocked } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 
 interface Props {
@@ -46,6 +48,12 @@ export function PredictReminder({
     b.kickoff < a.kickoff || (b.kickoff === a.kickoff && b.id < a.id) ? b : a
   )
 
+  // Once the jump target is the Final itself, the band trades its usual green
+  // for the deep-gold hype treatment (.finale-hype). The pressed state moves
+  // to brightness (the Switch idiom): a bg tint would paint under the gold
+  // gradient image and never show.
+  const isFinal = next.id === FINAL_ID
+
   return (
     // The entrance lives on a wrapper: `duration-*`/`ease-*` utilities set the
     // transition and the animate-in timing alike, so keeping them on one
@@ -55,17 +63,33 @@ export function PredictReminder({
       <button
         type="button"
         onClick={() => onGoToNext(next)}
-        className="predict-cta flex w-full cursor-pointer items-center gap-2 rounded-lg border border-ink px-4 py-3 text-sm transition-colors duration-[var(--duration-fast)] active:bg-foreground/10"
+        className={cn(
+          "flex w-full cursor-pointer items-center gap-2 rounded-lg border border-ink px-4 py-3 text-sm duration-[var(--duration-fast)]",
+          isFinal
+            ? "finale-hype transition-[filter] active:brightness-95"
+            : "predict-cta transition-colors active:bg-foreground/10"
+        )}
       >
-        <Zap className="size-4 shrink-0" aria-hidden />
+        {isFinal ? (
+          <Trophy className="size-4 shrink-0" aria-hidden />
+        ) : (
+          <Zap className="size-4 shrink-0" aria-hidden />
+        )}
         {/* The tail is dropped instead of truncated where space is tight. */}
-        <span className="whitespace-nowrap font-semibold">
-          <span className="tabular-nums">{open.length}</span> match
-          {open.length === 1 ? "" : "es"} open
-          <span className="hidden sm:inline"> for predictions</span>
-        </span>
+        {isFinal ? (
+          <span className="whitespace-nowrap font-semibold">
+            The Final is open
+            <span className="hidden sm:inline"> for prediction</span>
+          </span>
+        ) : (
+          <span className="whitespace-nowrap font-semibold">
+            <span className="tabular-nums">{open.length}</span> match
+            {open.length === 1 ? "" : "es"} open
+            <span className="hidden sm:inline"> for predictions</span>
+          </span>
+        )}
         <span className="ml-auto flex shrink-0 items-center gap-1 font-semibold">
-          Predict next
+          {isFinal ? "Make your call" : "Predict next"}
           <ChevronRight className="size-4" aria-hidden />
         </span>
       </button>

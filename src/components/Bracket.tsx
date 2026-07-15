@@ -99,7 +99,12 @@ function MatchFull({ m }: { m: MatchRow }) {
 
   return (
     <Card
-      className="shrink-0 gap-0 py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic"
+      className={cn(
+        "shrink-0 gap-0 py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        // The Final's slot wears the same pale-gold wash as its match-list
+        // card (.card-final) — the marquee node of the tree.
+        m.stage === "FINAL" && "card-final"
+      )}
       style={{ width: FULL_W }}
     >
       <div className="flex items-center justify-between border-b border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -195,7 +200,15 @@ function MatchMini({ m }: { m: MatchRow }) {
   const finished = m.status === "FINISHED" && m.home_score != null
 
   return (
-    <Card className="shrink-0 gap-0 px-1 py-1" style={{ width: MINI_W }}>
+    <Card
+      className={cn(
+        "shrink-0 gap-0 px-1 py-1",
+        // Keep the Final's gold when its column is compressed too, so the
+        // marquee slot stays findable at a glance in every focus state.
+        m.stage === "FINAL" && "card-final"
+      )}
+      style={{ width: MINI_W }}
+    >
       <div className="flex flex-col gap-0.5">
         <TinyRow
           code={m.home_code}

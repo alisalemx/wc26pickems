@@ -168,6 +168,9 @@ export function MatchCard({
       id={`match-${match.id}`}
       className={cn(
         "gap-0 overflow-hidden py-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in",
+        // The marquee match: the Final's card wears the pale-gold wash
+        // (.card-final), before and after it's played.
+        match.stage === "FINAL" && "card-final",
         highlighted && "match-highlight"
       )}
       style={{ "--i": index } as CSSProperties}

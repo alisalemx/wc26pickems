@@ -416,6 +416,99 @@
   animation: final-sheen 1.9s var(--ease-in-out-quart) 400ms 1 both;
 }
 
+/* The Final hype state of the "Predict next" reminder band (PredictReminder,
+   its only user): once the reminder's jump target is the Final itself, the
+   band swaps its usual .predict-cta green for this — the card-scale sibling of
+   .finale-hero that hypes the upcoming Final rather than crowning a decided
+   champion. Same base gold gradient + embossed text, but the sheen is the
+   Final stage tag's INFINITE slow glint (reused verbatim, just slower) rather
+   than .finale-hero's one-shot — the match hasn't happened yet, so the band
+   stays a constant, low-key glint the whole time it's shown instead of
+   settling after a single sweep. Same ::after-pseudo trick as
+   .finale-hero/.match-highlight so the sheen's own `animation` slot never
+   fights the element's tw-animate entrance. */
+.finale-hype {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
+  background-origin: border-box;
+  color: oklch(0.98 0.02 95);
+  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
+}
+.finale-hype::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 65%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: -150% 0;
+  animation: final-sheen 6s var(--ease-in-out-quart) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .finale-hype::after {
+    animation: none;
+  }
+}
+
+/* The Final's CONTENT card (the match list's MatchCard and the bracket's
+   final slot). Two tiers of gold by design: DEEP gold (.finale-hype /
+   .finale-hero / .stage-final) is for bands and badges that carry only light
+   embossed text; this PALE tier is for content cards full of inputs, pills,
+   and buttons that must keep the normal foreground in both themes — so it's
+   just the card surface washed with the --gold token (a light gold wash on a
+   light card, a dark gold tint on a dark one), keeping border-ink and every
+   child's own colors intact. The sheen is the same slow infinite glint as
+   .finale-hype but fainter, and lives on ::before — NOT ::after, which
+   .match-highlight already claims on the same element for its one-shot flash
+   (the two pseudos coexist; sharing one would let whichever class lands last
+   clobber the other's animation). */
+.card-final {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--gold) 26%, var(--card)),
+    color-mix(in oklab, var(--gold) 44%, var(--card)),
+    color-mix(in oklab, var(--gold) 26%, var(--card))
+  );
+  background-origin: border-box;
+  /* The hype comes from the warm champagne gradient plus a gold-warmed ink
+     outline, not from pushing the fill toward saturated yellow. */
+  border-color: color-mix(in oklab, var(--gold) 45%, var(--ink));
+}
+.card-final::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.3) 50%,
+    transparent 65%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: -150% 0;
+  animation: final-sheen 6s var(--ease-in-out-quart) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-final::before {
+    animation: none;
+  }
+}
+
 /* The finale podium's bars (ChampionBanner, its only user): each bar fills
    upward from the floor as its column enters. Transform-only (scaleY from 0,
    origin bottom) so it never triggers layout; the column's inline --i is
