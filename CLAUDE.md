@@ -36,6 +36,12 @@ It returns `{received,updated,unlinked,standings,espnFetched,espnKnockout,unlock
 A second hit within 60s returns `{"skipped":"recently synced"}` (the cooldown), and
 outside the Jun 10–Jul 21 2026 tournament window it returns `off-season`.
 
+**Off-season keep-alive.** Supabase's free tier pauses a project after ~7 days
+with no activity, and outside the tournament window nothing else touches the DB.
+So the off-season branch of `sync-results` does one tiny `matches` read a day
+(the cron run in the 12:00–12:01 UTC slot), returning `off-season (keep-alive)`.
+Don't remove it unless the project moves to a paid plan.
+
 Env vars live in `.env` (copy from `.env.example`). `VITE_*` are public/client;
 `SUPABASE_SERVICE_ROLE_KEY` and `FOOTBALL_DATA_TOKEN` are server-only (functions + seed scripts).
 `SYNC_SECRET` (server-only, optional) authorizes manual HTTP force-syncs of the

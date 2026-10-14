@@ -88,6 +88,25 @@ export default async (req: Request) => {
     now < new Date("2026-06-10T00:00:00Z") ||
     now > new Date("2026-07-21T00:00:00Z")
   ) {
+    // Keep-alive: Supabase pauses free-tier projects after ~7 days without
+    // activity, and off-season nothing else touches the DB. One tiny read a
+    // day (the first run after 12:00 UTC) gives it 7 chances per window.
+    if (now.getUTCHours() === 12 && now.getUTCMinutes() < 2) {
+      const supabaseUrl = process.env.SUPABASE_URL
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (supabaseUrl && serviceKey) {
+        const db = createClient(supabaseUrl, serviceKey, {
+          auth: { persistSession: false },
+        })
+        const { error } = await db.from("matches").select("id").limit(1)
+        if (error) {
+          return new Response(`off-season (keep-alive failed: ${error.message})`, {
+            status: 500,
+          })
+        }
+        return new Response("off-season (keep-alive)", { status: 200 })
+      }
+    }
     return new Response("off-season", { status: 200 })
   }
 
