@@ -14,7 +14,7 @@ import { TeamForm } from "./TeamForm"
 import { TeamInfoDialog } from "./TeamInfoDialog"
 import { ScorePair } from "./ScoreInput"
 import { useLiveSeconds } from "@/hooks/useCountdown"
-import { kickoffTime, isLocked, isLive, parseClockMinute, formatClock } from "@/lib/format"
+import { kickoffTime, isPredictionLocked, isLive, parseClockMinute, formatClock } from "@/lib/format"
 import { scorePrediction, maxPoints, EXACT_BASE } from "@/lib/scoring"
 import {
   useRevealedPredictions,
@@ -49,7 +49,7 @@ export function MatchCard({
 }: Props) {
   const signedIn = ownUserId != null
   const reduceMotion = useReducedMotion()
-  const locked = isLocked(match.kickoff)
+  const locked = isPredictionLocked(match)
   const finished =
     match.status === "FINISHED" &&
     match.home_score != null &&

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
   isLocked,
+  isPredictionLocked,
   isLive,
   MAX_LIVE_MS_GROUP,
   MAX_LIVE_MS_BRACKET,
@@ -25,6 +26,33 @@ describe("isLocked", () => {
 
   it("returns true after kickoff", () => {
     expect(isLocked(kickoff, kickoffMs + 60_000)).toBe(true)
+  })
+})
+
+describe("isPredictionLocked", () => {
+  const kickoff = "2026-07-01T18:00:00Z"
+  const before = new Date(kickoff).getTime() - 60_000
+
+  it("stays open before kickoff while the match is pre-match", () => {
+    expect(isPredictionLocked({ kickoff, status: "TIMED" }, before)).toBe(false)
+    expect(isPredictionLocked({ kickoff, status: "SCHEDULED" }, before)).toBe(false)
+  })
+
+  it("locks at kickoff even if the status hasn't moved", () => {
+    expect(
+      isPredictionLocked({ kickoff, status: "TIMED" }, new Date(kickoff).getTime())
+    ).toBe(true)
+  })
+
+  it("locks a match the feed reports underway before its stored kickoff", () => {
+    expect(isPredictionLocked({ kickoff, status: "IN_PLAY" }, before)).toBe(true)
+    expect(isPredictionLocked({ kickoff, status: "PAUSED" }, before)).toBe(true)
+    expect(isPredictionLocked({ kickoff, status: "FINISHED" }, before)).toBe(true)
+  })
+
+  it("fails closed on any other status", () => {
+    expect(isPredictionLocked({ kickoff, status: "POSTPONED" }, before)).toBe(true)
+    expect(isPredictionLocked({ kickoff, status: "SOMETHING_NEW" }, before)).toBe(true)
   })
 })
 

@@ -182,7 +182,11 @@ a settled-picks list with the same All/Outcome/Exact/Miss filter idiom as `/me`.
 
 ### Anti-cheat via Row Level Security (`0001_init.sql`)
 Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
-- Predictions can only be inserted/updated while `kickoff > now()` (locks at kickoff).
+- Predictions can only be inserted/updated while `kickoff > now()` **and** the
+  match `status` is still pre-match (`TIMED`/`SCHEDULED`) — `0018`. The status
+  check covers a kickoff stored later than the real one (the feeds have
+  mis-timed matches), so a live match can't take picks. The client mirrors it in
+  `isPredictionLocked` (`src/lib/format.ts`), which drives the Save button.
 - You can read others' predictions for a match only after its kickoff (`read predictions after lock`); your own are always visible.
 - `matches` updates restricted to admins (`is_admin()`); `profiles.is_admin` is protected by a column-level grant so users can't self-escalate.
 - The sync function uses the service role key, which bypasses RLS — so its
@@ -436,8 +440,10 @@ Signup is open to anyone. Each profile has a unique `username` (no first/last
 name) rendered as `@handle` everywhere.
 - Format `^[a-z0-9_]{3,20}$` and a unique index are enforced at the DB layer
   (`username_format` check + `profiles_username_key`), not just in the form.
-- Google OAuth carries no username metadata, so `handle_new_user()` assigns an
-  email-derived fallback handle with `username_chosen = false`, and
+- Google OAuth carries no username metadata, so `handle_new_user()` assigns a
+  random `fan_xxxxxxxx` placeholder handle with `username_chosen = false`
+  (`0018`; it used to be derived from the email local-part, which leaked part
+  of the address to every player on the leaderboard), and
   `RequireUsername` holds the user at `/welcome` until they pick one. (Migration
   `0014` dropped the old trusted-metadata branch, so the trigger now always
   assigns the unchosen fallback regardless of any `username` in signup metadata
@@ -504,6 +510,13 @@ Two host-specific rules to keep straight:
   static-asset validator rejects it as an infinite-loop self-redirect and fails
   the deploy.
 
+**Security headers live in `public/_headers`** (Vite copies it to `dist/`), and
+both hosts read it: a CSP (`script-src 'self'`, `connect-src` limited to
+`*.supabase.co`, `frame-ancestors 'none'`), plus `X-Frame-Options`, `nosniff`,
+`Referrer-Policy`, and `Permissions-Policy`. **If you add a third-party origin**
+(a font CDN, analytics, an image host, another API), add it to the matching CSP
+directive or the browser will block it silently.
+
 **Every serving domain must be allowlisted for OAuth or sign-in silently bounces
 to the wrong host.** `signInWithGoogle` requests `redirectTo:
 ${window.location.origin}/`, but Supabase honors it only if it matches the
@@ -525,6 +538,8 @@ the Google OAuth client's **Authorized JavaScript origins**.
 - **Knockout `matches.id` must be the *official* FIFA match number, and those are NOT chronological** — e.g. Brazil–Japan kicks off before Germany–Paraguay yet is officially match 76, not 74. The bracket linkage (`FEEDERS` in `src/components/Bracket.tsx`) is keyed by official number, so a slot holding the wrong fixture makes the *wrong winners meet in the next round*. football-data's feed carries no official number (its `fd_id`s aren't in bracket order, and `matchday` is null for knockouts), so the API seed pins each knockout fixture to its slot via `KNOCKOUT_FD_ID_TO_NUMBER` in `scripts/fd-shared.ts` (source: openfootball `2026--usa/cup_finals.txt`). **Do not number knockout matches by kickoff time** — only the 1..72 group stage is safe to number chronologically. If a knockout fd_id is missing from that map the seed throws (fail loud). Rows seeded before that fix were renumbered once in production via `scripts/sql/2026-knockout-renumber.sql` — a single-transaction, whole-row move (drop predictions FK → shift ids/predictions to a +1000 temp range → remap to official numbers → restore FK) so each row's teams/kickoff/fd_id and the 4 knockout predictions travel together. **Applied 2026-06-28; it's idempotent-ish (no-op on already-correct data) and should not need re-running.**
 - **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. Because football-data serves some teams under inconsistent TLAs (Uruguay `URU`/`URY`, flip-flopping across responses), the sync canonicalizes every stored code via `canonicalTla` (`netlify/lib/link-matches.mts`) — so `team_form.code` must use that **canonical** value (Uruguay = `URU`, matching `teams.ts`/`standings`). If a team's form silently disappears, suspect a new such split: add the alias to `canonicalTla` (one entry fixes both linking and the stored-code pinning) — **don't** flip the `team_form` key, which only moves the breakage. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
+- **Revoking a function's EXECUTE needs `from public, anon, authenticated`, not just `from public`.** Supabase's default privileges grant EXECUTE on every new `public` function to `anon` and `authenticated` explicitly, so a bare `revoke ... from public` leaves it callable through `/rest/v1/rpc` (this left `fill_ready_knockout_slots()` open to logged-out visitors until `0018`). The same default grants SELECT on new views to `anon`. Run the Supabase security advisor after any migration that adds a function or view.
+- **Keep the pre-match status list in sync across `isPredictionLocked` (`src/lib/format.ts`) and the predictions RLS policies (`0018`)** — the DB rejects the write, the client hides the Save button; if they disagree, players see a Save that bounces.
 - **`.npmrc` pins `legacy-peer-deps=true` and it is required, not optional.** vitest 4 has a peerOptional on `@opentelemetry/api ^1.9.0` that conflicts with `netlify-cli`'s `~1.8.0`; without this line a clean `npm install` (including Netlify/GitHub CI) fails with `ERESOLVE`. Don't delete it.
 - **A "stuck" match (e.g. `IN_PLAY` long past full time) is almost always football-data's free-tier CDN serving a stale snapshot, not a sync failure.** The sync faithfully writes whatever the upstream list endpoint returns, so forcing it only helps once the upstream cache catches up. Diagnose by checking `matches.updated_at` (proves the sync ran) and curling the API directly with `FOOTBALL_DATA_TOKEN` (`/v4/competitions/WC/matches`); the `lastUpdated` field reflects when the source changed, not when the edge cache will serve it. Knockout scores come from ESPN instead (see "Knockout results from ESPN"), which sidesteps this for the bracket.
 - **The Cloudflare deploy Action pins `wranglerVersion: "4"` on purpose.** `cloudflare/wrangler-action@v3` bundles wrangler 3.90.0, which can't deploy our assets-only Worker (`wrangler.jsonc` has `assets` but no `main`) and fails with "Missing entry-point"; `wrangler@^4` is also a devDependency so local `npx wrangler deploy` matches CI. Don't unpin it.

@@ -1,0 +1,15 @@
+# Security headers for every response. Netlify and Cloudflare Workers static
+# assets both read this file from dist/ (Vite copies it from public/), so one
+# file covers both hosts. Unlike public/_redirects, Cloudflare accepts it.
+#
+# CSP notes:
+# - connect-src: the app talks only to Supabase (REST + auth). Google sign-in is
+#   a full-page redirect, which CSP doesn't govern.
+# - style-src needs 'unsafe-inline': the toast library injects a <style> tag.
+# - Fonts are self-hosted (@fontsource) and flags are emoji, so no other origins.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

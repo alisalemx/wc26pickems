@@ -17,7 +17,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { ListSkeleton } from "@/components/ListSkeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { dayHeading, dayKey, isLocked, shortDate } from "@/lib/format"
+import { dayHeading, dayKey, isPredictionLocked, shortDate } from "@/lib/format"
 import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
 import { STAGE_MULTIPLIER } from "@/lib/scoring"
 import type { MatchRow, MatchStage } from "@/lib/types"
@@ -264,8 +264,8 @@ export function Matches() {
     const isEnded = (m: MatchRow) =>
       m.status === "FINISHED" && m.home_score != null
     const ended = list.filter(isEnded)
-    const locked = list.filter((m) => !isEnded(m) && isLocked(m.kickoff))
-    const upcoming = list.filter((m) => !isEnded(m) && !isLocked(m.kickoff))
+    const locked = list.filter((m) => !isEnded(m) && isPredictionLocked(m))
+    const upcoming = list.filter((m) => !isEnded(m) && !isPredictionLocked(m))
     const played = [...ended, ...locked]
     let i = 0
     return (

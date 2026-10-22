@@ -46,6 +46,22 @@ export function isLocked(iso: string, now: number = Date.now()): boolean {
   return new Date(iso).getTime() <= now
 }
 
+/** Statuses a match can still take picks in. Mirrors the
+ *  `m.status in ('TIMED', 'SCHEDULED')` guard in the predictions RLS policies
+ *  (0018_security_hardening.sql); keep the two identical. */
+const PRE_MATCH_STATUSES: ReadonlySet<string> = new Set(["TIMED", "SCHEDULED"])
+
+/** Whether a match's prediction is closed: its kickoff has passed, or the feed
+ *  already reports it as anything but pre-match. The status check covers a
+ *  kickoff time stored later than the real one, so a live match never shows a
+ *  Save button the database would reject. */
+export function isPredictionLocked(
+  match: { kickoff: string; status: string },
+  now: number = Date.now()
+): boolean {
+  return isLocked(match.kickoff, now) || !PRE_MATCH_STATUSES.has(match.status)
+}
+
 /** Longest plausible wall-clock span from kickoff to a final result, used to
  *  bound the LIVE label (see `isLive`). Group games end at 90' (no extra time or
  *  penalties), so they're shorter than knockout/bracket games. Both budgets:

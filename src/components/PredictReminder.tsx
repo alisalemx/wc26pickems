@@ -1,6 +1,6 @@
 import { ChevronRight, Trophy, Zap } from "lucide-react"
 import { FINAL_ID } from "@/lib/bracket"
-import { isLocked } from "@/lib/format"
+import { isPredictionLocked } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 
@@ -33,7 +33,7 @@ export function PredictReminder({
   // fills the slot.
   const open = matches.filter(
     (m) =>
-      !isLocked(m.kickoff) &&
+      !isPredictionLocked(m) &&
       m.home_team != null &&
       m.away_team != null &&
       !m.teams_provisional &&
