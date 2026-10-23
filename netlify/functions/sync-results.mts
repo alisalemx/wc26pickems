@@ -88,10 +88,11 @@ export default async (req: Request) => {
     now < new Date("2026-06-10T00:00:00Z") ||
     now > new Date("2026-07-21T00:00:00Z")
   ) {
-    // Keep-alive: Supabase pauses free-tier projects after ~7 days without
-    // activity, and off-season nothing else touches the DB. One tiny read a
-    // day (the first run after 12:00 UTC) gives it 7 chances per window.
-    if (now.getUTCHours() === 12 && now.getUTCMinutes() < 2) {
+    // Keep-alive: Supabase pauses free-tier projects without "a few user
+    // requests to the database each day" over a week, and off-season nothing
+    // else touches the DB. One read a day still drew a pause warning, so this
+    // reads once an hour (the first run of each hour).
+    if (now.getUTCMinutes() < 2) {
       const supabaseUrl = process.env.SUPABASE_URL
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
       if (supabaseUrl && serviceKey) {
