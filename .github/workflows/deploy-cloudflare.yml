@@ -1,19 +1,15 @@
-# Deploy the SPA to Cloudflare Workers static assets on every push to main.
-#
-# Netlify is wired to the repo and redeploys itself on push, but the parallel
-# Cloudflare deploy is a manual `npx wrangler deploy` — so without this workflow
-# it silently drifts stale while Netlify stays current (the two serve the same
-# Supabase backend off the same dist/, so they must ship together). This builds
-# dist/ and publishes it with Wrangler, keeping both hosts in lockstep.
+# Deploy to Cloudflare Workers on every push to main: build dist/ and publish it
+# with Wrangler, along with worker/index.ts (the hourly Supabase keep-alive).
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   CLOUDFLARE_API_TOKEN   — token with the "Workers Scripts: Edit" permission
 #   CLOUDFLARE_ACCOUNT_ID  — the Cloudflare account id that owns the Worker
-#   VITE_SUPABASE_URL      — same public value used by the Netlify build
+#   VITE_SUPABASE_URL      — the public Supabase project URL
 #   VITE_SUPABASE_ANON_KEY — the public anon key (safe to expose to the client)
 #
-# Only the VITE_* vars are needed at build time; the sync cron + service-role
-# key stay on Netlify (this deploy serves the SPA and reads Supabase directly).
+# The two VITE_* values are baked into the build and also stored as Worker
+# secrets (SUPABASE_URL, SUPABASE_ANON_KEY) for the keep-alive cron. No
+# server-only key is needed: the cron only reads the public `matches` table.
 name: Deploy to Cloudflare
 
 on:
@@ -48,9 +44,14 @@ jobs:
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          # Pin wrangler v4: the action's bundled 3.90.0 can't deploy an
-          # assets-only Worker (our wrangler.jsonc has `assets` but no `main`
-          # script), failing with "Missing entry-point". v4 supports it.
+          # Pin wrangler v4 to match the devDependency; the action's bundled
+          # 3.90.0 is too old for this wrangler.jsonc.
           wranglerVersion: "4"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          secrets: |
+            SUPABASE_URL
+            SUPABASE_ANON_KEY
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

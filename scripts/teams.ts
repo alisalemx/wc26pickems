@@ -3,10 +3,9 @@
  * Tournament.
  *
  * NOTE: group assignments here are a best-effort, illustrative seed so the app
- * is fully functional out of the box. The Netlify sync function and the
- * API-based seed (`seed-matches.ts` with FOOTBALL_DATA_TOKEN) reconcile team
- * names, kickoff times, and fd_ids against official football-data.org data,
- * so any inaccuracy here is corrected automatically once the API is reachable.
+ * is fully functional out of the box. The API-based seed (`seed-matches.ts`
+ * with FOOTBALL_DATA_TOKEN) reconciles team names, kickoff times, and fd_ids
+ * against official football-data.org data.
  */
 export interface Team {
   name: string

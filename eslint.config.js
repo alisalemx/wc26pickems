@@ -30,8 +30,8 @@ export default defineConfig([
     },
   },
   {
-    // Node-side tooling: schedule generator, DB seed, Netlify functions.
-    files: ['scripts/**/*.{ts,mts}', 'netlify/**/*.{ts,mts}'],
+    // Node-side tooling: schedule generator and DB seed scripts.
+    files: ['scripts/**/*.{ts,mts}'],
     languageOptions: {
       globals: globals.node,
     },

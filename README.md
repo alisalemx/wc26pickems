@@ -1,12 +1,12 @@
 # 🏆 2026 World Soccer Tournament Prediction League
 
 A friends-league prediction game for the 2026 World Soccer Tournament. Predict the exact
-score of all **104 matches**, compete on a shared leaderboard, and watch results
-sync in automatically from [football-data.org](https://www.football-data.org).
+score of all **104 matches** and compete on a shared leaderboard. During the
+tournament, results synced in automatically from
+[football-data.org](https://www.football-data.org) and ESPN.
 
 Built with **Vite + React 19 + TypeScript**, **Tailwind CSS v4**, **shadcn/ui**,
-**Supabase** (Google auth + Postgres + RLS), and one **Netlify scheduled
-function** for result syncing.
+**Supabase** (Google auth + Postgres + RLS), hosted on **Cloudflare Workers**.
 
 ![Screenshot of the 2026 World Soccer Tournament Prediction League app](docs/screenshot.png)
 
@@ -30,12 +30,12 @@ function** for result syncing.
   champions banner with a player podium for the league's top 3, a "Hall of
   fame" awards card (most exact scores, best single call, most predictions
   scored), and the leaderboard settles into the final standings.
-- **Results sync** every 2 minutes during the tournament — group results and
+- **Results synced** every 2 minutes during the tournament — group results and
   official standings from football-data.org, **knockout** results from ESPN
   (whose feed reports the clean 90'+extra-time score and the shootout separately,
-  which football-data's free tier mangles for penalty-decided matches). An
-  **admin** page can enter or correct any result manually; locked results survive
-  the next sync.
+  which football-data's free tier mangles for penalty-decided matches). The sync
+  was retired after the final; it's in the git history. An **admin** page can
+  enter or correct any result manually.
 
 ## Quick start
 
@@ -55,9 +55,9 @@ Validate changes with `npm run typecheck`, `npm run lint`, and `npm test`.
 You need accounts on three services, all free for this project's needs:
 [**Supabase**](https://supabase.com) (database + auth), the
 [**Google Cloud Console**](https://console.cloud.google.com) (Google sign-in),
-and [**football-data.org**](https://www.football-data.org) (live results).
-[**Netlify**](https://netlify.com) is a fourth, but only for deploying; you can
-run everything locally without it.
+and [**football-data.org**](https://www.football-data.org) (the official
+schedule). [**Cloudflare**](https://cloudflare.com) is a fourth, but only for
+deploying; you can run everything locally without it.
 
 By the end you'll have filled in all five variables in `.env`:
 
@@ -72,7 +72,7 @@ By the end you'll have filled in all five variables in `.env`:
 > The `VITE_`-prefixed vars are bundled into the client and are meant to be
 > public. The unprefixed ones (especially the **service role key**) bypass all
 > security rules: never prefix them with `VITE_`, never commit real values, and
-> only ever use them in the Netlify functions and seed scripts.
+> only ever use them in the seed scripts.
 
 ### 1. Supabase: database, auth, and three keys
 
@@ -112,15 +112,14 @@ Supabase about it.
 > These Google values live in the Supabase dashboard, **not** in `.env`; the
 > app never sees them directly.
 
-### 3. football-data.org: results API token
+### 3. football-data.org: schedule API token
 
 1. Register for a free account at
    [football-data.org/client/register](https://www.football-data.org/client/register).
 2. Your **API token** is shown on your account page; copy it into
    `FOOTBALL_DATA_TOKEN`.
 
-The free tier covers the World Cup competition and is enough here; the sync
-function self-throttles to ~1 request/minute to stay under its rate limit.
+The free tier covers the World Cup competition and is enough here.
 
 ### 4. Seed the schedule
 
@@ -131,9 +130,8 @@ npm run seed                  # from the committed static schedule (offline)
 SEED_SOURCE=api npm run seed  # or fetch the official schedule live (recommended)
 ```
 
-The committed `scripts/data/matches-2026.json` is an illustrative seed. Team
-names, kickoff times, knockout participants, and results are all reconciled
-against official data by the sync function once `FOOTBALL_DATA_TOKEN` is set.
+The committed `scripts/data/matches-2026.json` is an illustrative seed; the
+API seed loads the official team names and kickoff times instead.
 
 You can now run `npm run dev` and sign in with Google.
 
@@ -148,58 +146,36 @@ update public.profiles set is_admin = true where id = '<your-auth-user-id>';
 
 The **Admin** tab then appears for manual result entry.
 
-### 6. Deploy to Netlify (optional)
+### 6. Deploy to Cloudflare Workers (optional)
 
-Local dev needs no Netlify account; this step is only for hosting.
+Local dev needs no Cloudflare account; this step is only for hosting. The
+frontend is a static Vite SPA that reads Supabase directly, and
+[`wrangler.jsonc`](wrangler.jsonc) serves `dist/` as static assets.
 
-1. Push the repo to GitHub and **import it** in Netlify. Build settings come
-   from [`netlify.toml`](netlify.toml) (`npm run build` → `dist/`), so you can
-   accept the defaults.
-2. In **Site settings → Environment variables**, add all five variables from the
-   table above (use the production Supabase URL and keys).
-3. Deploy. The scheduled `sync-results` function (cron `*/2 * * * *`, every
-   2 min) runs only on the published production deploy; trigger it on demand with
-   `netlify functions:invoke sync-results`.
-
-### 7. Parallel deploy to Cloudflare Workers (optional)
-
-The frontend is a static Vite SPA that talks directly to Supabase, so the same
-`dist/` build can be served from a second host for redundancy — or to dodge
-region-level blocks of the shared `*.netlify.app` domain (some ISPs/countries
-throttle the whole wildcard). The sync **function does not run here**: it only
-writes results into Supabase and only needs to run in one place (leave it on
-Netlify), while this deploy serves the SPA and reads the same backend.
-
-1. Cloudflare → **Workers & Pages → Create → Continue with GitHub**, pick this
-   repo. Build settings are read from [`wrangler.jsonc`](wrangler.jsonc): build
-   command `npm run build`, deploy command `npx wrangler deploy` (serves `dist/`
-   as static assets).
-2. Add the `VITE_*` variables (Supabase URL + anon key) under **Advanced
-   settings → Variables**. The server-only keys (`SUPABASE_SERVICE_ROLE_KEY`,
-   `FOOTBALL_DATA_TOKEN`, `SYNC_SECRET`) are **not** needed — the sync function
-   stays on Netlify.
-3. Client-side routes resolve via `assets.not_found_handling:
-   "single-page-application"` in `wrangler.jsonc` (the Workers equivalent of an
-   SPA fallback) — no `_redirects` file (Cloudflare's asset validator rejects a
-   `/* /index.html 200` self-loop; Netlify's own fallback lives in
-   `netlify.toml`).
-4. Point a custom subdomain at the Worker (**Settings → Domains & Routes → Add →
-   Custom domain**, e.g. `wc26.alisalem.ca` — a subdomain, never the bare apex).
-   Since the zone is already on Cloudflare it creates the DNS record + TLS cert
-   automatically. If you move a subdomain here from Netlify, remove it as a
-   custom domain on the Netlify side so two hosts aren't claiming the same name.
-5. **Make Google sign-in work on the new domain.** The app requests
+1. Add four repository secrets in GitHub (**Settings → Secrets and variables →
+   Actions**): `CLOUDFLARE_API_TOKEN` (with **Workers Scripts: Edit**),
+   `CLOUDFLARE_ACCOUNT_ID`, and the public `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY`.
+2. Push to `main`. The
+   [`deploy-cloudflare.yml`](.github/workflows/deploy-cloudflare.yml) Action
+   builds `dist/` and runs `wrangler deploy`. `npx wrangler deploy` works locally
+   too.
+3. The Worker ([`worker/index.ts`](worker/index.ts)) also runs an **hourly
+   keep-alive**: one tiny read of `matches`, so Supabase's free tier never pauses
+   the project. The Action stores the Supabase URL and anon key as Worker
+   secrets for it; no server-only key is needed.
+4. Client-side routes resolve via `assets.not_found_handling:
+   "single-page-application"` in `wrangler.jsonc`. Don't add a `_redirects` file:
+   Cloudflare's asset validator rejects a `/* /index.html 200` self-loop.
+5. Point a custom subdomain at the Worker (**Settings → Domains & Routes → Add →
+   Custom domain**, e.g. `wc26.alisalem.ca`, a subdomain, never the bare apex).
+6. **Make Google sign-in work on the domain.** The app requests
    `redirectTo: ${window.location.origin}/`, but Supabase only honors that if the
-   URL matches its allowlist — otherwise it falls back to the **Site URL** (your
-   Netlify domain), which looks like login "redirecting you back to Netlify". Fix
-   it in **Supabase → Authentication → URL Configuration**:
-   - add `https://wc26.alisalem.ca/**` to **Redirect URLs** — the `/**` wildcard
-     is required (a bare domain won't match the trailing `/`);
-   - optionally set **Site URL** to the new domain.
-
-   Then add `https://wc26.alisalem.ca` to **Authorized JavaScript origins** on the
-   Google OAuth client. Keep the existing Netlify entries so that host keeps
-   working too.
+   URL matches its allowlist; otherwise it falls back to the **Site URL**. In
+   **Supabase → Authentication → URL Configuration**, set the **Site URL** to
+   your domain and add `https://wc26.alisalem.ca/**` to **Redirect URLs** (the
+   `/**` wildcard is required). Then add `https://wc26.alisalem.ca` to
+   **Authorized JavaScript origins** on the Google OAuth client.
 
 ## Project structure
 
@@ -209,8 +185,7 @@ src/
   hooks/            useAuth, TanStack Query data hooks
   lib/              supabase client, scoring, formatting, types (+ unit tests)
   pages/            Login, Welcome, Matches, Leaderboard, Tournament, MyPredictions, PlayerPage, Admin
-netlify/functions/  sync-results.mts (scheduled result fetcher)
-netlify/lib/        link-matches.mts, espn.mts (knockout results), sync-auth.mts (+ unit tests)
+worker/             index.ts (Cloudflare Worker: serves dist/, hourly Supabase keep-alive)
 scripts/            generate-schedule.ts, seed-matches.ts, fd-shared.ts, teams.ts
 supabase/migrations/  schema + RLS + scoring views
 ```
@@ -227,8 +202,8 @@ API (a `FOOTBALL_DATA_TOKEN` is required; register for one
 results** come from [ESPN](https://www.espn.com)'s public scoreboard feed
 instead, because football-data's free tier reports a corrupted score for
 penalty/extra-time matches (the shootout baked into — and inconsistent with —
-the full-time score). The `sync-results` Netlify function polls these every
-2 minutes during the tournament to keep results current.
+the full-time score). A scheduled sync polled these every 2 minutes during the
+tournament to keep results current.
 
 This is an unofficial, non-commercial project and is not affiliated with or
 endorsed by FIFA, football-data.org, or ESPN.

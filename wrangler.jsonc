@@ -1,14 +1,19 @@
 {
-  // Cloudflare Workers static-assets deploy for the SPA. `npm run build`
-  // produces ./dist, and Wrangler serves it as static assets — no Worker
-  // script needed. This is the parallel deploy alongside Netlify (both read
-  // the same Supabase backend; the sync cron stays on Netlify only).
+  // Cloudflare Workers deploy: the only host. `npm run build` produces ./dist,
+  // served as static assets. worker/index.ts adds the hourly Supabase
+  // keep-alive (the cron below); it needs SUPABASE_URL and SUPABASE_ANON_KEY
+  // as Worker secrets, which the deploy Action sets.
   "name": "wc26pickems",
+  "main": "worker/index.ts",
   "compatibility_date": "2025-06-01",
   "assets": {
     "directory": "./dist",
-    // Serve index.html for client-side routes (/leaderboard, /me, …),
-    // the Workers equivalent of the _redirects SPA fallback.
+    "binding": "ASSETS",
+    // Serve index.html for client-side routes (/leaderboard, /me, …).
     "not_found_handling": "single-page-application"
+  },
+  "triggers": {
+    // Hourly keep-alive, so Supabase's free tier never pauses the project.
+    "crons": ["0 * * * *"]
   }
 }

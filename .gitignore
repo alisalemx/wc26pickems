@@ -12,11 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Local env + Netlify
+# Local env
 .env
 .env.*
 !.env.example
-.netlify
 
 # Advisor implementation plans (local working docs)
 plans/

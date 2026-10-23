@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 An unofficial prediction game for the 2026 World Soccer Tournament. Players predict exact scores
-for all 104 matches, compete on a shared leaderboard, and results sync
-automatically from football-data.org.
+for all 104 matches and compete on a shared leaderboard. The tournament is
+over: results synced automatically during it, and the site is now a read-only
+portfolio piece.
 
 ## Commands
 
@@ -24,36 +25,30 @@ npm run generate-schedule   # regenerate scripts/data/matches-2026.json
 After code changes, validate with `npm run typecheck`, `npm run lint`, and
 `npm test`. Test coverage is currently limited to the pure helpers
 (`src/lib/*.test.ts` — scoring, format, form, standings, bracket, rank, awards,
-links) and the sync-side pure modules (`netlify/lib/link-matches.test.mts`,
-`espn.test.mts`, `sync-auth.test.mts`).
+links) and `scripts/fd-shared.test.ts`.
 
-To run the scheduled sync function locally: `netlify functions:invoke sync-results`.
-
-To **force the production sync**, curl its endpoint with the admin bearer token
-(the endpoint is auth-gated, so a bare curl returns `401` — see "Sync auth gate"):
-`curl -H "Authorization: Bearer $SYNC_SECRET" https://<netlify-site>/.netlify/functions/sync-results`.
-It returns `{received,updated,unlinked,standings,espnFetched,espnKnockout,unlocked}`.
-A second hit within 60s returns `{"skipped":"recently synced"}` (the cooldown), and
-outside the Jun 10–Jul 21 2026 tournament window it returns `off-season`.
-
-**Off-season keep-alive.** Supabase's free tier pauses a project that doesn't
-get "a few user requests to the database each day" over a 7-day window
-([docs](https://supabase.com/docs/guides/platform/free-project-pausing)), and
-outside the tournament window nothing else touches the DB. So the off-season
-branch of `sync-results` does one tiny `matches` read an hour (the cron run in
-the first two minutes of each hour), returning `off-season (keep-alive)`. A
-once-a-day read (2026-10-14 → 21) still drew a pause warning, so don't thin it
-out, and don't remove it unless the project moves to a paid plan.
+**Supabase keep-alive (`worker/index.ts`).** Supabase's free tier pauses a
+project that doesn't get "a few user requests to the database each day" over a
+7-day window ([docs](https://supabase.com/docs/guides/platform/free-project-pausing)),
+and since the tournament ended nothing else touches the DB. So the Cloudflare
+Worker's cron trigger (`0 * * * *` in `wrangler.jsonc`) does one tiny `matches`
+read an hour with the public anon key. A once-a-day read (2026-10-14 → 21)
+still drew a pause warning, so don't thin it out, and don't remove it unless the
+project moves to a paid plan. It needs the `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` Worker secrets, which the deploy Action sets from the
+`VITE_*` repo secrets; a failed run shows as an error in the Worker's cron
+events in the Cloudflare dashboard. It's the only Supabase project on the
+account, so this Worker is the account's one keep-alive trigger; if another
+Supabase project appears, ping it from this same trigger rather than spending
+another of the free plan's 5 cron triggers.
 
 Env vars live in `.env` (copy from `.env.example`). `VITE_*` are public/client;
-`SUPABASE_SERVICE_ROLE_KEY` and `FOOTBALL_DATA_TOKEN` are server-only (functions + seed scripts).
-`SYNC_SECRET` (server-only, optional) authorizes manual HTTP force-syncs of the
-sync function; the Netlify cron runs without it (see "Sync auth gate").
+`SUPABASE_SERVICE_ROLE_KEY` and `FOOTBALL_DATA_TOKEN` are server-only (seed scripts).
 
 ## Architecture
 
-Vite + React 19 SPA, Supabase (Postgres + Auth + RLS) backend, one Netlify
-scheduled function. Path alias `@/` → `src/`. shadcn/ui (new-york style) in
+Vite + React 19 SPA, Supabase (Postgres + Auth + RLS) backend, hosted on
+Cloudflare Workers. Path alias `@/` → `src/`. shadcn/ui (new-york style) in
 `src/components/ui/`; Tailwind v4 configured CSS-first via `@theme` in `src/index.css`.
 
 ### Design system ("Signage", Pitch palette)
@@ -205,8 +200,7 @@ avoid a visible-then-snap flicker.
 - `scored_predictions` view — exact score = 3×mult, correct outcome (W/D/L) = 1×mult, else 0. Judged on `home_score`/`away_score` which hold the **90'+extra-time** result; penalty shootout columns (`home_pens`/`away_pens`) are display-only and never affect points.
 - `leaderboard` view — aggregates `scored_predictions` per profile.
 
-Because scoring is recomputed on read, admin corrections and result re-syncs
-reflect on the leaderboard instantly. `src/lib/scoring.ts` is a **mirror of this
+Because scoring is recomputed on read, admin corrections reflect on the leaderboard instantly. `src/lib/scoring.ts` is a **mirror of this
 SQL for client-side display labels only** ("worth up to N pts") — its
 `STAGE_MULTIPLIER` and `scorePrediction()` must be kept in sync with the SQL
 functions, but never become the actual score.
@@ -250,8 +244,6 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
   `isPredictionLocked` (`src/lib/format.ts`), which drives the Save button.
 - You can read others' predictions for a match only after its kickoff (`read predictions after lock`); your own are always visible.
 - `matches` updates restricted to admins (`is_admin()`); `profiles.is_admin` is protected by a column-level grant so users can't self-escalate.
-- The sync function uses the service role key, which bypasses RLS — so its
-  public HTTP endpoint is locked down separately (see "Sync auth gate" below).
 - The `matches` table is **publicly readable** (`0004_public_matches.sql` grants
   `select` to `anon`) so fixtures and standings render for logged-out visitors.
 - **The rest of the app is publicly readable too, read-only (`0019_public_read.sql`).**
@@ -269,26 +261,6 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
   Before opening this, every handle was replaced with a randomly assigned
   footballer pun (`scripts/sql/2026-anonymize-handles.sql`, applied
   2026-10-23) so the public pages don't reveal who played.
-
-### Sync auth gate (`netlify/lib/sync-auth.mts`)
-The sync function is publicly reachable over HTTP at
-`/.netlify/functions/sync-results` (Netlify serves scheduled functions at their
-URL despite the docs' claim otherwise — a bare `GET` used to run it), and it
-holds the service role key, so it must not be open to anyone. `isSyncAuthorized`
-(a pure, unit-tested helper) gates the handler **before any env read, DB query,
-or upstream fetch**: a caller is allowed only if it's **Netlify's scheduler**
-— recognized by the `next_run` timestamp Netlify puts in the JSON body of every
-scheduled invocation — **or** it presents the shared `SYNC_SECRET` as a bearer
-token (`Authorization: Bearer …`, or the `X-Sync-Key` header, constant-time
-compared). Everything else gets `401`. The scheduler path needs no secret, so
-the 2-min cron keeps running even before `SYNC_SECRET` is configured (and never
-breaks if it's rotated/removed); the manual force-sync now **requires** the
-bearer token. Caveat: the repo is public, so the `next_run` shape is
-discoverable and a crafted POST can still reach the body — but that's bounded by
-the 60s cooldown (can't exceed the football-data quota or alter results) so the
-residual is cost amplification, not a data risk. To close it fully, move
-scheduling to a secret-carrying trigger (GitHub Actions / Supabase pg_cron) and
-drop the `next_run` branch so every caller must hold the secret.
 
 ### Popular picks (`0007`–`0010`)
 The match list shows the crowd's most-predicted scorelines per upcoming match
@@ -359,16 +331,15 @@ We can't reproduce FIFA's full ranking from match results alone: once teams are
 level on points / goal difference / goals / head-to-head, FIFA breaks ties on
 **fair-play (disciplinary) points** then a **drawing of lots** — and we store no
 card data. football-data's `/competitions/WC/standings` endpoint already applies
-that whole chain, so the sync function (which also fetches it) upserts each team's
+that whole chain, so the sync (now retired) upserted each team's
 `position` + stats into the public, service-role-written `standings` table
 (mirrors `matches`/`team_form`), read client-side via `useStandings`
 (`["standings"]`, polled 60s). Two football-data quirks the data handles: its
 standings count **in-progress matches** (a live result shows before the matches
 feed flips to FINISHED), and it serves a few teams under an **inconsistent TLA** —
 Uruguay comes back as `URU` or `URY` depending on both the feed and the individual
-response (the free tier flip-flops it every couple of minutes). The sync pins
-every code it stores to one canonical TLA (`URU`) via `canonicalTla` (see "Data
-flow"), so `matches`/`standings`/`team_form` always agree; the rows also key on
+response (the free tier flip-flops it every couple of minutes). The sync pinned
+every code it stored to one canonical TLA (`URU`), so `matches`/`standings`/`team_form` agree; the rows also key on
 the stable `fd_team_id`, and both codes map in `flags.ts`.
 
 The Groups tab does **not** render football-data's `position` order verbatim —
@@ -395,51 +366,27 @@ least one match (`thirdsComparable`) — the ranking is provisional mid-stage an
 settles into the real cut-off as the final matchday completes. The Bracket tab does
 **not** use any of this — it fills knockout slots from the fixture list.
 
-### Knockout results from ESPN (`netlify/lib/espn.mts`)
-**Knockout result fields come from ESPN, not football-data.** FD's free tier
-serves a corrupt `score.fullTime` for penalty/extra-time matches (Germany–Paraguay
-R32 came back `5-6`, winner `null`, pens `5-5`, when it finished 1-1 / Paraguay 4-3
-on pens — the correct 1-1 was only in `regularTime`). ESPN's free, keyless
-scoreboard (`site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard`)
-reports the clean post-ET score in `competitor.score` and the shootout in
-`competitor.shootoutScore` — exactly the 90'+ET / penalty split our schema stores.
-**Group results and official standings stay on football-data;** only knockout
-results switch.
-- `espn.mts` (pure, unit-tested in `espn.test.mts`): `parseEspnScoreboard` maps
-  ESPN → our vocabulary (`status` FINISHED/IN_PLAY/PAUSED/TIMED via
-  `mapEspnStatus`; `duration` REGULAR/EXTRA_TIME/PENALTY_SHOOTOUT via
-  `espnDuration`; the live match clock via `espnMinute`). It's deliberately
-  defensive (the endpoint is undocumented / ToS-gray): malformed events are
-  skipped, and a scheduled fixture's `0-0` is stored as null, not a real draw.
-- **Live match minute (`0015_match_minute.sql`):** `espnMinute` passes ESPN's
-  own formatted `status.displayClock` through (`"67'"`, `"45'+2'"`) while a match
-  is being clocked (state `in`), collapsing halftime to `"HT"`, and is null
-  pre-match / at full time (so a finished row clears it). The sync writes it into
-  `matches.minute` (text, display-only — scoring never reads it) alongside the
-  knockout result. The match list shows it beside the pulsing LIVE dot
-  (`LiveClock` in `MatchCard`), falling back to a wall-clock estimate counted
-  from kickoff when no synced minute is present yet (the first moments after
-  kickoff, a sync gap, or a group match — which isn't ESPN-synced). Because it's
-  only refreshed each sync (~2 min) it can read a touch stale, but it never has
-  the wall-clock estimate's ~15-min halftime drift.
-- Linking is by **exact kickoff instant** (`indexEspnByInstant`) — no two
-  knockout rows share a kickoff, and ESPN's kickoff instants + team abbreviations
-  match ours, so no ESPN-id map is needed (unlike FD's `KNOCKOUT_FD_ID_TO_NUMBER`).
-- `sync-results.mts` makes **one ranged ESPN request** (`?dates=min-max` spanning
-  every knockout kickoff date) gated to fire only when a knockout row is in its
-  live window (3h before → 6h after kickoff) and not yet finalized — so it's zero
-  ESPN calls during the group stage / pre-tournament / once knockouts are done.
-  Knockout rows are driven by ESPN **only** (FD's knockout score is never written),
-  holding the prior value when ESPN has nothing usable and never regressing a
-  recorded final. Best-effort like standings: an ESPN failure leaves prior results
-  intact. `result_locked` (below) still overrides everything. Response reports
-  `espnFetched`/`espnKnockout`.
+### Results sync (retired)
+During the tournament a Netlify scheduled function synced results every 2
+minutes: group results and official standings from football-data.org, knockout
+results from ESPN's public scoreboard (football-data's free tier corrupted
+penalty and extra-time scores), plus the live match minute (`matches.minute`,
+`0015`) from ESPN's clock. It was removed after the final, along with Netlify
+hosting; the code (`netlify/functions/sync-results.mts`, `netlify/lib/`) is in
+the git history. Results now change only through the Admin page. The data
+quirks it repaired, still visible in the stored data:
+- Football-data served Uruguay as `URU` or `URY`; every stored code was pinned
+  to the canonical `URU` (both codes still map in `flags.ts`).
+- Football-data's standings lag its matches feed and count in-progress matches,
+  so the Groups tab computes its own table (see "Group standings").
+- Penalty/extra-time knockouts: Germany–Paraguay came back `5-6` with no winner
+  when it finished 1-1, Paraguay 4-3 on pens; ESPN's split of the post-ET score
+  and the shootout matches our `home_score`/`home_pens` columns.
 
 ### Admin result locks (`0006_result_lock.sql`)
-`matches.result_locked` lets an admin's manual result survive the 10-min sync:
-when set, the sync function skips the result fields (status/scores/pens/duration)
-for that row but keeps reconciling fixture metadata (teams, kickoff, `fd_id`).
-Unlocking re-opens the row to the API (or, for a knockout row, to ESPN).
+`matches.result_locked` let an admin's manual result survive the (now retired)
+sync, which skipped the result fields for a locked row. With no sync left the
+flag no longer changes anything, but the Admin page still shows it.
 
 ### Knockout unlock (`0016_knockout_unlock.sql`)
 A knockout slot's teams live in `matches.home_team`/`away_team`, and the RLS
@@ -458,12 +405,9 @@ the slot **server-side, in our own DB**, from our own results:
   real football-data assignment always wins. Its **FEEDERS map mirrors
   `src/lib/bracket.ts`** (`FEEDERS`/`THIRD_FEEDERS`) and its winner rule mirrors
   `winnerSide` (90'+ET, shootout only as decider) — keep the SQL and TS in sync.
-- The sync (`sync-results.mts`) calls it via RPC each run **after** the result
-  upserts (best-effort — a failure never fails the result sync; reports
-  `unlocked`). So a slot fills within ~one sync cycle of the settle window
-  elapsing (≈10–12 min after the second feeder's final whistle).
-- The finished match's **own** result is untouched by this — it shows and scores
-  instantly via the normal sync. Only the *unlocking of the next match* waits.
+- The retired sync called it via RPC each run after the result upserts, so a
+  slot filled within ~one sync cycle of the settle window elapsing. Nothing
+  calls it now.
 - `matches.finished_at` (stamped by the `stamp_finished_at` trigger on the
   transition into FINISHED, cleared on regression) is the stable marker the
   settle window gates on — `updated_at` is bumped every sync so it can't.
@@ -536,9 +480,8 @@ name) rendered as `@handle` everywhere.
 
 ### Data flow
 - `src/hooks/queries.ts` — all data access via TanStack Query + the Supabase client (`src/lib/supabase.ts`). `useMatches`/`useLeaderboard` poll every 60s. Mutations (`useUpsertPrediction`, `useAdminUpdateMatch`) invalidate the relevant query keys.
-- `netlify/functions/sync-results.mts` — runs every 2 min (cron `*/2 * * * *`), auth-gated so only Netlify's scheduler or an admin bearer token can invoke its public HTTP endpoint (see "Sync auth gate"), guarded to the tournament window and throttled to ≈1 fetch/min by the 60s cooldown (so it stays well under football-data's free-tier rate limit). Fetches `competitions/WC/matches` from football-data.org v4 and upserts results. Holds a row's prior result (skips result fields) while the API reports a match `FINISHED` without a score yet, so scoring/form/standings never see a finished match with null scores. Links API matches to our rows via the unit-tested 4-pass linker in `netlify/lib/link-matches.mts` (explicit `fd_id` → exact kickoff instant → team codes → unique stage+day) — it links only when unambiguous, and unlinked matches are counted in the function's JSON response. That same module exports `canonicalTla`, which the sync runs every stored team code through (`matches.home_code`/`away_code`, `standings.team_code`) to pin football-data's inconsistent TLAs to one canonical value (Uruguay `URU`/`URY` → `URU`) — otherwise a code that flip-flops across responses would oscillate in our `matches` table and make the `team_form`/in-tournament joins blink out. Skips result fields for rows with `result_locked = true` (see admin result locks above). For **knockout** rows it does **not** trust football-data's result fields at all — those come from a separate **ESPN** fetch (`netlify/lib/espn.mts`), because FD's free tier mangles penalty/extra-time scores; FD still drives knockout *fixture* metadata (teams/kickoff/slot-filling), and this ESPN fetch only fires during live knockout windows (see "Knockout results from ESPN"). It then also fetches `competitions/WC/standings` and upserts the official group order into the `standings` table (best-effort — a standings failure never fails the match sync; see "Group standings & best thirds").
-- `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the sync function reconciles names/times/results against official data once a token is set.
-- `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers shared between the sync function and the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
+- `scripts/seed-matches.ts` — seeds fixtures from the committed `scripts/data/matches-2026.json` (offline) or live from the API (`SEED_SOURCE=api`). The committed JSON is illustrative; the API seed loads the official names and kickoff times.
+- `scripts/fd-shared.ts` — football-data.org fetch/mapping helpers used by the seed/schedule scripts; `scripts/teams.ts` holds the team metadata (names, flags) used by `generate-schedule.ts`.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
 
 ### Routing (`src/App.tsx`)
@@ -557,39 +500,29 @@ The **Admin tab is hidden from the nav** (route still reachable by URL), Me
 shows only when signed in, and once the tournament ends the nav reorders to
 Matches, Leaderboard, Tournament (see "Tournament finale").
 
-### Hosting & parallel deploys (`netlify.toml`, `wrangler.jsonc`)
-The frontend is a static Vite SPA reading **directly from Supabase**, so the same
-`dist/` build can be served from **multiple hosts at once** — they all read the
-same backend and stay identical. This is used to dodge region-level blocks of the
-shared `*.netlify.app` domain (some ISPs/countries throttle the whole wildcard):
-the app is served from **Netlify** *and*, in parallel, from **Cloudflare Workers**
-static assets (`wrangler.jsonc` publishes `dist/`). Custom subdomains (e.g.
-`wc26.alisalem.ca`) point at whichever host; for a blocked region, hand out the
-Cloudflare one (its edge isn't caught by the Netlify wildcard block).
+### Hosting (`wrangler.jsonc`, `worker/index.ts`)
+The frontend is a static Vite SPA reading **directly from Supabase**, served from
+**Cloudflare Workers** static assets (`wrangler.jsonc` publishes `dist/`) at
+`wc26.alisalem.ca`. The Worker script (`worker/index.ts`) only adds the hourly
+Supabase keep-alive cron (see "Commands"); requests are answered by the assets.
+Netlify used to serve it in parallel and run the sync; both were removed on
+2026-10-23.
 
-**Both hosts must redeploy together or they drift.** Netlify is wired to the
-repo and rebuilds itself on every push to `main`; the Cloudflare side is driven
-by the `.github/workflows/deploy-cloudflare.yml` GitHub Action (build `dist/` →
-`cloudflare/wrangler-action`) on the same push, so a change can't land on one
-host but not the other. The Action needs four repo secrets —
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and the public
-`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` build vars; `workflow_dispatch`
-allows a manual re-run, and `npx wrangler deploy` is still the local fallback.
+Every push to `main` deploys through `.github/workflows/deploy-cloudflare.yml`
+(build `dist/` → `cloudflare/wrangler-action`). The Action needs four repo
+secrets — `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and the public
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` — and also stores the last two as
+the Worker secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` for the cron.
+`workflow_dispatch` allows a manual re-run, and `npx wrangler deploy` is the
+local fallback (it keeps the Worker secrets already set).
 
-Two host-specific rules to keep straight:
-- **The sync cron runs on Netlify only.** `sync-results` just writes results into
-  Supabase, so it must live in exactly one place; the Cloudflare deploy serves the
-  SPA and reads the same data. Don't duplicate it (and the Cloudflare deploy needs
-  **no** server-only secrets — only the `VITE_*` build vars).
-- **SPA fallback is configured per host, and they are not interchangeable.**
-  Netlify uses the `[[redirects]]` rule in `netlify.toml`; Cloudflare Workers uses
-  `assets.not_found_handling: "single-page-application"` in `wrangler.jsonc`. Do
-  **not** add a `public/_redirects` with `/* /index.html 200` — Cloudflare's
-  static-asset validator rejects it as an infinite-loop self-redirect and fails
-  the deploy.
+**SPA fallback** is `assets.not_found_handling: "single-page-application"` in
+`wrangler.jsonc`. Do **not** add a `public/_redirects` with `/* /index.html 200`
+— Cloudflare's static-asset validator rejects it as an infinite-loop
+self-redirect and fails the deploy.
 
 **Security headers live in `public/_headers`** (Vite copies it to `dist/`), and
-both hosts read it: a CSP (`script-src 'self'`, `connect-src` limited to
+Cloudflare reads it: a CSP (`script-src 'self'`, `connect-src` limited to
 `*.supabase.co`, `frame-ancestors 'none'`), plus `X-Frame-Options`, `nosniff`,
 `Referrer-Policy`, and `Permissions-Policy`. **If you add a third-party origin**
 (a font CDN, analytics, an image host, another API), add it to the matching CSP
@@ -598,11 +531,10 @@ directive or the browser will block it silently.
 **Every serving domain must be allowlisted for OAuth or sign-in silently bounces
 to the wrong host.** `signInWithGoogle` requests `redirectTo:
 ${window.location.origin}/`, but Supabase honors it only if it matches the
-**Redirect URLs** allowlist — otherwise it falls back to the **Site URL** (which
-reads as "login redirected me back to the *other* deploy"). For each domain add
-`https://<domain>/**` (the `/**` wildcard is required — a bare domain won't match
-the trailing `/`) to Supabase → Auth → URL Configuration, and add the origin to
-the Google OAuth client's **Authorized JavaScript origins**.
+**Redirect URLs** allowlist — otherwise it falls back to the **Site URL**. For
+each domain add `https://<domain>/**` (the `/**` wildcard is required — a bare
+domain won't match the trailing `/`) to Supabase → Auth → URL Configuration, and
+add the origin to the Google OAuth client's **Authorized JavaScript origins**.
 
 ## Gotchas
 
@@ -612,16 +544,14 @@ the Google OAuth client's **Authorized JavaScript origins**.
 - **The floating top bar's footprint is `--header-h` in `src/index.css`** (the `pt-3` gap plus the `h-14` pill in `Layout.tsx`), and sticky content parks at `--sticky-top` below it. If you change the header's height or gap, update `--header-h` to match. The Matches scroll helpers (`goToDay`, `visibleBand`) measure the bars from the DOM (`data-app-header`, `data-day-strip`, `data-tab-bar`), so keep those attributes.
 - **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
-- `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.
+- `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id (nullable; it was filled in by the sync).
 - **Knockout `matches.id` must be the *official* FIFA match number, and those are NOT chronological** — e.g. Brazil–Japan kicks off before Germany–Paraguay yet is officially match 76, not 74. The bracket linkage (`FEEDERS` in `src/components/Bracket.tsx`) is keyed by official number, so a slot holding the wrong fixture makes the *wrong winners meet in the next round*. football-data's feed carries no official number (its `fd_id`s aren't in bracket order, and `matchday` is null for knockouts), so the API seed pins each knockout fixture to its slot via `KNOCKOUT_FD_ID_TO_NUMBER` in `scripts/fd-shared.ts` (source: openfootball `2026--usa/cup_finals.txt`). **Do not number knockout matches by kickoff time** — only the 1..72 group stage is safe to number chronologically. If a knockout fd_id is missing from that map the seed throws (fail loud). Rows seeded before that fix were renumbered once in production via `scripts/sql/2026-knockout-renumber.sql` — a single-transaction, whole-row move (drop predictions FK → shift ids/predictions to a +1000 temp range → remap to official numbers → restore FK) so each row's teams/kickoff/fd_id and the 4 knockout predictions travel together. **Applied 2026-06-28; it's idempotent-ish (no-op on already-correct data) and should not need re-running.**
-- **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. Because football-data serves some teams under inconsistent TLAs (Uruguay `URU`/`URY`, flip-flopping across responses), the sync canonicalizes every stored code via `canonicalTla` (`netlify/lib/link-matches.mts`) — so `team_form.code` must use that **canonical** value (Uruguay = `URU`, matching `teams.ts`/`standings`). If a team's form silently disappears, suspect a new such split: add the alias to `canonicalTla` (one entry fixes both linking and the stored-code pinning) — **don't** flip the `team_form` key, which only moves the breakage. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
+- **`team_form.code` is the football-data TLA** and must match `matches.home_code`/`away_code` for the form chips to join. Because football-data serves some teams under inconsistent TLAs (Uruguay `URU`/`URY`, flip-flopping across responses), the sync canonicalized every stored code — so `team_form.code` must use that **canonical** value (Uruguay = `URU`, matching `teams.ts`/`standings`). **Don't** flip the `team_form` key to an alias, which only moves the breakage. (`team_form.api_id` is vestigial — left nullable from the abandoned API path; the form data is static.)
 - Schema changes go in a Supabase migration under `supabase/migrations/`; remember RLS implications for any new table/column.
 - **Revoking a function's EXECUTE needs `from public, anon, authenticated`, not just `from public`.** Supabase's default privileges grant EXECUTE on every new `public` function to `anon` and `authenticated` explicitly, so a bare `revoke ... from public` leaves it callable through `/rest/v1/rpc` (this left `fill_ready_knockout_slots()` open to logged-out visitors until `0018`). The same default grants SELECT on new views to `anon`. Run the Supabase security advisor after any migration that adds a function or view.
 - **Keep the pre-match status list in sync across `isPredictionLocked` (`src/lib/format.ts`) and the predictions RLS policies (`0018`)** — the DB rejects the write, the client hides the Save button; if they disagree, players see a Save that bounces.
-- **`.npmrc` pins `legacy-peer-deps=true` and it is required, not optional.** vitest 4 has a peerOptional on `@opentelemetry/api ^1.9.0` that conflicts with `netlify-cli`'s `~1.8.0`; without this line a clean `npm install` (including Netlify/GitHub CI) fails with `ERESOLVE`. Don't delete it.
-- **A "stuck" match (e.g. `IN_PLAY` long past full time) is almost always football-data's free-tier CDN serving a stale snapshot, not a sync failure.** The sync faithfully writes whatever the upstream list endpoint returns, so forcing it only helps once the upstream cache catches up. Diagnose by checking `matches.updated_at` (proves the sync ran) and curling the API directly with `FOOTBALL_DATA_TOKEN` (`/v4/competitions/WC/matches`); the `lastUpdated` field reflects when the source changed, not when the edge cache will serve it. Knockout scores come from ESPN instead (see "Knockout results from ESPN"), which sidesteps this for the bracket.
-- **The Cloudflare deploy Action pins `wranglerVersion: "4"` on purpose.** `cloudflare/wrangler-action@v3` bundles wrangler 3.90.0, which can't deploy our assets-only Worker (`wrangler.jsonc` has `assets` but no `main`) and fails with "Missing entry-point"; `wrangler@^4` is also a devDependency so local `npx wrangler deploy` matches CI. Don't unpin it.
-- **The app is served from two hosts in parallel (Netlify + Cloudflare Workers) off the same `dist`/Supabase** — keep the per-host SPA fallback split (`netlify.toml` vs `wrangler.jsonc` `not_found_handling`; **no** `public/_redirects` — Cloudflare rejects its self-loop), run the sync cron on Netlify only, and allowlist **every** serving domain for OAuth as `https://<domain>/**` (see "Hosting & parallel deploys").
+- **The Cloudflare deploy Action pins `wranglerVersion: "4"` on purpose.** `cloudflare/wrangler-action@v3` bundles wrangler 3.90.0, which is too old for this `wrangler.jsonc`; `wrangler@^4` is also a devDependency so local `npx wrangler deploy` matches CI. Don't unpin it.
+- **Don't remove the keep-alive cron** in `wrangler.jsonc` / `worker/index.ts` while Supabase is on the free plan, or the project pauses within a week (see "Commands").
 
 ## Commit conventions
 

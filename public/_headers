@@ -1,6 +1,6 @@
-# Security headers for every response. Netlify and Cloudflare Workers static
-# assets both read this file from dist/ (Vite copies it from public/), so one
-# file covers both hosts. Unlike public/_redirects, Cloudflare accepts it.
+# Security headers for every response. Cloudflare Workers static assets read
+# this file from dist/ (Vite copies it from public/). Unlike public/_redirects,
+# Cloudflare accepts it.
 #
 # CSP notes:
 # - connect-src: the app talks only to Supabase (REST + auth). Google sign-in is

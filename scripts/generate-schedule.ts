@@ -6,8 +6,8 @@
  * Run: npx tsx scripts/generate-schedule.ts
  *
  * This static schedule is the committed fallback used to seed the database so
- * the app works immediately. Exact kickoff times / knockout participants are
- * reconciled later by the Netlify sync function against football-data.org.
+ * the app works immediately. Exact kickoff times / knockout participants come
+ * from the API-based seed (`SEED_SOURCE=api`) against football-data.org.
  */
 import { writeFileSync, mkdirSync } from "node:fs"
 import { dirname, resolve } from "node:path"
