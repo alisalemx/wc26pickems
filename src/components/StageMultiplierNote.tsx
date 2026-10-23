@@ -70,14 +70,14 @@ export function StageMultiplierNote({ stage }: { stage: MatchStage }) {
       }}
     >
       <div className="overflow-hidden">
-        <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-9 duration-[var(--duration-base)] ease-out-cubic">
+        <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-12 duration-[var(--duration-base)] ease-out-cubic">
           <Info />
           <AlertDescription>
             <p>
               {copy} ×{STAGE_MULTIPLIER[stage]} the points.{" "}
               <ScoringGuide
                 trigger={
-                  <button className="rounded-sm -mx-1 px-1 font-medium text-primary underline underline-offset-2 transition-colors duration-[var(--duration-fast)] hover:no-underline active:bg-foreground/10">
+                  <button className="-mx-1 rounded-sm px-1 font-semibold text-foreground underline decoration-1 underline-offset-4 hover:decoration-2 active:bg-foreground/10">
                     See scoring system
                   </button>
                 }
@@ -88,7 +88,7 @@ export function StageMultiplierNote({ stage }: { stage: MatchStage }) {
             type="button"
             onClick={dismiss}
             aria-label="Dismiss reminder"
-            className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground transition-colors duration-[var(--duration-fast)] hover:text-foreground active:bg-foreground/10"
+            className="absolute top-1 right-1 grid size-10 place-items-center rounded-full text-muted-foreground transition-colors duration-[var(--duration-fast)] hover:bg-accent hover:text-foreground active:bg-accent-pressed"
           >
             <X className="size-4" aria-hidden />
           </button>

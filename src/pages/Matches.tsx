@@ -6,7 +6,7 @@ import {
   useMyPredictions,
   useUpsertPrediction,
 } from "@/hooks/queries"
-import { ChampionBanner } from "@/components/ChampionBanner"
+import { ChampionBanner, LeaguePodium } from "@/components/ChampionBanner"
 import { LeagueAwards } from "@/components/LeagueAwards"
 import { MatchCard } from "@/components/MatchCard"
 import { PenaltyNote } from "@/components/PenaltyNote"
@@ -67,16 +67,32 @@ function currentStageFilter(matches: MatchRow[] | undefined): string {
 
 type View = "day" | "all"
 
+/** The vertical band the floating chrome leaves visible: from the bottom of
+ *  the top bar (plus a pinned day strip) to the top of the phone tab bar, or
+ *  the viewport bottom where the tab bar is hidden. Measured from the DOM, so
+ *  it tracks the bars' real sizes and the safe areas. */
+function visibleBand() {
+  const header = document.querySelector("[data-app-header]")
+  const strip = document.querySelector("[data-day-strip]")
+  const tabBar = document.querySelector("[data-tab-bar]")
+  const top =
+    (header?.getBoundingClientRect().bottom ?? 0) +
+    (strip?.getBoundingClientRect().height ?? 0)
+  const bar = tabBar?.getBoundingClientRect()
+  const bottom = bar && bar.height > 0 ? bar.top : window.innerHeight
+  return { top, bottom }
+}
+
 /** Centered category label with hairline rules either side — used inside a day
  *  to mark where the not-yet-played matches start. */
 function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="h-px flex-1 bg-border" />
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="col-span-full flex items-center gap-3 py-2">
+      <div className="h-px flex-1 bg-input" />
+      <span className="text-sm font-semibold text-muted-foreground">
         {label}
       </span>
-      <div className="h-px flex-1 bg-border" />
+      <div className="h-px flex-1 bg-input" />
     </div>
   )
 }
@@ -156,23 +172,22 @@ export function Matches() {
         ? `Jump to ${shortDate(jumpTarget[1][0].kickoff)}`
         : ""
 
-  // Switching days should bring the day strip up flush beneath the app header,
-  // rather than retaining the previous scroll position. The DayHeader sticks at
-  // top-14 (the h-14 app header), so scroll the day-view top to that offset.
-  // Only do this when the day strip is already pinned (the user has scrolled
-  // past the segmented controls); if they're still at the top with the controls
-  // visible, leave the scroll position alone.
+  // Switching days should bring the day strip up to its pinned spot beneath the
+  // floating top bar, rather than retaining the previous scroll position. The
+  // strip (the day view's first child) parks at its sticky `top`, read from the
+  // DOM so it tracks --sticky-top. Only do this when the strip is already
+  // pinned (the user has scrolled past the segmented controls); if they're
+  // still at the top with the controls visible, leave the scroll alone.
   const dayViewRef = useRef<HTMLDivElement>(null)
   function goToDay(key: string) {
     setSelectedDay(key)
     const el = dayViewRef.current
-    if (!el) return
-    const HEADER_OFFSET = 56 // h-14 app header
+    const strip = el?.firstElementChild
+    if (!el || !strip) return
+    const pinnedAt = parseFloat(getComputedStyle(strip).top) || 0
     const rect = el.getBoundingClientRect()
-    // The day header is pinned once the day view has scrolled up to the offset.
-    if (rect.top > HEADER_OFFSET) return
-    const top = window.scrollY + rect.top - HEADER_OFFSET
-    window.scrollTo({ top: Math.max(0, top) })
+    if (rect.top > pinnedAt) return
+    window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - pinnedAt) })
   }
 
   // Jump-and-highlight for the reminder banner's "Predict next" CTA: switch
@@ -193,16 +208,15 @@ export function Matches() {
       // Not scrollIntoView: on iOS Safari a programmatic scrollIntoView can
       // shift the visual viewport and leave the fixed bottom nav floating
       // mid-page. window.scrollTo scrolls the layout viewport, which fixed
-      // elements track, matching goToDay's approach above.
-      const HEADER_OFFSET = 56 // h-14 app header
-      const NAV_OFFSET = 64 // approx height of the fixed bottom tab bar
+      // elements track, matching goToDay's approach above. Centre the card in
+      // the band the floating chrome leaves visible.
+      const { top: bandTop, bottom: bandBottom } = visibleBand()
       const rect = el.getBoundingClientRect()
-      const visibleHeight = window.innerHeight - HEADER_OFFSET - NAV_OFFSET
       const top =
         window.scrollY +
         rect.top -
-        HEADER_OFFSET -
-        (visibleHeight - rect.height) / 2
+        bandTop -
+        (bandBottom - bandTop - rect.height) / 2
       window.scrollTo({ top: Math.max(0, top) })
     }
     const t = setTimeout(() => setHighlightId(null), 2000)
@@ -268,23 +282,33 @@ export function Matches() {
     const upcoming = list.filter((m) => !isEnded(m) && !isPredictionLocked(m))
     const played = [...ended, ...locked]
     let i = 0
+    // Two columns of cards from lg up; the divider spans both.
     return (
-      <>
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 lg:gap-4">
         {played.map((m) => renderCard(m, i++))}
         {played.length > 0 && upcoming.length > 0 && (
           <SectionDivider label="Upcoming" />
         )}
         {upcoming.map((m) => renderCard(m, i++))}
-      </>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
       <ChampionBanner matches={matches} />
-      <LeagueAwards matches={matches} centerTitle />
-      <Tabs value={view} onValueChange={(v) => setView(v as View)}>
-        <TabsList className="flex w-full">
+      {over && (
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+          <LeaguePodium matches={matches} />
+          <LeagueAwards matches={matches} />
+        </div>
+      )}
+      <Tabs
+        value={view}
+        onValueChange={(v) => setView(v as View)}
+        className="mt-2"
+      >
+        <TabsList className="flex w-full md:w-80">
           <TabsTrigger value="day" className="flex-1">
             By day
           </TabsTrigger>
@@ -309,7 +333,7 @@ export function Matches() {
         // scroll back to the top.
         <div
           ref={dayViewRef}
-          className="min-h-[calc(100dvh-3.5rem)] space-y-3"
+          className="flex min-h-[calc(100dvh-3.5rem)] flex-col gap-3"
         >
           <DayHeader
             heading={dayHeading(current[1][0].kickoff)}
@@ -349,9 +373,9 @@ export function Matches() {
 
       {/* All-matches view */}
       {!isLoading && view === "all" && days.length > 0 && (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <Tabs value={filter} onValueChange={setChosenFilter}>
-            <TabsList className="flex w-full">
+            <TabsList className="flex w-full md:w-fit">
               {FILTERS.map((f) => (
                 <TabsTrigger key={f.value} value={f.value} className="flex-1">
                   {f.label}
@@ -382,7 +406,7 @@ export function Matches() {
             <section
               key={day}
               id={day === todayKey ? "today" : undefined}
-              className="space-y-3"
+              className="flex flex-col gap-1"
             >
               <DayHeader
                 heading={dayHeading(dayMatches[0].kickoff)}

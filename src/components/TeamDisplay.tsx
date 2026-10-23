@@ -1,4 +1,4 @@
-import { flagEmoji } from "@/lib/flags"
+import { Flag } from "@/components/Flag"
 import { cn } from "@/lib/utils"
 
 /** Flag + team name, used wherever a team is listed (match cards, standings,
@@ -22,8 +22,8 @@ export function TeamDisplay({
   align?: "left" | "right"
   size?: "sm" | "md"
   stack?: boolean
-  /** Grey out + fade the team — used to de-emphasize the loser on a finished
-   *  match card. The `grayscale` filter desaturates the emoji flag too. */
+  /** De-emphasize the loser on a finished match: the name drops to the quiet
+   *  grey. The flag keeps its colours so the team stays recognisable. */
   dim?: boolean
   className?: string
 }) {
@@ -31,20 +31,18 @@ export function TeamDisplay({
     return (
       <div
         className={cn(
-          "flex min-w-0 flex-col items-center gap-1.5 text-center",
-          dim && "opacity-60 grayscale",
+          "flex min-w-0 flex-col items-center gap-2 text-center",
           className
         )}
       >
+        <Flag code={code} size="lg" className="sm:size-12" />
         <span
           className={cn(
-            "text-4xl leading-none sm:text-5xl",
-            dim && "opacity-75"
+            "line-clamp-2 text-[15px] leading-tight font-semibold tracking-tight whitespace-normal transition-colors sm:text-base",
+            dim && "text-quiet",
+            !name && "text-muted-foreground"
           )}
         >
-          {flagEmoji(code)}
-        </span>
-        <span className="line-clamp-2 whitespace-normal text-sm font-medium leading-tight sm:text-base">
           {name ?? "TBD"}
         </span>
       </div>
@@ -54,22 +52,20 @@ export function TeamDisplay({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-2",
+        "flex min-w-0 items-center gap-2.5",
         align === "right" && "flex-row-reverse text-right",
-        dim && "opacity-60 grayscale",
         className
       )}
     >
+      <Flag code={code} size={size === "md" ? "md" : "sm"} />
       <span
         className={cn(
-          "leading-none",
-          size === "md" ? "text-2xl" : "text-base",
-          dim && "opacity-75"
+          "truncate",
+          size === "md" ? "font-semibold tracking-tight" : "text-sm font-medium",
+          dim && "text-quiet",
+          !name && "text-muted-foreground"
         )}
       >
-        {flagEmoji(code)}
-      </span>
-      <span className={cn("truncate", size === "md" ? "font-medium" : "text-sm")}>
         {name ?? "TBD"}
       </span>
     </div>

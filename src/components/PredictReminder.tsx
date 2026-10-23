@@ -1,4 +1,4 @@
-import { ChevronRight, Trophy, Zap } from "lucide-react"
+import { ArrowRight, Trophy } from "lucide-react"
 import { FINAL_ID } from "@/lib/bracket"
 import { isPredictionLocked } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -12,7 +12,7 @@ interface Props {
   onGoToNext: (m: MatchRow) => void
 }
 
-/** A gold one-line CTA banner above the match list telling a signed-in user how
+/** A one-line CTA panel above the match list telling a signed-in user how
  *  many matches are still open for them to predict. Clicking it jumps to the
  *  next (earliest-kickoff) open match. Not dismissable — it disappears on its
  *  own once every open match has a pick. */
@@ -48,10 +48,8 @@ export function PredictReminder({
     b.kickoff < a.kickoff || (b.kickoff === a.kickoff && b.id < a.id) ? b : a
   )
 
-  // Once the jump target is the Final itself, the band trades its usual green
-  // for the deep-gold hype treatment (.finale-hype). The pressed state moves
-  // to brightness (the Switch idiom): a bg tint would paint under the gold
-  // gradient image and never show.
+  // Once the jump target is the Final itself, the panel trades its usual black
+  // ground for the one bold colour (turf green) to hype the last match.
   const isFinal = next.id === FINAL_ID
 
   return (
@@ -60,37 +58,51 @@ export function PredictReminder({
     // element would make the hover transition and the entrance fight over the
     // same custom properties.
     <div className="animate-in fade-in-0 slide-in-from-top-1 duration-[var(--duration-base)] ease-out-cubic">
+      {/* A signage numbered panel: the count in a bullet, the destination,
+          and an arrow in a circle. */}
       <button
         type="button"
         onClick={() => onGoToNext(next)}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-2 rounded-lg border border-ink px-4 py-3 text-sm duration-[var(--duration-fast)]",
+          "group flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 pr-3 text-left transition-colors duration-[var(--duration-fast)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none",
           isFinal
-            ? "finale-hype transition-[filter] active:brightness-95"
-            : "predict-cta transition-colors active:bg-foreground/10"
+            ? "bg-signal text-signal-foreground hover:bg-signal/90 active:bg-signal/80"
+            : "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80"
         )}
       >
-        {isFinal ? (
-          <Trophy className="size-4 shrink-0" aria-hidden />
-        ) : (
-          <Zap className="size-4 shrink-0" aria-hidden />
-        )}
-        {/* The tail is dropped instead of truncated where space is tight. */}
-        {isFinal ? (
-          <span className="whitespace-nowrap font-semibold">
-            The Final is open
-            <span className="hidden sm:inline"> for prediction</span>
+        <span
+          className={cn(
+            "grid size-11 shrink-0 place-items-center rounded-full text-lg font-bold tabular-nums tracking-tight",
+            isFinal
+              ? "bg-signal-foreground text-signal"
+              : "bg-signal text-signal-foreground"
+          )}
+        >
+          {isFinal ? (
+            <Trophy className="size-5" aria-hidden />
+          ) : (
+            open.length
+          )}
+        </span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="truncate text-[15px] font-bold tracking-tight">
+            {isFinal
+              ? "The Final is open"
+              : `${open.length === 1 ? "Match" : "Matches"} open for predictions`}
           </span>
-        ) : (
-          <span className="whitespace-nowrap font-semibold">
-            <span className="tabular-nums">{open.length}</span> match
-            {open.length === 1 ? "" : "es"} open
-            <span className="hidden sm:inline"> for predictions</span>
+          <span className="truncate text-sm opacity-60">
+            {isFinal ? "Make your call" : "Predict next"}
           </span>
-        )}
-        <span className="ml-auto flex shrink-0 items-center gap-1 font-semibold">
-          {isFinal ? "Make your call" : "Predict next"}
-          <ChevronRight className="size-4" aria-hidden />
+        </span>
+        <span
+          className={cn(
+            "ml-auto grid size-9 shrink-0 place-items-center rounded-full transition-transform duration-[var(--duration-fast)] ease-out group-hover:translate-x-0.5",
+            isFinal
+              ? "bg-signal-foreground text-signal"
+              : "bg-primary-foreground text-primary"
+          )}
+        >
+          <ArrowRight className="size-[18px]" aria-hidden />
         </span>
       </button>
     </div>

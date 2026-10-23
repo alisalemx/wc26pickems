@@ -1,37 +1,22 @@
-import { useMemo, type CSSProperties } from "react"
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react"
+import { Link } from "react-router-dom"
+import { ArrowUpRight } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useLeaderboard } from "@/hooks/queries"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Flag } from "@/components/Flag"
+import { SignHeading } from "@/components/SignHeading"
 import { tournamentChampion } from "@/lib/bracket"
 import { competitionRanks } from "@/lib/rank"
-import { flagEmoji } from "@/lib/flags"
 import { ordinal } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MatchRow } from "@/lib/types"
-
-const MEDALS = ["🥇", "🥈", "🥉"]
-
-// Metal fill matched to each medal, same idiom as the /me rank reveal
-// (`.rank-metal-*` in index.css, clipped to the handle text). Indexed by
-// rank - 1; top 3 rows always carry rank <= 3.
-const TIER_GRADIENT = [
-  "rank-metal rank-metal-gold",
-  "rank-metal rank-metal-silver",
-  "rank-metal rank-metal-bronze",
-]
-
-// Podium bar height and tint per rank: gold, silver, bronze (soft washes of
-// the rank-metal palette; the winner's bar is tallest). Height sits on the
-// static wrapper; the tint is on the inner .podium-bar fill that scales up
-// from the floor (see index.css).
-const BAR_HEIGHT = ["h-20", "h-14", "h-10"]
-// Angled like the rank-metal fills (deep at the edges, a lighter band
-// through the middle) so each bar reads as a soft slab of its medal's metal.
-const BAR_TINT = [
-  "bg-linear-135 from-gold/55 via-gold/20 to-gold/45",
-  "bg-linear-135 from-[#a8a8a8]/50 via-[#a8a8a8]/12 to-[#a8a8a8]/40",
-  "bg-linear-135 from-[#d8812d]/40 via-[#d8812d]/10 to-[#d8812d]/30",
-]
 
 /** The tw-animate idiom for each cascading element: fade/slide in, delayed
  *  by the inline `--i` index via the shared .stagger-in utility (backwards
@@ -39,12 +24,107 @@ const BAR_TINT = [
 const LINE_IN =
   "animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
 
-/** The podium sequence: the bars draw up from the floor first (.podium-bar
- *  in index.css, staggered off the column's --i), then each column's content
- *  — handle and points above the bar and the medal on it — reveals as
- *  ONE linked animation once its bar has finished filling. The two reveal
- *  elements share this class and the same inline animationDelay so they move
- *  as a unit. */
+/** Fits one line of display text to its box's width: measures the word at its
+ *  current size and scales it so it spans the box's content width exactly,
+ *  capped at `max` px. Width scales linearly with font size here (the tracking
+ *  is in em, and Inter's optical size tops out well below display sizes), so a
+ *  single pass lands it. Re-fits when the box resizes and once the web font
+ *  has loaded; until the first measure, the caller's CSS estimate holds. */
+function useFitText(text: string | undefined, max: number) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const wordRef = useRef<HTMLSpanElement>(null)
+  const [size, setSize] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const box = boxRef.current
+    const word = wordRef.current
+    if (!box || !word) return
+    const fit = () => {
+      const cs = getComputedStyle(box)
+      const avail =
+        box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      const current = parseFloat(getComputedStyle(word).fontSize)
+      const width = word.getBoundingClientRect().width
+      if (width > 0) setSize(Math.min(max, (current * avail) / width))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(box)
+    void document.fonts?.ready.then(fit)
+    return () => ro.disconnect()
+  }, [text, max])
+  return { boxRef, wordRef, size }
+}
+
+/** The champion hero for the match list: renders once the final (match 104)
+ *  has a decided result, and stays invisible before then. A flat turf-green
+ *  panel with the two-tone "World champions" heading and the winner's
+ *  flag, over the team's name set as one huge word that bleeds off the bottom
+ *  edge. The word is measured and fitted to the panel width (useFitText), so
+ *  any name runs edge to edge whatever its letters. */
+export function ChampionBanner({
+  matches,
+}: {
+  matches: MatchRow[] | undefined
+}) {
+  const champion = useMemo(
+    () => tournamentChampion(matches ?? []),
+    [matches]
+  )
+  // Capped so a very short name can't outgrow the panel's height.
+  const { boxRef, wordRef, size } = useFitText(champion?.team, 448)
+  if (!champion) return null
+
+  // First-paint estimate (~0.5em per glyph) until the word is measured.
+  const estimate = `${(100 / (Math.max(champion.team.length, 4) * 0.5)).toFixed(2)}cqw`
+
+  return (
+    <section
+      aria-label={`${champion.team} are world champions`}
+      className="@container relative isolate overflow-hidden rounded-2xl bg-signal text-signal-foreground animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-quint"
+    >
+      <div className="flex items-start justify-between gap-4 p-5 sm:p-7">
+        <SignHeading
+          as="h1"
+          size="lg"
+          title="World"
+          sub="champions"
+          subClassName="text-signal-foreground/65"
+          className={LINE_IN}
+        />
+        <Flag
+          code={champion.code}
+          size="xl"
+          className={cn("sm:size-20", LINE_IN)}
+        />
+      </div>
+      <div
+        ref={boxRef}
+        aria-hidden
+        className={cn(
+          "-mt-2 -mb-[0.09em] px-3 leading-[0.74] font-bold tracking-display whitespace-nowrap select-none sm:px-5",
+          LINE_IN
+        )}
+        style={
+          { fontSize: size ? `${size}px` : estimate, "--i": 1 } as CSSProperties
+        }
+      >
+        <span ref={wordRef} className="inline-block">
+          {champion.team}
+        </span>
+      </div>
+    </section>
+  )
+}
+
+// Podium bar height and tone per rank (the winner's bar is tallest). Only the
+// winner wears the bold colour; 2nd and 3rd sit on the sunk tone, so the
+// rank numbers carry the order. Height sits on the static wrapper; the tone is
+// on the inner .podium-bar fill that scales up from the floor (see index.css).
+const BAR_HEIGHT = ["h-28", "h-20", "h-14"]
+const BAR_TONE = ["bg-signal", "bg-sunk", "bg-sunk"]
+
+/** The tw-animate idiom for a podium column's content, which reveals once its
+ *  bar has finished filling. */
 const CONTENT_IN =
   "animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic"
 
@@ -55,31 +135,25 @@ function contentDelay(enter: number): CSSProperties {
   return { animationDelay: `${Math.min(enter, 6) * 45 + 120 + 420}ms` }
 }
 
-/** Champion banner for the match list: renders once the final (match 104)
- *  has a decided result, and stays invisible before then. A compact deep-gold
- *  band (`.finale-hero`, the card-scale sibling of `.stage-final`, with its
- *  one-shot sheen) crowns the world champions; below it, on the normal card
- *  surface, a podium celebrates the league's top 3 players with the winner
- *  raised in the middle in gold. The leaderboard view isn't readable
- *  anonymously (and this page is public), so that fetch is session-gated and
- *  the banner degrades to the team-only band when the data isn't available. */
-export function ChampionBanner({
+/** The league's top three once the tournament is over, podium-style: 2nd on
+ *  the left, 1st raised in the middle, 3rd on the right, each bar a flat slab
+ *  with the rank set large. The cascade builds to the winner:
+ *  bronze in first, gold last. Off-podium viewers get their own finish below. */
+export function LeaguePodium({
   matches,
+  className,
 }: {
   matches: MatchRow[] | undefined
+  className?: string
 }) {
   const { session } = useAuth()
   const champion = useMemo(
     () => tournamentChampion(matches ?? []),
     [matches]
   )
-  const { data: leaderboard } = useLeaderboard(
-    Boolean(session) && champion != null
-  )
+  const { data: leaderboard } = useLeaderboard(champion != null)
   // Top 3 rows with their competition ranks (a full tie shares a rank, so
-  // e.g. two shared golds then a bronze), arranged podium-style: 2nd on the
-  // left, 1st raised in the middle, 3rd on the right. Cascade order builds
-  // to the winner: bronze in first, gold last.
+  // e.g. two shared firsts then a third).
   const podium = useMemo(() => {
     const rows = leaderboard ?? []
     const ranks = competitionRanks(rows)
@@ -104,98 +178,93 @@ export function ChampionBanner({
   }, [session, leaderboard])
   const onPodium = podium.some((s) => s.row.user_id === session?.user.id)
 
-  if (!champion) return null
+  if (!champion || podium.length === 0) return null
 
   return (
-    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-quint gap-0 overflow-hidden border-ink py-0">
-      <div className="finale-hero flex flex-col items-center gap-1 px-5 py-4 text-center">
-        <span
-          className={`text-6xl ${LINE_IN}`}
-          style={{ "--i": 0 } as CSSProperties}
-          aria-hidden="true"
-        >
-          {flagEmoji(champion.code)}
-        </span>
-        <p
-          className={`text-lg font-semibold ${LINE_IN}`}
-          style={{ "--i": 1 } as CSSProperties}
-        >
-          {champion.team} are world champions
-        </p>
-      </div>
-
-      {podium.length > 0 && (
-        <div className="p-4">
-          <div className="flex items-end justify-center gap-1 sm:gap-4">
-            {podium.map(({ row, rank, enter }) => {
-              return (
-                <div
-                  key={row.user_id}
-                  className="flex min-w-0 flex-1 flex-col items-center sm:max-w-36"
-                  style={{ "--i": enter } as CSSProperties}
-                >
-                  <div
-                    className={cn(
-                      "flex w-full min-w-0 flex-col items-center",
-                      CONTENT_IN
-                    )}
-                    style={contentDelay(enter)}
-                  >
-                    <span
-                      title={`@${row.username}`}
-                      className={cn(
-                        "rank-sheen max-w-full truncate text-sm font-bold bg-clip-text text-transparent [-webkit-background-clip:text]",
-                        TIER_GRADIENT[rank - 1]
-                      )}
-                    >
-                      @{row.username}
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">
-                      {row.total_points} pts
-                    </span>
-                  </div>
-                  <div
-                    className={cn("relative mt-2 w-full", BAR_HEIGHT[rank - 1])}
-                  >
-                    <div
-                      className={cn(
-                        "podium-bar absolute inset-0 rounded-t-sm border border-b-0 border-ink",
-                        BAR_TINT[rank - 1]
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "absolute inset-x-0 top-1 text-center text-xl",
-                        CONTENT_IN
-                      )}
-                      style={contentDelay(enter)}
-                      aria-hidden="true"
-                    >
-                      {MEDALS[rank - 1]}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          {viewer && !onPodium && (
-            <p
-              className={cn(
-                "mt-3 text-center text-sm text-muted-foreground",
-                CONTENT_IN
-              )}
-              // After the podium sequence (gold content lands at ~720ms).
-              style={{ animationDelay: "900ms" }}
-            >
-              You finished{" "}
-              <span className="font-semibold text-foreground">
-                {ordinal(viewer.position)}
-              </span>{" "}
-              of {viewer.total}
-            </p>
-          )}
-        </div>
+    <Card
+      className={cn(
+        "gap-5 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        className
       )}
+    >
+      <CardHeader className="grid-cols-[1fr_auto] items-center">
+        <SignHeading
+          title="Podium"
+          sub={`${leaderboard?.length ?? 0} players`}
+        />
+        <Link
+          to="/leaderboard"
+          aria-label="See the full leaderboard"
+          className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground transition-colors duration-[var(--duration-fast)] hover:bg-primary/85 active:bg-primary/75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          <ArrowUpRight className="size-5" aria-hidden />
+        </Link>
+      </CardHeader>
+      <CardContent className="mt-auto">
+        <div className="flex items-end justify-center gap-2">
+          {podium.map(({ row, rank, enter }) => (
+            <Link
+              key={row.user_id}
+              to={`/player/${row.user_id}`}
+              className="group flex min-w-0 flex-1 flex-col items-center rounded-t-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-44"
+              style={{ "--i": enter } as CSSProperties}
+            >
+              <div
+                className={cn(
+                  "flex w-full min-w-0 flex-col items-center px-1 text-center",
+                  CONTENT_IN
+                )}
+                style={contentDelay(enter)}
+              >
+                <span
+                  title={`@${row.username}`}
+                  className="max-w-full truncate text-[15px] font-bold tracking-tight underline-offset-4 decoration-1 group-hover:underline"
+                >
+                  @{row.username}
+                </span>
+                <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                  {row.total_points} pts
+                </span>
+              </div>
+              <div className={cn("relative mt-2.5 w-full", BAR_HEIGHT[rank - 1])}>
+                <div
+                  className={cn(
+                    "podium-bar absolute inset-0 rounded-t-xl",
+                    BAR_TONE[rank - 1]
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute inset-x-0 top-2 text-center text-3xl leading-none font-bold tracking-display tabular-nums",
+                    rank === 1 ? "text-signal-foreground" : "text-foreground",
+                    CONTENT_IN
+                  )}
+                  style={contentDelay(enter)}
+                  aria-label={`${ordinal(rank)} place`}
+                >
+                  {rank}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        {viewer && !onPodium && (
+          <p
+            className={cn(
+              "mt-4 text-center text-sm text-muted-foreground",
+              CONTENT_IN
+            )}
+            // After the podium sequence (gold content lands at ~720ms).
+            style={{ animationDelay: "900ms" }}
+          >
+            You finished{" "}
+            <span className="font-semibold text-foreground">
+              {ordinal(viewer.position)}
+            </span>{" "}
+            of {viewer.total}
+          </p>
+        )}
+      </CardContent>
     </Card>
   )
 }

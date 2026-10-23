@@ -1,10 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/inter/opsz.css";
 
 :root {
   color-scheme: light dark;
-  --radius: 0.25rem;
+  --radius: 0.75rem;
 
   /* Motion durations (course guidance — keep UI < 300ms; exits ~20% faster).
      Plain custom properties (not @theme) so they're never tree-shaken; consumed
@@ -14,101 +14,106 @@
   --duration-slow: 280ms;  /* modals/drawers */
   --duration-exit: 160ms;  /* exits ~20% faster */
 
-  /* Polished neo-brutalist light theme: warm paper, near-black ink, vivid green.
-     Two-tier borders: --border is a soft hairline (rows, separators),
-     --ink is the strong structural outline (cards, buttons, inputs). */
-  --background: oklch(0.97 0.012 105);
-  --foreground: oklch(0.2 0.02 155);
-  --card: oklch(0.995 0.004 105);
-  --card-foreground: oklch(0.2 0.02 155);
-  --popover: oklch(0.995 0.004 105);
-  --popover-foreground: oklch(0.2 0.02 155);
-  --primary: oklch(0.64 0.19 148);
-  --primary-foreground: oklch(0.16 0.04 152);
-  --secondary: oklch(0.92 0.015 105);
-  --secondary-foreground: oklch(0.2 0.02 155);
-  --muted: oklch(0.92 0.012 105);
-  --muted-foreground: oklch(0.44 0.02 150);
-  --accent: oklch(0.9 0.07 148);
-  --accent-foreground: oklch(0.2 0.06 152);
-  /* One step deeper than --accent: the shared "pressed" tint. Every interactive
-     element settles on this on :active, so the press reads as a subtle
-     background shift (no scale/translate) yet stays distinct from the hover
-     --accent. Darker here in light, lighter in the dark theme below — pressed =
-     "more present" against each background. */
-  --accent-pressed: oklch(0.85 0.09 148);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0.01 27);
-  --border: oklch(0.84 0.012 150);
-  --ink: oklch(0.28 0.02 155);
-  --input: oklch(0.28 0.02 155);
-  --ring: oklch(0.64 0.19 148);
-  --shadow-color: oklch(0.28 0.02 155 / 0.14);
-  --gold: oklch(0.8 0.16 85);
-  --gold-foreground: oklch(0.25 0.06 80);
-  --chart-1: oklch(0.64 0.19 148);
-  --chart-2: oklch(0.78 0.16 85);
-  --chart-3: oklch(0.55 0.16 240);
-  --chart-4: oklch(0.62 0.21 30);
-  --chart-5: oklch(0.55 0.2 300);
-  --sidebar: oklch(0.97 0.012 105);
-  --sidebar-foreground: oklch(0.2 0.02 155);
-  --sidebar-primary: oklch(0.64 0.19 148);
-  --sidebar-primary-foreground: oklch(0.16 0.04 152);
-  --sidebar-accent: oklch(0.9 0.07 148);
-  --sidebar-accent-foreground: oklch(0.2 0.06 152);
-  --sidebar-border: oklch(0.84 0.012 150);
-  --sidebar-ring: oklch(0.64 0.19 148);
+  /* Stacking scale for the app chrome (dialogs and toasts manage their own).
+     Consumed as z-(--z-*). */
+  --z-sticky: 10; /* the sticky day strip */
+  --z-header: 20; /* app header + bottom tab bar */
+
+  /* The floating top bar's footprint (0.75rem gap + the h-14 pill), and where
+     sticky content parks beneath it. Layout.tsx's header classes must match. */
+  --header-h: 4.25rem;
+  --sticky-top: calc(var(--header-h) + 0.5rem);
+
+  /* Signage light theme, "Pitch": a warm paper ground, flat white panels,
+     near-black ink, and one bold colour (turf green). No outlines on panels and
+     no shadows; panels separate from the ground by tone alone. The neutrals
+     carry a little of the paper's warmth, so nothing reads as cold grey.
+     - --signal is the one bold colour (hero, Exact, the winner, Today, Final).
+     - --win is its pale tint, for the quieter "correct" marks (Outcome, W form).
+     - --muted-foreground is secondary body text (AA on white and the ground).
+     - --quiet is the second line of a two-tone heading (large text only).
+     - --track is a control's well when it sits directly on the ground. */
+  --background: oklch(0.955 0.009 90);
+  --foreground: oklch(0.18 0.006 100);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.006 100);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.006 100);
+  --primary: oklch(0.18 0.006 100);
+  --primary-foreground: oklch(0.99 0.003 90);
+  --secondary: oklch(0.962 0.007 90);
+  --secondary-foreground: oklch(0.18 0.006 100);
+  --muted: oklch(0.962 0.007 90);
+  --muted-foreground: oklch(0.47 0.014 85);
+  --quiet: oklch(0.6 0.018 85);
+  --track: oklch(0.915 0.011 90);
+  /* An inset block inside a white panel (podium plinths, bracket wells). */
+  --sunk: oklch(0.915 0.011 90);
+  /* The floating bars' frosted fill: halfway between the sand ground (0.955)
+     and the white cards (1), so a bar reads as a soft step on both without a
+     border or shadow. Keep it translucent (~72%) so the backdrop blur shows the
+     content through it: Ali wants frosted glass, and a near-opaque fill (94%)
+     killed it. He rejected darker-than-sand tones (0.915, 0.937) as dull. */
+  --bar: oklch(0.978 0.006 90 / 0.72);
+  --accent: oklch(0.94 0.009 90);
+  --accent-foreground: oklch(0.18 0.006 100);
+  /* One step deeper than --accent: the shared "pressed" tint for accent
+     controls, so a press reads distinct from hover. */
+  --accent-pressed: oklch(0.9 0.011 90);
+  --signal: oklch(0.68 0.17 150);
+  --signal-foreground: oklch(0.2 0.03 150);
+  --win: color-mix(in oklab, var(--signal) 28%, var(--card));
+  --win-foreground: var(--foreground);
+  --destructive: oklch(0.6 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.915 0.009 90);
+  --ink: oklch(0.18 0.006 100);
+  --input: oklch(0.86 0.012 90);
+  --ring: oklch(0.18 0.006 100);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Softened-brutalist dark theme: near-black pitch, visible borders, brighter green */
-    --background: oklch(0.17 0.012 155);
-    --foreground: oklch(0.95 0.012 110);
-    --card: oklch(0.21 0.015 155);
-    --card-foreground: oklch(0.95 0.012 110);
-    --popover: oklch(0.21 0.015 155);
-    --popover-foreground: oklch(0.95 0.012 110);
-    --primary: oklch(0.74 0.2 148);
-    --primary-foreground: oklch(0.16 0.05 152);
-    --secondary: oklch(0.27 0.018 155);
-    --secondary-foreground: oklch(0.95 0.012 110);
-    --muted: oklch(0.25 0.015 155);
-    --muted-foreground: oklch(0.7 0.02 150);
-    --accent: oklch(0.36 0.06 149);
-    --accent-foreground: oklch(0.96 0.03 145);
-    --accent-pressed: oklch(0.42 0.07 149);
-    --destructive: oklch(0.66 0.2 25);
-    --destructive-foreground: oklch(0.98 0.01 27);
-    --border: oklch(0.33 0.015 152);
-    --ink: oklch(0.55 0.02 150);
-    --input: oklch(0.55 0.02 150);
-    --ring: oklch(0.74 0.2 148);
-    --shadow-color: oklch(0.05 0 0 / 0.4);
-    --gold: oklch(0.82 0.15 85);
-    --gold-foreground: oklch(0.25 0.06 80);
-    --chart-1: oklch(0.74 0.2 148);
-    --chart-2: oklch(0.82 0.15 85);
-    --chart-3: oklch(0.65 0.15 240);
-    --chart-4: oklch(0.7 0.2 30);
-    --chart-5: oklch(0.65 0.18 300);
-    --sidebar: oklch(0.17 0.012 155);
-    --sidebar-foreground: oklch(0.95 0.012 110);
-    --sidebar-primary: oklch(0.74 0.2 148);
-    --sidebar-primary-foreground: oklch(0.16 0.05 152);
-    --sidebar-accent: oklch(0.36 0.06 149);
-    --sidebar-accent-foreground: oklch(0.96 0.03 145);
-    --sidebar-border: oklch(0.33 0.015 152);
-    --sidebar-ring: oklch(0.74 0.2 148);
+    /* Signage dark theme: a near-black ground with a hint of pitch at night,
+       deep green-graphite panels, and a brighter turf green. */
+    --background: oklch(0.13 0.008 155);
+    --foreground: oklch(0.97 0.006 110);
+    --card: oklch(0.195 0.011 155);
+    --card-foreground: oklch(0.97 0.006 110);
+    --popover: oklch(0.215 0.012 155);
+    --popover-foreground: oklch(0.97 0.006 110);
+    --primary: oklch(0.97 0.006 110);
+    --primary-foreground: oklch(0.13 0.008 155);
+    --secondary: oklch(0.25 0.012 155);
+    --secondary-foreground: oklch(0.97 0.006 110);
+    --muted: oklch(0.245 0.012 155);
+    --muted-foreground: oklch(0.75 0.014 140);
+    --quiet: oklch(0.64 0.018 140);
+    --track: oklch(0.205 0.011 155);
+    --sunk: oklch(0.285 0.013 155);
+    --bar: oklch(0.235 0.012 155 / 0.72);
+    --accent: oklch(0.27 0.013 155);
+    --accent-foreground: oklch(0.97 0.006 110);
+    --accent-pressed: oklch(0.32 0.015 155);
+    --signal: oklch(0.75 0.18 150);
+    --signal-foreground: oklch(0.17 0.03 150);
+    --win: color-mix(in oklab, var(--signal) 26%, var(--card));
+    --win-foreground: var(--foreground);
+    --destructive: oklch(0.65 0.2 27);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.27 0.012 155);
+    --ink: oklch(0.97 0.006 110);
+    --input: oklch(0.35 0.014 155);
+    --ring: oklch(0.97 0.006 110);
   }
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -121,52 +126,36 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-quiet: var(--quiet);
+  --color-track: var(--track);
+  --color-sunk: var(--sunk);
+  --color-bar: var(--bar);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-pressed: var(--accent-pressed);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-win: var(--win);
+  --color-win-foreground: var(--win-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-gold: var(--gold);
-  --color-gold-foreground: var(--gold-foreground);
   --color-border: var(--border);
   --color-ink: var(--ink);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
-  --shadow-brutal: 3px 3px 0 0 var(--shadow-color);
-  --shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Inter's optical-size axis already tightens its large (Display) cut, so the
+     manual tracking stays gentle: "tight" is a small nudge for headings and
+     bold labels, and body text keeps Inter's own spacing. */
+  --tracking-tight: -0.011em;
 
   /* Easing tokens live in @theme so Tailwind generates ease-* utilities from
      the --ease-* namespace (ease-out-cubic, ease-out-quint, ease-in-out-quart).
-     Durations have no such namespace, so they live in :root below and are
+     Durations have no such namespace, so they live in :root above and are
      referenced via duration-[var(--duration-*)]. Hover/color stays on `ease`. */
   --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);     /* livelier card entrance */
   --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1); /* collapse / on-screen morph */
-}
-
-/* "Ultramode" sign-in CTA, à la Claude Code's Ultracode slider: a soft green
-   gradient over a light base that flows endlessly left → right. The symmetric
-   stops let the 200% tile loop seamlessly with no visible jump. Structural
-   outline and offset shadow still come from the Button. The keyframe is shared
-   with .predict-cta (the Matches-page reminder banner) — same motion, its own
-   gold wash. */
-@keyframes play-flow {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
 }
 
 /* Countdown urgency: a soft pulse on the clock icon in the final minutes before
@@ -180,102 +169,9 @@
   animation: countdown-pulse 1.6s ease-in-out infinite;
 }
 
-.play-cta {
-  position: relative;
-  overflow: hidden;
-  /* New stacking context so the gradient's z-index: -1 stays inside the
-     button (above its background, below its label + icon). */
-  isolation: isolate;
-  color: var(--foreground);
-  background-color: var(--card);
-  /* The default button now outlines itself with the on-primary ink, which is
-     near-black and would vanish on this card-colored surface in dark mode;
-     restore the structural ink outline so the CTA keeps a visible edge. */
-  border-color: var(--ink);
-}
-.play-cta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: linear-gradient(
-    100deg,
-    oklch(0.64 0.19 148 / 0.1),
-    oklch(0.64 0.19 148 / 0.3),
-    oklch(0.68 0.19 149 / 0.42),
-    oklch(0.64 0.19 148 / 0.3),
-    oklch(0.64 0.19 148 / 0.1)
-  );
-  background-size: 200% 100%;
-  animation: play-flow 4s linear infinite;
-  opacity: 0.75;
-  transition: opacity 300ms ease;
-  pointer-events: none;
-}
-/* Changing animation-duration mid-flight makes the gradient jump, so hover
-   smoothly deepens the green instead of speeding it up. */
-.play-cta:hover::before {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .play-cta::before {
-    animation: none;
-  }
-}
-
-/* The Matches-page "open predictions" reminder banner (PredictReminder): the
-   same endless flow as .play-cta (sharing the play-flow keyframe) washed in
-   faint gold, so it nods at the gold "exact score" badge rather than the
-   sign-in green. Base and text stay on the adaptive card/foreground tokens so
-   the wash works in both schemes; the structural ink outline comes from the
-   component's border utilities. */
-.predict-cta {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  color: var(--foreground);
-  background-color: var(--card);
-}
-.predict-cta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: linear-gradient(
-    100deg,
-    oklch(0.8 0.16 85 / 0.1),
-    oklch(0.8 0.16 85 / 0.28),
-    oklch(0.82 0.16 85 / 0.4),
-    oklch(0.8 0.16 85 / 0.28),
-    oklch(0.8 0.16 85 / 0.1)
-  );
-  background-size: 200% 100%;
-  animation: play-flow 4s linear infinite;
-  opacity: 0.75;
-  transition: opacity 300ms ease;
-  pointer-events: none;
-}
-/* Like .play-cta: hover deepens the gold rather than speeding the flow up. */
-.predict-cta:hover::before {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .predict-cta::before {
-    animation: none;
-  }
-}
-
-/* The user's own rank reveal on /me (MyPredictions). Two touches, both only ever
-   on a single element — the viewer's own rank — so they stay calm personal
-   accents (same justification as the countdown pulse):
-   1. .rank-pop   — a celebratory scale-in with a slight overshoot, landing just
-                    after the card has slid up.
-   2. .rank-sheen — a slow highlight that travels across the metal gradient like
-                    light moving over a real medal. The metal classes below stack
-                    two text-clipped background layers — a moving white streak
-                    (layer 1, animated here) over the static base gradient
-                    (layer 2) — so the resting look is unchanged and the letters
-                    never thin out as the streak passes. */
+/* The viewer's own rank reveal on /me and the player pages: a celebratory
+   scale-in with a slight overshoot, landing just after the card has slid up.
+   Only ever on that single element, so it stays a calm personal accent. */
 @keyframes rank-pop {
   /* Burst in: ease-out so the glyph jumps toward its destination and is fully
      opaque before the peak. */
@@ -290,234 +186,17 @@
 }
 .rank-pop {
   animation: rank-pop calc(var(--duration-base) * 1.25) 120ms both;
-  will-change: transform;
-}
-
-@keyframes rank-sheen {
-  0%   { background-position: -150% 0, 0 0; }
-  100% { background-position: 250% 0, 0 0; }
-}
-.rank-sheen {
-  animation: rank-sheen 4.5s cubic-bezier(0.77, 0, 0.175, 1) infinite;
-}
-
-/* Gold/silver/bronze fills sampled from Apple Color Emoji so each "Nth Place"
-   reads as the same metal as its medal. Layer 1 is the moving sheen streak
-   (transparent-edged, so the base shows through it); layer 2 is the opaque base
-   gradient at full size, so the text is always fully filled. Both are clipped to
-   the glyphs by the element's bg-clip-text. The base position never animates;
-   only the sheen sweeps (see .rank-sheen). 4th place and below get no metal class
-   → neutral foreground. */
-.rank-metal {
-  background-repeat: no-repeat;
-  background-size: 200% 100%, 100% 100%;
-  background-position: -150% 0, 0 0;
-}
-.rank-metal-gold {
-  background-image:
-    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.7) 50%, transparent 60%),
-    linear-gradient(135deg, #d39e08, #f8dd7a, #d39e08);
-}
-.rank-metal-silver {
-  background-image:
-    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.85) 50%, transparent 60%),
-    linear-gradient(135deg, #8a8a8a, #dadada, #8a8a8a);
-}
-.rank-metal-bronze {
-  background-image:
-    linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.55) 50%, transparent 60%),
-    linear-gradient(135deg, #8c3807, #d8812d, #8c3807);
-}
-
-/* A slow white glint sweeping across the Final stage tag: layer 1 (the streak)
-   travels while layer 2 (the base gold) holds, so light appears to move over the
-   metal — the same idea as the 1st-place medal's .rank-sheen. Constant but slow
-   and on a single small element, per the motion budget; background-position is
-   paint-only (like .play-cta), and most of the cycle the streak sits off-screen
-   so it reads as an occasional glint, not a marquee. */
-@keyframes final-sheen {
-  0%   { background-position: -150% 0, 0 0; }
-  100% { background-position: 250% 0, 0 0; }
-}
-
-/* The Final's stage tag. Every other round wears the same flat secondary badge;
-   the championship match gets a deep, lustrous gold gradient with light, slightly
-   embossed text — the inverse of the flat pale gold + dark text "exact score"
-   badge, so the two never read as the same thing. Both background and color
-   override the gold badge variant; this is the only stage that gets it.
-
-   Two stacked background layers (topmost first): a travelling white sheen streak
-   over the base gold fill. background-origin is the border box so the no-repeat
-   gradient covers the badge's 1px border ring too — otherwise the gold variant's
-   flat bg-gold colour shows through it as a pale rim. The resting
-   background-position parks the streak off the left edge, so under reduced motion
-   (animation off) it's just the clean static gold. */
-.stage-final {
-  background-image:
-    linear-gradient(100deg, transparent 35%, rgb(255 255 255 / 0.5) 50%, transparent 65%),
-    linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
-  background-origin: border-box;
-  background-repeat: no-repeat;
-  background-size: 200% 100%, 100% 100%;
-  background-position: -150% 0, 0 0;
-  color: oklch(0.98 0.02 95);
-  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
-  animation: final-sheen 5s var(--ease-in-out-quart) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .stage-final {
-    animation: none;
-  }
-}
-
-/* The tournament's closing surface: the champion banner's world-champions
-   band (ChampionBanner, its only user). Deliberately shares the Final stage
-   tag's deep-gold vocabulary (.stage-final) scaled up — same base gradient,
-   embossed light text, and border-box origin (the .stage-final rim fix) — so
-   the tournament closes on the same gold it crowned the Final with. The band
-   is kept compact (the player podium below it sits on the plain card surface)
-   so the gold reads as a crown, not a wall. Differences from the badge: the
-   sheen is a ONE-SHOT (plays once on load, delayed so it sweeps after the
-   banner's entrance settles, then rests) rather than an infinite glint, and
-   it lives on an ::after pseudo-element so it never competes with a
-   tw-animate entrance in the element's own `animation` slot (the
-   .match-highlight lesson). z-index -1 within the isolated context paints the
-   streak above the card's background but behind all content; border-radius
-   inherits so the streak never pokes past the rounded corners. final-sheen's
-   second background-position layer value is simply ignored on this
-   single-layer pseudo. Both keyframe endpoints park the streak off-screen, so
-   during the pre-play delay (backwards fill) and at rest it's the clean gold;
-   the global reduced-motion backstop collapses the play itself to an
-   invisible instant, so no extra reduced-motion block is needed. */
-.finale-hero {
-  position: relative;
-  isolation: isolate;
-  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
-  background-origin: border-box;
-  color: oklch(0.98 0.02 95);
-  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
-}
-.finale-hero::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background-image: linear-gradient(
-    100deg,
-    transparent 35%,
-    rgb(255 255 255 / 0.35) 50%,
-    transparent 65%
-  );
-  background-repeat: no-repeat;
-  background-size: 200% 100%;
-  background-position: -150% 0;
-  animation: final-sheen 1.9s var(--ease-in-out-quart) 400ms 1 both;
-}
-
-/* The Final hype state of the "Predict next" reminder band (PredictReminder,
-   its only user): once the reminder's jump target is the Final itself, the
-   band swaps its usual .predict-cta green for this — the card-scale sibling of
-   .finale-hero that hypes the upcoming Final rather than crowning a decided
-   champion. Same base gold gradient + embossed text, but the sheen is the
-   Final stage tag's INFINITE slow glint (reused verbatim, just slower) rather
-   than .finale-hero's one-shot — the match hasn't happened yet, so the band
-   stays a constant, low-key glint the whole time it's shown instead of
-   settling after a single sweep. Same ::after-pseudo trick as
-   .finale-hero/.match-highlight so the sheen's own `animation` slot never
-   fights the element's tw-animate entrance. */
-.finale-hype {
-  position: relative;
-  isolation: isolate;
-  background-image: linear-gradient(135deg, #6b4607, #cf991f, #6b4607);
-  background-origin: border-box;
-  color: oklch(0.98 0.02 95);
-  text-shadow: 0 1px 1px oklch(0.2 0.02 60 / 0.3);
-}
-.finale-hype::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background-image: linear-gradient(
-    100deg,
-    transparent 35%,
-    rgb(255 255 255 / 0.35) 50%,
-    transparent 65%
-  );
-  background-repeat: no-repeat;
-  background-size: 200% 100%;
-  background-position: -150% 0;
-  animation: final-sheen 6s var(--ease-in-out-quart) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .finale-hype::after {
-    animation: none;
-  }
-}
-
-/* The Final's CONTENT card (the match list's MatchCard and the bracket's
-   final slot). Two tiers of gold by design: DEEP gold (.finale-hype /
-   .finale-hero / .stage-final) is for bands and badges that carry only light
-   embossed text; this PALE tier is for content cards full of inputs, pills,
-   and buttons that must keep the normal foreground in both themes — so it's
-   just the card surface washed with the --gold token (a light gold wash on a
-   light card, a dark gold tint on a dark one), keeping border-ink and every
-   child's own colors intact. The sheen is the same slow infinite glint as
-   .finale-hype but fainter, and lives on ::before — NOT ::after, which
-   .match-highlight already claims on the same element for its one-shot flash
-   (the two pseudos coexist; sharing one would let whichever class lands last
-   clobber the other's animation). */
-.card-final {
-  position: relative;
-  isolation: isolate;
-  background-image: linear-gradient(
-    135deg,
-    color-mix(in oklab, var(--gold) 26%, var(--card)),
-    color-mix(in oklab, var(--gold) 44%, var(--card)),
-    color-mix(in oklab, var(--gold) 26%, var(--card))
-  );
-  background-origin: border-box;
-  /* The hype comes from the warm champagne gradient plus a gold-warmed ink
-     outline, not from pushing the fill toward saturated yellow. */
-  border-color: color-mix(in oklab, var(--gold) 45%, var(--ink));
-}
-.card-final::before {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background-image: linear-gradient(
-    100deg,
-    transparent 35%,
-    rgb(255 255 255 / 0.3) 50%,
-    transparent 65%
-  );
-  background-repeat: no-repeat;
-  background-size: 200% 100%;
-  background-position: -150% 0;
-  animation: final-sheen 6s var(--ease-in-out-quart) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .card-final::before {
-    animation: none;
-  }
 }
 
 /* The finale podium's bars (ChampionBanner, its only user): each bar fills
    upward from the floor as its column enters. Transform-only (scaleY from 0,
    origin bottom) so it never triggers layout; the column's inline --i is
    inherited, so the same stagger that cascades the columns delays each fill,
-   plus a beat so the bar rises as its column lands. The medal riding the bar
-   is a SIBLING of this element, not a child — a child would squash with the
-   scale — and fades in separately on the stagger after. `both` fill holds
-   scaleY(0) during the delay and rests at full height; under reduced motion
-   the global backstop collapses the play to an instant at full height. */
+   plus a beat so the bar rises as its column lands. The rank bullet riding the
+   bar is a SIBLING of this element, not a child — a child would squash with
+   the scale — and fades in separately after. `both` fill holds scaleY(0)
+   during the delay and rests at full height; under reduced motion the global
+   backstop collapses the play to an instant at full height. */
 @keyframes podium-fill {
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
@@ -529,18 +208,17 @@
   animation: podium-fill calc(var(--duration-base) * 1.75) var(--ease-out-cubic)
     both;
   animation-delay: calc(min(var(--i, 0), 6) * 45ms + 120ms);
-  will-change: transform;
 }
 
-/* One-shot highlight on the match card the reminder banner's "Predict next"
+/* One-shot highlight on the match card the reminder panel's "Predict next"
    CTA jumps to (`.match-highlight` in MatchCard): the card's background holds
-   a faint gold, then fades back to the card colour. Drawn on a pseudo-element
-   slotted *behind* the content (isolate + z-index: -1, the .play-cta trick) so
-   it tints only the background, never films over the text and controls — and
-   not on the card itself, whose `animation` slot already runs the `animate-in`
-   entrance (an animation here would replace it, then replay it from scratch
-   when the highlight class is removed). Opacity-only, and under reduced motion
-   the backstop collapses it straight to the transparent end frame. */
+   a faint green, then fades back to the card colour. Drawn on a pseudo-element
+   slotted *behind* the content (isolate + z-index: -1) so it tints only the
+   background, never films over the text and controls — and not on the card
+   itself, whose `animation` slot already runs the `animate-in` entrance (an
+   animation here would replace it, then replay it from scratch when the
+   highlight class is removed). Opacity-only, and under reduced motion the
+   backstop collapses it straight to the transparent end frame. */
 .match-highlight {
   position: relative;
   isolation: isolate;
@@ -551,27 +229,42 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--gold);
+  border-radius: inherit;
+  background: var(--signal);
   animation: match-highlight 1s var(--ease-out-cubic) both;
 }
 @keyframes match-highlight {
   0% { opacity: 0; }
-  15% { opacity: 0.35; }
+  15% { opacity: 0.45; }
   100% { opacity: 0; }
 }
 
 @layer base {
   * {
     border-color: var(--border);
-    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+    outline-color: var(--ring);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
   }
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3 {
-    letter-spacing: -0.015em;
+    letter-spacing: -0.017em;
+    text-wrap: balance;
+  }
+  /* Anchored jumps (e.g. #today) land below the sticky app header. */
+  [id] {
+    scroll-margin-top: calc(var(--sticky-top) + 1rem);
+  }
+  ::selection {
+    background-color: color-mix(in oklab, var(--signal) 60%, transparent);
   }
 }
 
@@ -584,6 +277,11 @@
   .stagger-in {
     animation-delay: calc(min(var(--i, 0), 6) * 45ms);
     animation-fill-mode: backwards;
+  }
+  /* The display size used for scores, ranks, and the cropped hero word: the
+     slightly tighter tracking grotesk type wants at large sizes. */
+  .tracking-display {
+    letter-spacing: -0.025em;
   }
 }
 

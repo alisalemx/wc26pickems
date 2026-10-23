@@ -32,7 +32,7 @@ export function Login() {
 
   return (
     <AuthShell
-      title="WC26 Pick'ems"
+      title="WC26 Pick’ems"
       subtitle="Predict every match. Top the table."
     >
       {!hasSupabaseConfig && (
@@ -56,7 +56,7 @@ export function Login() {
           <Button
             type="button"
             size="lg"
-            className="play-cta w-full text-base"
+            className="w-full"
             disabled={busy}
             onClick={handleGoogle}
           >

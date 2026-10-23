@@ -1,51 +1,18 @@
-import { useMemo, useState, type CSSProperties } from "react"
+import { useMemo, useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { useLeaderboard, useMatches, useMyPredictions } from "@/hooks/queries"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ResultBadge } from "@/components/ResultBadge"
-import { StageBadge } from "@/components/StageBadge"
-import { StatCard } from "@/components/StatCard"
 import { EmptyState } from "@/components/EmptyState"
 import { Skeleton } from "@/components/ui/skeleton"
-import { flagEmoji } from "@/lib/flags"
+import { SignHeading } from "@/components/SignHeading"
+import { PickRow, RankSummary, SettledList } from "@/components/PlayerSummary"
+import { RESULT_FILTERS, type ResultFilter } from "@/lib/filters"
 import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
-import { ordinal } from "@/lib/format"
 import { competitionRanks } from "@/lib/rank"
 import { remainingMaxPoints, scorePrediction } from "@/lib/scoring"
-import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
-import type { ResultType } from "@/lib/types"
-
-const MEDALS = ["🥇", "🥈", "🥉"]
-
-// Settled-match filters in the Settled section. "all" plus the three
-// ResultType buckets scorePrediction can return.
-type ResultFilter = "all" | ResultType
-const FILTERS: { value: ResultFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "OUTCOME", label: "Outcome" },
-  { value: "EXACT", label: "Exact" },
-  { value: "MISS", label: "Miss" },
-]
-// Metal fill matched to each medal emoji, defined in index.css (`.rank-metal-*`):
-// a static base gradient (deep → bright → deep, sampled from Apple Color Emoji)
-// under a moving sheen streak, both clipped to the rank text so "1st Place" reads
-// as the same metal as its medal. 4th place and below fall back to neutral
-// foreground (no class). Indexed by position - 1.
-const TIER_GRADIENT = [
-  "rank-metal rank-metal-gold", // 🥇 gold
-  "rank-metal rank-metal-silver", // 🥈 silver
-  "rank-metal rank-metal-bronze", // 🥉 bronze
-]
 
 export function MyPredictions() {
-  const { session } = useAuth()
+  const { session, profile } = useAuth()
   const userId = session?.user.id
   const { data: rawMatches, isLoading } = useMatches()
   // Fill knockout TBD slots from feeders client-side (same as the match list)
@@ -70,9 +37,6 @@ export function MyPredictions() {
     const ranks = competitionRanks(leaderboard)
     return { position: ranks[idx], total: leaderboard.length }
   }, [leaderboard, userId])
-
-  // Medal gradient for the top 3; undefined (→ neutral text) for 4th and below.
-  const rankGradient = rank ? TIER_GRADIENT[rank.position - 1] : undefined
 
   const stats = useMemo(() => {
     if (!matches || !predictions)
@@ -171,134 +135,101 @@ export function MyPredictions() {
     return best
   }, [finishedWithPicks])
 
-  return (
-    <div className="space-y-4">
-      <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
-        <CardContent>
-          <div className="mb-1.5 text-center text-sm font-medium text-foreground">
-            Your rank
-          </div>
-          {isLoading ? (
-            <Skeleton className="h-16 w-full" />
-          ) : (
-            <>
-              {rank && (
-                <div className="mb-4 text-center">
-                  <div className="rank-pop flex items-center justify-center gap-1 leading-none">
-                    {MEDALS[rank.position - 1] && (
-                      <span className="text-3xl" aria-hidden="true">
-                        {MEDALS[rank.position - 1]}
-                      </span>
-                    )}
-                    <span
-                      className={cn(
-                        "text-3xl font-semibold tabular-nums",
-                        rankGradient
-                          ? "bg-clip-text text-transparent [-webkit-background-clip:text] rank-sheen"
-                          : "text-foreground",
-                        rankGradient
-                      )}
-                    >
-                      {ordinal(rank.position)} Place
-                    </span>
-                  </div>
-                  <div className="mt-1.5 text-xs text-muted-foreground">
-                    of {rank.total} {rank.total === 1 ? "player" : "players"}
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <StatCard label="Total points" value={stats.points} highlight />
-                <StatCard label="Exact scores" value={stats.exact} />
-                <StatCard label="Picks made" value={stats.made} />
-              </div>
-            </>
-          )}
-          {!champion && stats.left > 0 && (
-            <p className="mt-3 text-center text-sm text-muted-foreground">
-              {stats.left} {stats.left === 1 ? "match" : "matches"} left in the
-              tournament, up to {remainingPoints}{" "}
-              {remainingPoints === 1 ? "pt" : "pts"} still up for grabs.
-            </p>
-          )}
-          {champion && (
-            <div className="mt-4 text-center">
-              <p className="text-sm font-medium">Tournament complete</p>
-              {bestCall && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Best call: {bestCall.m.home_team} {bestCall.m.home_score}-
-                  {bestCall.m.away_score} {bestCall.m.away_team}, +
-                  {bestCall.scored.points} pts
-                </p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+  const filterControl = finishedWithPicks.length > 0 && (
+    <SegmentedControl
+      layoutId="me-filter-active"
+      value={filter}
+      onChange={setFilter}
+      options={RESULT_FILTERS.map((f) => ({
+        value: f.value,
+        label: (
+          <>
+            {f.label}
+            <span className="ml-1 text-[11px] tabular-nums opacity-60 max-[359px]:hidden sm:ml-1.5 sm:text-xs">
+              {counts[f.value]}
+            </span>
+          </>
+        ),
+      }))}
+    />
+  )
 
-      <Card className="gap-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
-        <CardHeader>
-          <CardTitle className="text-base">Settled matches</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {finishedWithPicks.length > 0 && (
-            <SegmentedControl
-              layoutId="me-filter-active"
-              value={filter}
-              onChange={setFilter}
-              options={FILTERS.map((f) => ({
-                value: f.value,
-                label: (
-                  <>
-                    {f.label}
-                    <span className="ml-1 text-xs tabular-nums opacity-60">
-                      {counts[f.value]}
-                    </span>
-                  </>
-                ),
-              }))}
+  return (
+    <div className="flex flex-col gap-4">
+      <SignHeading
+        as="h1"
+        size="lg"
+        title="Your picks"
+        sub={profile ? `@${profile.username}` : undefined}
+        className="px-1 sm:px-0"
+      />
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
+        {isLoading ? (
+          <Skeleton className="h-64 w-full rounded-xl" />
+        ) : (
+          <RankSummary
+            rank={rank}
+            className="lg:sticky lg:top-20"
+            stats={[
+              { label: "Total points", value: stats.points },
+              { label: "Exact scores", value: stats.exact },
+              { label: "Picks made", value: stats.made },
+            ]}
+            footer={
+              champion ? (
+                <>
+                  <p className="font-semibold text-foreground">
+                    Tournament complete
+                  </p>
+                  {bestCall && (
+                    <p className="mt-0.5">
+                      Best call: {bestCall.m.home_team} {bestCall.m.home_score}–
+                      {bestCall.m.away_score} {bestCall.m.away_team}, +
+                      {bestCall.scored.points} pts
+                    </p>
+                  )}
+                </>
+              ) : stats.left > 0 ? (
+                <p>
+                  {stats.left} {stats.left === 1 ? "match" : "matches"} left in
+                  the tournament, up to {remainingPoints}{" "}
+                  {remainingPoints === 1 ? "pt" : "pts"} still up for grabs.
+                </p>
+              ) : null
+            }
+          />
+        )}
+
+        <SettledList
+          title="Settled matches"
+          filter={filterControl}
+          empty={
+            finishedWithPicks.length === 0 ? (
+              <EmptyState className="py-8">
+                No results scored yet. Check back after kickoff.
+              </EmptyState>
+            ) : filtered.length === 0 ? (
+              <EmptyState className="py-8">
+                No{" "}
+                {RESULT_FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}{" "}
+                results yet.
+              </EmptyState>
+            ) : undefined
+          }
+        >
+          {filtered.map(({ m, p, scored: s }, i) => (
+            <PickRow
+              key={m.id}
+              match={m}
+              homePred={p.home_pred}
+              awayPred={p.away_pred}
+              result={s.result}
+              points={s.points}
+              index={i}
             />
-          )}
-          {finishedWithPicks.length === 0 && (
-            <EmptyState className="py-6">
-              No results scored yet. Check back after kickoff!
-            </EmptyState>
-          )}
-          {finishedWithPicks.length > 0 && filtered.length === 0 && (
-            <EmptyState className="py-6">
-              No {FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}{" "}
-              results yet.
-            </EmptyState>
-          )}
-          {filtered.map(({ m, p, scored: s }, i) => {
-            return (
-              <div
-                key={m.id}
-                className="flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
-                style={{ "--i": i } as CSSProperties}
-              >
-                <div className="flex min-w-0 flex-col gap-1">
-                  <StageBadge
-                    stage={m.stage}
-                    group={m.group_name}
-                    className="w-fit"
-                  />
-                  <span className="truncate">
-                    {flagEmoji(m.home_code)} {m.home_team} {m.home_score}–
-                    {m.away_score} {m.away_team} {flagEmoji(m.away_code)}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant="secondary" className="tabular-nums">
-                    pick {p.home_pred}–{p.away_pred}
-                  </Badge>
-                  <ResultBadge result={s.result} points={s.points} />
-                </div>
-              </div>
-            )
-          })}
-        </CardContent>
-      </Card>
+          ))}
+        </SettledList>
+      </div>
     </div>
   )
 }

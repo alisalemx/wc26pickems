@@ -5,8 +5,8 @@ import { ListSkeleton } from "@/components/ListSkeleton"
 import { SegmentedControl } from "@/components/SegmentedControl"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { Whistle } from "@/components/Whistle"
-import { flagEmoji } from "@/lib/flags"
-import { STAGE_SHORT } from "@/lib/scoring"
+import { Flag } from "@/components/Flag"
+import { STAGE_LABEL, STAGE_SHORT } from "@/lib/scoring"
 import { kickoffTime, shortDayHeading, isLive } from "@/lib/format"
 import { FEEDERS, FINAL_ID, THIRD_ID, resolveMatch, winnerSide } from "@/lib/bracket"
 import type { MatchRow, MatchStage } from "@/lib/types"
@@ -27,9 +27,16 @@ const ROUND_NAV: { stage: MatchStage; depth: number }[] = [
  *  (names + scores + date); every other round compresses to a flag + score chip
  *  so the whole tree stays visible. Each gap between rounds = STUB (horizontal
  *  line from the feeder card's right edge) + CONN (vertical bar + stub into the
- *  next card). Total width is constant: 4*MINI + FULL + 4*(STUB+CONN) = 380px. */
+ *  next card). The narrowest tree is 4*MINI + FULL + 4*(STUB_MIN+CONN_MIN) =
+ *  348px, which fits a 375px phone; narrower screens scroll the tree itself. */
 const FULL_W = 140
-const MINI_W = 44
+const MINI_W = 40
+/** Wide mode (desktop): once all five rounds fit as full cards with roomy gaps,
+ *  every round renders full and the round selector goes away. Cards then grow
+ *  with the container up to WIDE_CARD_MAX. */
+const WIDE_GAP_MIN = 40
+const WIDE_CARD_MAX = 184
+const WIDE_MIN = 5 * FULL_W + 4 * WIDE_GAP_MIN
 
 /** Cards stay a fixed size; the inter-round gaps are the only horizontal
  *  dimension that flexes, so the tree fills its container (wide horizontal lines
@@ -65,30 +72,31 @@ function TeamLine({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-1.5",
-        won && "font-semibold"
+        "flex items-center justify-between gap-1.5 [&_span.truncate]:text-[13px]",
+        won && "[&_span.truncate]:font-semibold"
       )}
     >
       <TeamDisplay name={name} code={code} size="sm" dim={lost} />
       <span
         className={cn(
           "flex shrink-0 items-center gap-1 tabular-nums",
-          lost && "text-muted-foreground"
+          lost && "text-quiet"
         )}
       >
         {pens != null && (
-          <span className="text-[10px] text-muted-foreground">({pens})</span>
+          <span className="text-[11px] text-muted-foreground">({pens})</span>
         )}
-        <span className="w-3 text-right text-sm">{score ?? ""}</span>
+        <span className="w-4 text-right text-sm font-bold">{score ?? ""}</span>
       </span>
     </div>
   )
 }
 
-/** Full knockout match card — shown for the focused round only. Fixed width so
- *  the round's cards line up into a clean column. Carries date + FT/kickoff and
- *  the two team rows with scores; the stage label lives in the round nav above. */
-function MatchFull({ m }: { m: MatchRow }) {
+/** Full knockout match card — shown for the focused round (every round in wide
+ *  mode). Fixed width so the round's cards line up into a clean column. Carries
+ *  date + FT/kickoff and the two team rows with scores; the stage label lives in
+ *  the round nav above. */
+function MatchFull({ m, width = FULL_W }: { m: MatchRow; width?: number }) {
   const w = winnerSide(m)
   const finished = m.status === "FINISHED" && m.home_score != null
   const live = isLive(m.kickoff, m.status, m.stage)
@@ -100,14 +108,14 @@ function MatchFull({ m }: { m: MatchRow }) {
   return (
     <Card
       className={cn(
-        "shrink-0 gap-0 py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
-        // The Final's slot wears the same pale-gold wash as its match-list
-        // card (.card-final) — the marquee node of the tree.
-        m.stage === "FINAL" && "card-final"
+        "shrink-0 gap-0 rounded-lg py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        // The Final's slot is ringed in the one bold colour — the marquee node
+        // of the tree.
+        m.stage === "FINAL" && "shadow-[inset_0_0_0_2px_var(--signal)]"
       )}
-      style={{ width: FULL_W }}
+      style={{ width }}
     >
-      <div className="flex items-center justify-between border-b border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center justify-between border-b border-border px-2.5 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground">
         <span>{shortDayHeading(m.kickoff)}</span>
         {live ? (
           <LiveTag />
@@ -119,7 +127,7 @@ function MatchFull({ m }: { m: MatchRow }) {
           <span>{kickoffTime(m.kickoff)}</span>
         )}
       </div>
-      <div className="flex flex-col gap-0.5 px-2 py-1">
+      <div className="flex flex-col gap-1 px-2.5 py-1.5">
         <TeamLine
           name={m.home_team}
           code={m.home_code}
@@ -141,19 +149,19 @@ function MatchFull({ m }: { m: MatchRow }) {
   )
 }
 
-/** "LIVE" tag for the focused-round card header, replacing the kickoff/FT label
- *  while a match is in progress — a pulsing green dot + LIVE. (The bracket card
+/** "Live" tag for the focused-round card header, replacing the kickoff/FT label
+ *  while a match is in progress — a pulsing red dot + Live. (The bracket card
  *  is tight, so unlike the match list this tag is just a status marker, not a
  *  link.) The CSS `animate-ping` is neutralized by the global
  *  prefers-reduced-motion backstop. */
 function LiveTag() {
   return (
-    <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
+    <span className="flex items-center gap-1 font-semibold text-destructive">
       <span className="relative flex size-1.5">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-75" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
       </span>
-      LIVE
+      Live
     </span>
   )
 }
@@ -174,13 +182,11 @@ function TinyRow({
     <div
       className={cn(
         "flex items-center justify-between gap-0.5",
-        won && "font-semibold",
-        lost && "opacity-40"
+        won && "font-bold",
+        lost && "text-quiet [&_img]:opacity-40"
       )}
     >
-      <span className={cn("text-sm leading-none", lost && "grayscale")}>
-        {flagEmoji(code)}
-      </span>
+      <Flag code={code} size="xs" />
       {/* leading-none matches the flag span so a present score digit doesn't
           make a finished-match mini taller than a scoreless one — unequal mini
           heights desync sibling subtrees and pull the fixed 25%/75% connector
@@ -202,10 +208,10 @@ function MatchMini({ m }: { m: MatchRow }) {
   return (
     <Card
       className={cn(
-        "shrink-0 gap-0 px-1 py-1",
-        // Keep the Final's gold when its column is compressed too, so the
+        "shrink-0 gap-0 rounded-lg px-1 py-1",
+        // Keep the Final's ring when its column is compressed too, so the
         // marquee slot stays findable at a glance in every focus state.
-        m.stage === "FINAL" && "card-final"
+        m.stage === "FINAL" && "shadow-[inset_0_0_0_2px_var(--signal)]"
       )}
       style={{ width: MINI_W }}
     >
@@ -239,6 +245,8 @@ function Node({
   activeDepth,
   stub,
   conn,
+  wide,
+  cardW,
   byId,
 }: {
   id: number
@@ -246,11 +254,14 @@ function Node({
   activeDepth: number
   stub: number
   conn: number
+  /** Wide mode: every round renders full, at `cardW`. */
+  wide: boolean
+  cardW: number
   byId: Map<number, MatchRow>
 }) {
   const m = resolveMatch(byId, id)
   const feeders = FEEDERS[id]
-  const full = depth === activeDepth
+  const full = wide || depth === activeDepth
 
   if (!feeders) {
     return (
@@ -260,7 +271,7 @@ function Node({
           !full && "opacity-50"
         )}
       >
-        {m && (full ? <MatchFull m={m} /> : <MatchMini m={m} />)}
+        {m && (full ? <MatchFull m={m} width={cardW} /> : <MatchMini m={m} />)}
       </div>
     )
   }
@@ -269,12 +280,12 @@ function Node({
     <div className="flex items-stretch">
       <div className="flex flex-col justify-center">
         <div className="flex items-center">
-          <Node id={feeders[0]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
-          <div className="shrink-0 border-t border-border" style={{ width: stub }} />
+          <Node id={feeders[0]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
+          <div className="shrink-0 border-t border-input" style={{ width: stub }} />
         </div>
         <div className="flex items-center">
-          <Node id={feeders[1]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
-          <div className="shrink-0 border-t border-border" style={{ width: stub }} />
+          <Node id={feeders[1]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
+          <div className="shrink-0 border-t border-input" style={{ width: stub }} />
         </div>
       </div>
       {/* Connector: vertical bar joining the two feeder stubs (their centres
@@ -283,7 +294,7 @@ function Node({
           right-centre rather than from a corner. Its width (`conn`) is computed
           to stretch the tree across the container. */}
       <div
-        className="relative shrink-0 self-stretch before:absolute before:left-0 before:top-1/4 before:bottom-1/4 before:border-l before:border-border after:absolute after:inset-x-0 after:top-1/2 after:border-t after:border-border"
+        className="relative shrink-0 self-stretch before:absolute before:left-0 before:top-1/4 before:bottom-1/4 before:border-l before:border-input after:absolute after:inset-x-0 after:top-1/2 after:border-t after:border-input"
         style={{ width: conn }}
         aria-hidden
       />
@@ -293,7 +304,7 @@ function Node({
           !full && "opacity-50"
         )}
       >
-        {m && (full ? <MatchFull m={m} /> : <MatchMini m={m} />)}
+        {m && (full ? <MatchFull m={m} width={cardW} /> : <MatchMini m={m} />)}
       </div>
     </div>
   )
@@ -327,16 +338,28 @@ export function Bracket() {
   // up the observer because the wrap mounts only after the async match data
   // loads — an effect with `[]` deps would have run while the loading skeleton
   // was up and the wrap was still null, then never re-run.
-  const [{ stub, conn }, setGap] = useState({ stub: STUB_MIN, conn: GAP_DEFAULT })
+  const [{ stub, conn, wide, cardW }, setGap] = useState({
+    stub: STUB_MIN,
+    conn: GAP_DEFAULT,
+    wide: false,
+    cardW: FULL_W,
+  })
   const roRef = useRef<ResizeObserver | null>(null)
   const setWrap = useCallback((node: HTMLDivElement | null) => {
     roRef.current?.disconnect()
     if (!node) return
     const measure = () => {
+      const width = node.clientWidth
+      // Wide enough for five full columns: every round expands, and the cards
+      // grow with the container (capped) while keeping roomy gaps.
+      const wide = width >= WIDE_MIN
+      const cardW = wide
+        ? Math.min(WIDE_CARD_MAX, Math.floor((width - 4 * WIDE_GAP_MIN) / 5))
+        : FULL_W
       // 4 gaps fill the slack beyond the cards; split each into stub + conn.
-      const gap = (node.clientWidth - CARDS_W) / 4
+      const gap = (width - (wide ? 5 * cardW : CARDS_W)) / 4
       const stub = Math.max(STUB_MIN, gap * STUB_FRACTION)
-      setGap({ stub, conn: Math.max(CONN_MIN, gap - stub) })
+      setGap({ stub, conn: Math.max(CONN_MIN, gap - stub), wide, cardW })
     }
     measure()
     roRef.current = new ResizeObserver(measure)
@@ -384,29 +407,44 @@ export function Bracket() {
   const third = resolveMatch(byId, THIRD_ID)
 
   return (
-    <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-300 ease-out motion-reduce:animate-none">
-      {/* Round selector — focuses one round (expands its column to full cards). */}
-      <SegmentedControl
-        layoutId="bracket-round-active"
-        value={activeDepth}
-        onChange={setChosen}
-        options={ROUND_NAV.map(({ stage, depth }) => ({
-          value: depth,
-          label: STAGE_SHORT[stage],
-        }))}
-      />
+    <div className="flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
+      {wide ? (
+        // Wide mode labels each column instead of offering a selector.
+        <div
+          className="grid text-sm font-semibold text-muted-foreground"
+          style={{
+            gridTemplateColumns: `repeat(5, ${cardW}px)`,
+            columnGap: stub + conn,
+          }}
+        >
+          {ROUND_NAV.map(({ stage }) => (
+            <span key={stage}>{STAGE_LABEL[stage]}</span>
+          ))}
+        </div>
+      ) : (
+        // Round selector — focuses one round (expands its column to full cards).
+        <SegmentedControl
+          layoutId="bracket-round-active"
+          value={activeDepth}
+          onChange={setChosen}
+          options={ROUND_NAV.map(({ stage, depth }) => ({
+            value: depth,
+            label: STAGE_SHORT[stage],
+          }))}
+        />
+      )}
 
-      <div ref={setWrap}>
-        <Node id={FINAL_ID} depth={4} activeDepth={activeDepth} stub={stub} conn={conn} byId={byId} />
+      <div ref={setWrap} className="overflow-x-auto">
+        <Node id={FINAL_ID} depth={4} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
       </div>
 
       {third && (
-        <section className="space-y-2">
+        <section className="flex flex-col gap-2">
           <h3 className="px-1 text-sm font-semibold text-muted-foreground">
             Third-place play-off
           </h3>
           <div className="w-max">
-            <MatchFull m={third} />
+            <MatchFull m={third} width={cardW} />
           </div>
         </section>
       )}

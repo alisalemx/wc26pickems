@@ -56,27 +56,55 @@ Vite + React 19 SPA, Supabase (Postgres + Auth + RLS) backend, one Netlify
 scheduled function. Path alias `@/` → `src/`. shadcn/ui (new-york style) in
 `src/components/ui/`; Tailwind v4 configured CSS-first via `@theme` in `src/index.css`.
 
-### Design system ("polished neo-brutalist")
+### Design system ("Signage", Pitch palette)
+**Design direction: Signage**, the transit-sign variant of Ali's *Playful tech*
+direction (his AliOS note `work/notes/design-directions/playful-tech-signage.md`),
+in the **Pitch** palette Ali picked on 2026-10-23: turf green on warm paper.
+Don't re-ask which direction applies; build on this one. It replaced the earlier
+"polished neo-brutalist" look (outlines + offset shadows + Space Grotesk).
+
 Theme tokens live in `src/index.css` (`:root` light, `@media (prefers-color-scheme: dark)`
-dark — no manual toggle). The look is small-radius cards with visible outlines and
-offset shadows. Borders are **two-tier**: `--border` (`border-*` utilities) is a soft
-hairline for table rows, separators, and inner boxes; `--ink` (`border-ink`) is the
-strong structural outline reserved for cards, buttons, inputs, alerts, and dialogs.
-Offset shadows use the translucent `--shadow-brutal`/`--shadow-brutal-sm` tokens.
+dark — no manual toggle). The rules of the look:
+- **Flat panels, no outlines, no shadows.** White cards (`rounded-xl`) sit on the
+  warm paper ground (`--background`) and separate by tone alone; dark mode is a
+  near-black ground with green-graphite panels. `--border` is only a hairline for
+  row dividers and the header edge. Don't bring back `border-ink` card outlines or
+  offset shadows.
+- **One bold colour, `--signal` (turf green), used sparingly**: the champion hero,
+  the Exact badge, the leader's rank bullet and podium bar, the Final stage tag,
+  "Today", and the Final's bracket ring. Its pale tint `--win` (a `color-mix` of
+  the signal into the card) marks the quieter "correct" states: the Outcome badge,
+  W form pills, the viewer's own leaderboard row, and a qualifying third. Red
+  (`--destructive`) is live/loss/error only. Keep green from meaning two things.
+- **Neutrals carry the paper's warmth** (no cold grey). `--muted-foreground` is
+  secondary body text; `--quiet` is the second line of a two-tone heading and the
+  loser's name (large or bold text only); `--track` is a control's well on the
+  ground (tabs, segmented control); `--sunk` is an inset block inside a white panel
+  (podium plinths).
+- **Ink is the action colour.** `primary` is near-black (inverted to near-white in
+  dark mode): primary buttons, the active tab/nav pill, day arrows, the reminder
+  panel. Buttons, tabs, badges, and the segmented control are pills
+  (`rounded-full`).
+- **Type is Inter** with its optical-size axis (`@fontsource-variable/inter/opsz.css`,
+  `--font-sans`, `font-optical-sizing: auto`), so large text gets Inter's tighter
+  Display cut on its own. Keep manual tracking gentle (Ali found Inter Tight plus
+  heavy negative tracking too tight): `--tracking-tight` is -0.011em, `h1`–`h3`
+  are -0.017em, scores and the hero word use `tracking-display` (-0.025em), and
+  body text keeps Inter's own spacing. Every changing number is `tabular-nums`,
+  body text is antialiased (`@layer base`), and copy is sentence case everywhere,
+  with no all-caps labels.
+- **Focus rings are neutral** (`--ring` is the ink colour, 2px), never green.
 
 **Pressed states are a uniform convention: every interactive element settles on a
 subtle background tint while held (`:active`) — no scale or translate — and the
-tint matches the element rather than being a blanket green.** Three tiers:
-- **Filled colour buttons** deepen their own fill: `default` →
-  `active:bg-primary/80`, `destructive` → `active:bg-destructive/80`.
-- **Accent buttons** (`outline`/`secondary`/`ghost`, whose hover is the green
-  `--accent`) deepen to `--accent-pressed` (the `bg-accent-pressed` utility — one
-  step past `--accent`, darker in light / lighter in dark so press reads distinct
-  from hover).
-- **Neutral chrome** (tabs, segmented control, nav items, the dialog close, text
-  links, clickable table rows) presses to the adaptive `active:bg-foreground/10` —
-  a hueless ink tint that darkens on light and lightens on dark, so it can never
-  read as an out-of-place green.
+tint matches the element.** Three tiers:
+- **Filled buttons** deepen their own fill: `default` → `active:bg-primary/75`,
+  `signal` → `active:bg-signal/75`, `destructive` → `active:bg-destructive/80`.
+- **Accent buttons** (`outline`/`secondary`/`ghost`, whose hover is `--accent`)
+  deepen to `--accent-pressed` (the `bg-accent-pressed` utility — one step past
+  `--accent`, darker in light / lighter in dark so press reads distinct from hover).
+- **Neutral chrome** (tabs, segmented control, nav items, text links) presses to
+  the adaptive `active:bg-foreground/10` — a hueless ink tint.
 
 The **`Switch`** is the one outlier: it darkens via `active:brightness-95` so the
 press doesn't paint over its on/off state colour. Tinted text links pad the
@@ -84,23 +112,42 @@ highlight with `rounded-sm -mx-1 px-1` so it doesn't hug the glyphs. All are CSS
 `transition`s, so the global `prefers-reduced-motion` backstop neutralizes their
 timing automatically (no per-element gating needed).
 
-Shared, restyle-once UI atoms live in `src/components/` (not `ui/`):
-`TeamDisplay`, `StatCard`, `EmptyState`, `ListSkeleton`, `DayHeader`, `AuthShell`,
-`SegmentedControl`, `StageBadge` — prefer these over re-inlining the pattern so a
-design change lands everywhere. Type is Space Grotesk
-(`@fontsource-variable/space-grotesk`, `--font-sans`); headings get a slight
-negative letter-spacing (`@layer base`).
+Shared, restyle-once UI atoms live in `src/components/` (not `ui/`). Prefer these
+over re-inlining the pattern so a design change lands everywhere:
+- `SignHeading`: the **two-tone heading** (ink line over a `--quiet` line, same
+  size and weight). Page titles, card titles, the day strip, the hero.
+- `Bullet`: the **line bullet**, a number or letter in a flat colour disc, like a
+  subway route sign. Ranks, group positions, W/D/L, numbered lists.
+- `Flag`: a team's flag as a **round SVG badge** (from `flag-icons`, bundled per
+  team via the brace glob in `src/lib/flags.ts`; `flags.test.ts` fails if a team's
+  file is missing). Never use flag emoji: Windows renders them as two letters.
+- `TeamDisplay`, `StageBadge`, `DayHeader`, `SegmentedControl`, `EmptyState`,
+  `ListSkeleton`, `AuthShell`, and `PlayerSummary` (`RankSummary`, `PickRow`,
+  `SettledList`, shared by `/me` and the player pages; the filter list is in
+  `src/lib/filters.ts`).
 
 `StageBadge` renders a match's stage as **one flat `secondary` tag for every
 round** (with the `×N` multiplier appended for knockout stages); the **Final
-alone** is set apart, via the `.stage-final` treatment in `src/index.css` — a
-deep gold gradient with light, embossed text (the inverse of the flat pale-gold
-+ dark-text `gold` badge, so it never reads as the same chip), plus a slow gold
-sheen sweep (the `final-sheen` keyframe). Note `.stage-final` uses
-`background-origin: border-box` so the no-repeat gradient covers the badge's 1px
-border ring — without it the `gold` variant's flat `bg-gold` shows through as a
-pale rim. If you reintroduce a per-stage colour distinction, keep the Final the
-only special one.
+alone** is set apart, in the flat `signal` badge. If you reintroduce a per-stage
+colour distinction, keep the Final the only special one.
+
+**Layout:** the shell is `max-w-6xl`. Navigation **floats**: a frosted pill
+top bar (inset from the edges, lined up with the content width) holds the
+wordmark, the nav on desktop (`md`+), and sign-in; on phones the tabs sit in a
+matching frosted pill floating above the home indicator, and the sticky day
+strip is a third floating pill that parks under the top bar. No shadows and no
+borders: the pills use `--bar`, a frosted fill halfway between the sand ground and the
+white cards (lighter than both in dark mode), so they read as a soft step on the
+ground and over a card alike. Keep it translucent (~72%) with the backdrop blur:
+the frosted glass is the point, and a near-opaque fill hides it.
+Pages use the width: match cards in two columns from `lg`, Podium and Hall of fame
+side by side, the Leaderboard beside the Hall of fame, `/me` and player pages with
+a sticky summary column, group tables in a 2–3 column grid, and the bracket showing
+**every round as full cards** once five columns fit (`WIDE_MIN` in `Bracket.tsx`;
+narrower screens keep the focus-a-round selector). Wrap page grids in
+`grid-cols-1` so a wide child (a nowrap segmented control) can't push the page
+past the viewport. A "Made by Fluffy Pixel" sign-off (linking to fluffypixel.ca)
+closes every page; keep it.
 
 **The database is the source of truth for scoring and anti-cheat — not the
 client.** This is the central design principle; the React app is a thin view layer.
@@ -132,11 +179,12 @@ Tokens (do not hardcode timings — use these):
   color transitions stay on plain `ease`.
 
 Bespoke keyframes (all in `src/index.css`, each scoped to a single element class):
-`play-flow` (the "Ultramode" flowing-gradient sign-in CTA, `.play-cta`),
-`countdown-pulse` (clock icon in the final minutes before kickoff),
-`rank-pop` + `rank-sheen` with the `rank-metal-*` gradients (the viewer's own
-rank reveal on `/me` — a scale-in with overshoot plus a slow medal-sheen sweep),
-and `final-sheen` (a slow gold-sheen sweep over the Final stage tag, `.stage-final`).
+`countdown-pulse` (clock icon in the final minutes before kickoff), `rank-pop`
+(the rank bullet's reveal on `/me` and the player pages, a scale-in with
+overshoot), `podium-fill` (`.podium-bar`, the finale podium bars rising from the
+floor), and `match-highlight` (the one-shot green flash on the card the "Predict
+next" panel jumps to). Signage is flat, so there are no gradient sheens or
+flowing-gradient CTAs; don't add them back.
 Infinite/constant motion is used sparingly and only on one element at a time by
 design. List entrances stagger via the `.stagger-in` utility: the caller sets the
 row index inline as `--i`, and the cascade is capped (≤6 steps × 45ms) so long
@@ -180,8 +228,10 @@ it, so shared ranks agree everywhere.
 Leaderboard rows link to a per-player page showing their revealed picks —
 `usePlayerScoredPredictions` reads the `scored_predictions` view directly, and
 RLS (`security_invoker`) means you only get another player's post-kickoff rows
-(all of your own). Renders their rank (via `competitionRanks`), stat cards, and
-a settled-picks list with the same All/Outcome/Exact/Miss filter idiom as `/me`.
+(all of your own). Renders their rank (via `competitionRanks`) and stats in the
+shared `RankSummary`, and a settled-picks list with the same
+All/Outcome/Exact/Miss filter idiom as `/me` (both pages build on
+`PlayerSummary.tsx`).
 
 ### Anti-cheat via Row Level Security (`0001_init.sql`)
 Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
@@ -407,15 +457,17 @@ the slot **server-side, in our own DB**, from our own results:
 gates on**: it returns the winning team of the final (match 104, judged by
 `winnerSide` — 90'+ET, shootout only as decider) or null while the tournament
 is live. Once it resolves:
-- **ChampionBanner** (match list): a deep-gold band (`.finale-hero` in
-  `src/index.css`, the card-scale sibling of `.stage-final` with a one-shot
-  sheen) crowns the champions, above a **player podium** of the league's top 3
-  (2nd–1st–3rd, medal-metal handles via the `rank-metal-*` gradients, bars
-  filling from the floor via `.podium-bar` — its delay/duration is mirrored in
-  `contentDelay()` in the component; keep them in sync). Off-podium viewers get
-  a "You finished Nth of M" line. The leaderboard isn't readable anonymously
-  and the match list is public, so the fetch is session-gated and the banner
-  degrades to the team-only band when signed out.
+- **ChampionBanner** (match list): the hero, a flat turf-green panel with the
+  two-tone "World / champions" heading and the winner's flag over the team's
+  name as one huge word that bleeds off the bottom edge. `useFitText` measures
+  the word and sizes it to span the panel exactly (Inter's letter widths vary
+  too much for a per-letter estimate), re-fitting on resize.
+- **LeaguePodium** (same file, beside the Hall of fame): the league's top 3
+  (2nd–1st–3rd), the leader's bar in `--signal` and 2nd/3rd on `--sunk`, rank
+  numbers set large, bars filling from the floor via `.podium-bar` (its
+  delay/duration is mirrored in `contentDelay()` in the component; keep them in
+  sync). Off-podium viewers get a "You finished Nth of M" line. Visitors see it
+  too (the standings are publicly readable).
 - **LeagueAwards** ("Hall of fame", on the match list and the Leaderboard):
   Sharpshooter (most exact scores), Best single call (highest-points exact,
   earlier kickoff breaks ties), Ever-present (most scored predictions) — pure
@@ -423,9 +475,9 @@ is live. Once it resolves:
   `useAllScoredPredictions` (every player's revealed scored picks in one query,
   enabled only once the tournament is over).
 - The Leaderboard retitles to **"Final standings"**, `/me` shows a "Tournament
-  complete" wrap with the viewer's own best call, and the signed-in **nav
-  reorders** to Matches, Leaderboard, Tournament, Me (`FINALE_NAV` in
-  `Layout.tsx`).
+  complete" wrap with the viewer's own best call, the **nav reorders** to
+  Matches, Leaderboard, Tournament (+ Me when signed in; `FINALE_NAV` in
+  `Layout.tsx`), and the header's sign-in button drops "to play".
 
 Related match-list notes while the tournament is live: **PenaltyNote** (the
 dismissable penalties-don't-score reminder) shows through the group stage and
@@ -469,18 +521,20 @@ name) rendered as `@handle` everywhere.
 - `scripts/seed-team-form.ts` — one-time loader of the static `scripts/data/pre-tournament-form.json` into `team_form` (see "Team form" above). No live sync.
 
 ### Routing (`src/App.tsx`)
-The app shell is **public**: Matches (index) and Tournament render for anonymous
-visitors (backed by the public `matches` grant above). `RequireUsername` lets
-anonymous visitors through but funnels a signed-in user to `/welcome` until they
-pick a handle. `ProtectedRoute` (session required, `src/hooks/useAuth.tsx`) gates
-Leaderboard, MyPredictions (`/me`), PlayerPage (`/player/:userId`), and Admin;
-`AdminRoute` further gates `/admin`. `/welcome` needs a session but no handle;
+The app is **public and read-only for visitors**: Matches (index), Tournament,
+Leaderboard, and PlayerPage (`/player/:userId`) all render without a session,
+backed by the anon read grants (see "Anti-cheat via Row Level Security"), and
+the finale podium, Hall of fame, and revealed picks show to visitors too.
+Predicting still needs a session. `RequireUsername` lets anonymous visitors
+through but funnels a signed-in user to `/welcome` until they pick a handle.
+`ProtectedRoute` (session required, `src/hooks/useAuth.tsx`) gates only
+MyPredictions (`/me`) and Admin; `AdminRoute` further gates `/admin`. `/welcome` needs a session but no handle;
 `/login` is open. Pages: Matches (index), Leaderboard, Tournament (`/tournament`
 — the renamed Standings page; `/standings` redirects there), MyPredictions
 (`/me`), PlayerPage (`/player/:userId`), Admin, Login, Welcome (`/welcome`).
-The **Admin tab is hidden from the bottom nav** (route still reachable by URL),
-and once the tournament ends the signed-in nav reorders to Matches, Leaderboard,
-Tournament, Me (see "Tournament finale").
+The **Admin tab is hidden from the nav** (route still reachable by URL), Me
+shows only when signed in, and once the tournament ends the nav reorders to
+Matches, Leaderboard, Tournament (see "Tournament finale").
 
 ### Hosting & parallel deploys (`netlify.toml`, `wrangler.jsonc`)
 The frontend is a static Vite SPA reading **directly from Supabase**, so the same
@@ -533,8 +587,8 @@ the Google OAuth client's **Authorized JavaScript origins**.
 
 - **Keep `src/lib/scoring.ts` and the SQL scoring functions in sync** when changing point values or rules — they are duplicated by design (DB authoritative, client for display).
 - **Keep the knockout `FEEDERS` bracket map in sync across `src/lib/bracket.ts` and `fill_ready_knockout_slots()` (`0016`)** — same duplication-by-design as scoring (DB fills the slot / lifts the prediction lock; client fills for display). A wrong feeder pairing sends the wrong team into the next round. See "Knockout unlock".
-- **Use `border-ink` (not plain `border`) for a card/control's structural outline.** Plain `border` resolves to the faint hairline `--border` token; the strong outline is the separate `--ink` token. The two are intentionally different (see the design-system note above).
-- **The sticky `DayHeader` offset (`top-14`) tracks the `h-14` app header in `Layout.tsx`.** If you change the header height, update `DayHeader`'s `top-*` to match or the day strip will misalign.
+- **Panels are flat: no outlines and no shadows.** Cards separate from the ground by tone; `--border` is only for hairline row dividers. Reach for `--signal` (turf green) only where the design-system note lists it, and never use flag emoji (use `<Flag>`). See the design-system note above.
+- **The floating top bar's footprint is `--header-h` in `src/index.css`** (the `pt-3` gap plus the `h-14` pill in `Layout.tsx`), and sticky content parks at `--sticky-top` below it. If you change the header's height or gap, update `--header-h` to match. The Matches scroll helpers (`goToDay`, `visibleBand`) measure the bars from the DOM (`data-app-header`, `data-day-strip`, `data-tab-bar`), so keep those attributes.
 - **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id and is nullable until linked by the sync.

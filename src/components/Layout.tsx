@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { NavLink, Outlet, useNavigate } from "react-router-dom"
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
   CalendarDays,
@@ -24,20 +24,31 @@ type NavItem = {
   end?: boolean
 }
 
-// Matches and the Tournament view (group tables + knockout bracket) are public;
-// Leaderboard and Me only appear once signed in (tapping Leaderboard while logged
-// out still routes to /login via ProtectedRoute, but we keep the bar uncluttered
-// for visitors).
+// Every page but Me is public (read-only for visitors); Me only appears once
+// signed in, since it's the viewer's own picks.
 const MATCHES_NAV: NavItem = { to: "/", label: "Matches", icon: CalendarDays, end: true }
 const TOURNAMENT_NAV: NavItem = { to: "/tournament", label: "Tournament", icon: Network }
 const LEADERBOARD_NAV: NavItem = { to: "/leaderboard", label: "Leaderboard", icon: Trophy }
 const ME_NAV: NavItem = { to: "/me", label: "Me", icon: User }
 
-const PUBLIC_NAV: NavItem[] = [MATCHES_NAV, TOURNAMENT_NAV]
-const MEMBER_NAV: NavItem[] = [LEADERBOARD_NAV, ME_NAV]
+const LIVE_NAV: NavItem[] = [MATCHES_NAV, TOURNAMENT_NAV, LEADERBOARD_NAV]
 // Once the tournament is over the final standings are the main event, so the
 // Leaderboard moves up to second place.
-const FINALE_NAV: NavItem[] = [MATCHES_NAV, LEADERBOARD_NAV, TOURNAMENT_NAV, ME_NAV]
+const FINALE_NAV: NavItem[] = [MATCHES_NAV, LEADERBOARD_NAV, TOURNAMENT_NAV]
+
+/** The two-tone Signage wordmark: the name in ink over "Pick'ems" in grey. */
+function Wordmark() {
+  return (
+    <Link
+      to="/"
+      aria-label="WC26 Pick’ems, home"
+      className="-mx-1.5 flex flex-col rounded-md px-1.5 py-1 text-[15px] leading-[1.05] font-bold tracking-tight transition-colors duration-[var(--duration-fast)] active:bg-foreground/10"
+    >
+      <span>WC26</span>
+      <span className="text-quiet">Pick’ems</span>
+    </Link>
+  )
+}
 
 export function Layout() {
   const { session, profile, loading, signOut, signInWithGoogle } = useAuth()
@@ -60,97 +71,147 @@ export function Layout() {
     () => tournamentChampion(matches ?? []) != null,
     [matches]
   )
-  const items: NavItem[] = session
-    ? over
-      ? FINALE_NAV
-      : [...PUBLIC_NAV, ...MEMBER_NAV]
-    : PUBLIC_NAV
+  const items: NavItem[] = [
+    ...(over ? FINALE_NAV : LIVE_NAV),
+    ...(session ? [ME_NAV] : []),
+  ]
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-ink bg-background px-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🏆</span>
-          <div className="leading-tight">
-            <p className="text-sm font-semibold tracking-tight">WC26 Pick'ems</p>
-            <p className="text-xs text-muted-foreground">Prediction League</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {loading ? (
-            // Hold the auth area with a skeleton until getSession() resolves.
-            // Rendering off `session` alone flashed "Sign in to play" for a beat
-            // before the restored session loaded and flipped it to signed-in.
-            // Width roughly matches the sign-in button so it doesn't shift.
-            <Skeleton className="h-5 w-24 rounded-md" aria-hidden />
-          ) : session ? (
-            <>
-              {profile && (
-                <span className="text-sm font-medium tracking-tight">
-                  @{profile.username}
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Sign out"
-                onClick={async () => {
-                  try {
-                    await signOut()
-                    navigate("/")
-                  } catch (err) {
-                    toast.error(
-                      err instanceof Error ? err.message : "Sign out failed"
-                    )
-                  }
-                }}
+    <div className="flex min-h-dvh flex-col">
+      {/* The floating top bar: a frosted pill inset from the edges, so the page
+          shows around it as it scrolls. The sticky wrapper is click-through
+          (only the pill takes input), and shares `main`'s width and gutters so
+          the pill's edges line up with the cards. Its height (gap + bar) is
+          --header-h in index.css; the sticky day strip parks just below it.
+          Paddings keep the pill's controls concentric with its rounded ends. */}
+      <header
+        data-app-header
+        className="pointer-events-none sticky top-0 z-(--z-header) mx-auto w-full max-w-6xl px-3 pt-3 sm:px-6"
+      >
+        <div className="pointer-events-auto flex h-14 items-center gap-8 rounded-full bg-bar pr-3 pl-6 backdrop-blur-xl backdrop-saturate-150">
+          <Wordmark />
+          <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+            {items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    "flex h-9 items-center rounded-full px-4 text-sm font-semibold transition-colors duration-[var(--duration-fast)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent-pressed"
+                  )
+                }
               >
-                <LogOut className="size-4" />
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="ml-auto flex items-center gap-1">
+            {loading ? (
+              // Hold the auth area with a skeleton until getSession() resolves,
+              // so "Sign in" doesn't flash before a restored session loads.
+              // Sized like the sign-in button so it doesn't shift.
+              <Skeleton className="h-8 w-24 rounded-full" aria-hidden />
+            ) : session ? (
+              <>
+                {profile && (
+                  <span className="max-w-40 truncate px-2 text-sm font-semibold tracking-tight">
+                    @{profile.username}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9"
+                  aria-label="Sign out"
+                  onClick={async () => {
+                    try {
+                      await signOut()
+                      navigate("/")
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error ? err.message : "Sign out failed"
+                      )
+                    }
+                  }}
+                >
+                  <LogOut />
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" disabled={signingIn} onClick={handleSignIn}>
+                <GoogleIcon />
+                {over ? "Sign in" : "Sign in to play"}
               </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="play-cta"
-              disabled={signingIn}
-              onClick={handleSignIn}
-            >
-              <GoogleIcon />
-              Sign in to play
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 px-3 pb-24 pt-3 sm:px-4">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3 pt-4 pb-10 sm:px-6 sm:pt-6">
         <Outlet />
       </main>
 
-      {/* `transform-gpu` (translateZ(0)) forces the fixed bar onto its own GPU
+      {/* The personal sign-off. Clears the floating tab bar on phones. */}
+      <footer className="mx-auto flex w-full max-w-6xl justify-center px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] text-sm text-muted-foreground sm:px-6 md:pb-10">
+        <p>
+          Made by{" "}
+          <a
+            href="https://fluffypixel.ca"
+            className="-mx-1 rounded-sm px-1 font-semibold text-foreground underline decoration-1 underline-offset-4 hover:decoration-2 active:bg-foreground/10"
+          >
+            Fluffy Pixel
+          </a>
+        </p>
+      </footer>
+
+      {/* Phones only: the floating tab bar, a frosted pill matching the top bar
+          and inset from the edges and the home indicator (desktop navigates from
+          the header). `transform-gpu` (translateZ(0)) forces the fixed bar onto its own GPU
           compositing layer. Without it, mobile Safari recomputes a plain
           `position: fixed` bar's spot against the layout viewport mid-scroll
           (URL-bar show/hide, momentum scroll) and it intermittently detaches and
           floats over content; a promoted layer is composited independently of the
-          scroll, so it stays glued to the bottom. The `pb-[env(safe-area-inset-bottom)]`
-          only resolves once the viewport meta opts in with `viewport-fit=cover`. */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 transform-gpu border-t border-ink bg-background">
-        <div className="mx-auto flex max-w-2xl pb-[env(safe-area-inset-bottom)]">
+          scroll, so it stays glued to the bottom. The `env(safe-area-inset-bottom)`
+          offset only resolves once the viewport meta opts in with `viewport-fit=cover`. */}
+      <nav
+        aria-label="Main"
+        data-tab-bar
+        className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-(--z-header) mx-auto max-w-lg transform-gpu rounded-full bg-bar px-1.5 backdrop-blur-xl backdrop-saturate-150 md:hidden"
+      >
+        <div className="flex">
           {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={"end" in item ? item.end : false}
+              end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs transition-colors active:bg-foreground/10",
+                  "group flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors duration-[var(--duration-fast)] focus-visible:outline-none",
                   isActive
-                    ? "font-semibold text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-foreground"
+                    : "text-muted-foreground active:text-foreground"
                 )
               }
             >
-              <item.icon className="size-5" />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <span
+                    className={cn(
+                      "grid h-7 w-12 place-items-center rounded-full transition-colors duration-[var(--duration-fast)] group-focus-visible:ring-2 group-focus-visible:ring-ring",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "group-active:bg-foreground/10"
+                    )}
+                  >
+                    <item.icon className="size-[18px]" aria-hidden />
+                  </span>
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
         </div>

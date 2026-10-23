@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react"
+import { useMemo, useState } from "react"
 import { useParams } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import {
@@ -6,45 +6,16 @@ import {
   useMatches,
   usePlayerScoredPredictions,
 } from "@/hooks/queries"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ResultBadge } from "@/components/ResultBadge"
-import { StageBadge } from "@/components/StageBadge"
-import { StatCard } from "@/components/StatCard"
+import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/EmptyState"
-import { ListSkeleton } from "@/components/ListSkeleton"
-import { flagEmoji } from "@/lib/flags"
+import { SignHeading } from "@/components/SignHeading"
+import { PickRow, RankSummary, SettledList } from "@/components/PlayerSummary"
+import { RESULT_FILTERS, type ResultFilter } from "@/lib/filters"
 import { resolveKnockoutTeams } from "@/lib/bracket"
-import { ordinal } from "@/lib/format"
 import { competitionRanks } from "@/lib/rank"
-import { cn } from "@/lib/utils"
 import { SegmentedControl } from "@/components/SegmentedControl"
-import type { ResultType } from "@/lib/types"
-
-const MEDALS = ["🥇", "🥈", "🥉"]
-
-// Metal fill matched to each medal emoji (`.rank-metal-*` in index.css), the
-// same treatment as the /me rank reveal. Indexed by position - 1; 4th place
-// and below fall back to neutral foreground (no class).
-const TIER_GRADIENT = [
-  "rank-metal rank-metal-gold", // 🥇 gold
-  "rank-metal rank-metal-silver", // 🥈 silver
-  "rank-metal rank-metal-bronze", // 🥉 bronze
-]
-
-// Settled-match filters, same idiom as MyPredictions.
-type ResultFilter = "all" | ResultType
-const FILTERS: { value: ResultFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "OUTCOME", label: "Outcome" },
-  { value: "EXACT", label: "Exact" },
-  { value: "MISS", label: "Miss" },
-]
 
 export function PlayerPage() {
   const { userId } = useParams<{ userId: string }>()
@@ -80,9 +51,6 @@ export function PlayerPage() {
     return { position: ranks[idx], total: leaderboard.length }
   }, [leaderboard, userId, playerRow])
 
-  // Medal gradient for the top 3; undefined (neutral text) for 4th and below.
-  const rankGradient = rank ? TIER_GRADIENT[rank.position - 1] : undefined
-
   const settled = useMemo(() => {
     if (!scoredRows) return []
     return scoredRows
@@ -110,16 +78,12 @@ export function PlayerPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardContent>
-            <ListSkeleton
-              count={1}
-              className="space-y-3"
-              itemClassName="h-24 w-full"
-            />
-          </CardContent>
-        </Card>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-20 w-56 rounded-xl" />
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
+        </div>
       </div>
     )
   }
@@ -136,122 +100,84 @@ export function PlayerPage() {
 
   const isSelf = userId === session?.user.id
 
-  return (
-    <div className="space-y-4">
-      <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
-        <CardContent>
-          <div className="mb-1.5 flex items-center justify-center gap-2 text-center text-sm font-medium text-foreground">
-            <span>@{playerRow.username}</span>
-            {isSelf && (
-              <Badge variant="outline" className="px-1 py-0 text-[10px]">
-                you
-              </Badge>
-            )}
-          </div>
-          {rank && (
-            <div className="mb-4 text-center">
-              <div className="rank-pop flex items-center justify-center gap-1 leading-none">
-                {MEDALS[rank.position - 1] && (
-                  <span className="text-3xl" aria-hidden="true">
-                    {MEDALS[rank.position - 1]}
-                  </span>
-                )}
-                <span
-                  className={cn(
-                    "text-3xl font-semibold tabular-nums",
-                    rankGradient
-                      ? "bg-clip-text text-transparent [-webkit-background-clip:text] rank-sheen"
-                      : "text-foreground",
-                    rankGradient
-                  )}
-                >
-                  {ordinal(rank.position)} Place
-                </span>
-              </div>
-              <div className="mt-1.5 text-xs text-muted-foreground">
-                of {rank.total} {rank.total === 1 ? "player" : "players"}
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <StatCard
-              label="Total points"
-              value={playerRow.total_points}
-              highlight
-            />
-            <StatCard label="Exact scores" value={playerRow.exact_count} />
-            <StatCard label="Revealed picks" value={settled.length} />
-          </div>
-        </CardContent>
-      </Card>
+  const filterControl = settled.length > 0 && (
+    <SegmentedControl
+      layoutId="player-filter-active"
+      value={filter}
+      onChange={setFilter}
+      options={RESULT_FILTERS.map((f) => ({
+        value: f.value,
+        label: (
+          <>
+            {f.label}
+            <span className="ml-1 text-[11px] tabular-nums opacity-60 max-[359px]:hidden sm:ml-1.5 sm:text-xs">
+              {counts[f.value]}
+            </span>
+          </>
+        ),
+      }))}
+    />
+  )
 
-      <Card className="gap-3 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
-        <CardHeader>
-          <CardTitle className="text-base">Settled picks</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {settled.length > 0 && (
-            <SegmentedControl
-              layoutId="player-filter-active"
-              value={filter}
-              onChange={setFilter}
-              options={FILTERS.map((f) => ({
-                value: f.value,
-                label: (
-                  <>
-                    {f.label}
-                    <span className="ml-1 text-xs tabular-nums opacity-60">
-                      {counts[f.value]}
-                    </span>
-                  </>
-                ),
-              }))}
-            />
-          )}
-          {settled.length === 0 && (
-            <EmptyState className="py-6">
-              No revealed picks yet. Picks appear here after kickoff.
-            </EmptyState>
-          )}
-          {settled.length > 0 && filtered.length === 0 && (
-            <EmptyState className="py-6">
-              No {FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}{" "}
-              results yet.
-            </EmptyState>
-          )}
+  return (
+    <div className="flex flex-col gap-4">
+      <SignHeading
+        as="h1"
+        size="lg"
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            @{playerRow.username}
+            {isSelf && <Badge variant="default">You</Badge>}
+          </span>
+        }
+        sub="Revealed picks"
+        className="px-1 sm:px-0"
+      />
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
+        <RankSummary
+          rank={rank}
+          className="lg:sticky lg:top-20"
+          stats={[
+            { label: "Total points", value: playerRow.total_points },
+            { label: "Exact scores", value: playerRow.exact_count },
+            { label: "Revealed picks", value: settled.length },
+          ]}
+        />
+
+        <SettledList
+          title="Settled picks"
+          filter={filterControl}
+          empty={
+            settled.length === 0 ? (
+              <EmptyState className="py-8">
+                No revealed picks yet. Picks appear here after kickoff.
+              </EmptyState>
+            ) : filtered.length === 0 ? (
+              <EmptyState className="py-8">
+                No{" "}
+                {RESULT_FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}{" "}
+                results yet.
+              </EmptyState>
+            ) : undefined
+          }
+        >
           {filtered.map((r, i) => {
             const m = matchById.get(r.match_id)
             if (!m) return null
             return (
-              <div
+              <PickRow
                 key={r.match_id}
-                className="flex items-center justify-between gap-2 rounded-lg border p-2.5 text-sm animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
-                style={{ "--i": i } as CSSProperties}
-              >
-                <div className="flex min-w-0 flex-col gap-1">
-                  <StageBadge
-                    stage={m.stage}
-                    group={m.group_name}
-                    className="w-fit"
-                  />
-                  <span className="truncate">
-                    {flagEmoji(m.home_code)} {m.home_team} {m.home_score}–
-                    {m.away_score} {m.away_team} {flagEmoji(m.away_code)}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant="secondary" className="tabular-nums">
-                    pick {r.home_pred}–{r.away_pred}
-                  </Badge>
-                  {r.result_type && (
-                    <ResultBadge result={r.result_type} points={r.points ?? 0} />
-                  )}
-                </div>
-              </div>
+                match={m}
+                homePred={r.home_pred}
+                awayPred={r.away_pred}
+                result={r.result_type}
+                points={r.points ?? 0}
+                index={i}
+              />
             )
           })}
-        </CardContent>
-      </Card>
+        </SettledList>
+      </div>
     </div>
   )
 }

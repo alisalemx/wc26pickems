@@ -8,10 +8,10 @@ export function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-3 p-4">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
       </div>
     )
   }
@@ -30,9 +30,9 @@ export function RequireUsername() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-3 p-4">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
       </div>
     )
   }
@@ -46,7 +46,7 @@ export function RequireUsername() {
     // a retry instead.
     if (profileError) {
       return (
-        <div className="mx-auto max-w-2xl space-y-4 p-4 text-center">
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
           <p className="text-sm text-muted-foreground">
             We couldn't load your profile. Check your connection and try again.
           </p>
@@ -55,9 +55,9 @@ export function RequireUsername() {
       )
     }
     return (
-      <div className="mx-auto max-w-2xl space-y-3 p-4">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
       </div>
     )
   }
@@ -70,10 +70,10 @@ export function AdminRoute() {
   const { profile, loading } = useAuth()
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-3 p-4">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
       </div>
     )
   }

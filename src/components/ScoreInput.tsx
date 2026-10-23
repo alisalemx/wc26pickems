@@ -31,8 +31,8 @@ export function ScoreInput({
       className={cn(
         // md:text-2xl is required, not redundant: the base Input class ends in
         // `md:text-sm`, which would otherwise shrink the score to text-sm at md+.
-        "h-12 w-12 text-center text-xl font-bold tabular-nums md:text-xl",
-        muted && "bg-muted text-muted-foreground disabled:opacity-60"
+        "size-14 rounded-xl px-0 text-center text-2xl font-bold tabular-nums tracking-tight md:text-2xl",
+        muted && "text-muted-foreground disabled:opacity-60"
       )}
     />
   )
@@ -59,7 +59,7 @@ export function ScorePair({
   muted?: boolean
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <ScoreInput
         value={home}
         onChange={onHome}
@@ -67,7 +67,7 @@ export function ScorePair({
         disabled={disabled}
         muted={muted}
       />
-      <span className="text-muted-foreground">–</span>
+      <span aria-hidden className="text-xl font-bold text-quiet">–</span>
       <ScoreInput
         value={away}
         onChange={onAway}

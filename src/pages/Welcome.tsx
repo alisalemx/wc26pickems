@@ -42,11 +42,11 @@ export function Welcome() {
         username !== profile?.username &&
         !(await isUsernameAvailable(username))
       ) {
-        toast.error(`@${username} is taken — try another`)
+        toast.error(`@${username} is taken. Try another.`)
         return
       }
       await setUsername(username)
-      toast.success(`You're @${username} — let's play.`)
+      toast.success(`You're @${username}. Let's play.`)
       navigate("/")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save username")
@@ -63,14 +63,14 @@ export function Welcome() {
       <Card>
         <CardHeader>
           <CardTitle>Choose a username</CardTitle>
-          <CardDescription>Make it count — this is your identity in the league.</CardDescription>
+          <CardDescription>Make it count. This is your identity in the league.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-3" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="wc-name">Username</Label>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">@</span>
+                <span className="text-lg font-semibold text-muted-foreground">@</span>
                 <Input
                   id="wc-name"
                   autoComplete="username"
@@ -90,7 +90,7 @@ export function Welcome() {
                 3–20 characters: lowercase letters, numbers, underscore.
               </p>
             </div>
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button type="submit" size="lg" className="w-full" disabled={busy}>
               Continue
             </Button>
           </form>

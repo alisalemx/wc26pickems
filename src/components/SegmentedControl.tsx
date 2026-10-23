@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils"
 
 export type SegmentedOption<T> = { value: T; label: ReactNode }
 
-/** Single-select segmented control: equal-width chips on a muted track with a
- *  single shared-layout "pill" (`layoutId`) that glides to the active chip when
- *  you switch, riding over the track; the active label is raised so the pill
- *  stays beneath it mid-slide. Chips are `flex-1`, so they share one row instead
+/** Single-select segmented control: equal-width chips in a rounded track with a
+ *  single shared-layout ink "pill" (`layoutId`) that glides to the active chip
+ *  when you switch; the active label is raised so the pill stays beneath it
+ *  mid-slide. Matches the Tabs strip, so every switcher in the app reads alike. Chips are `flex-1`, so they share one row instead
  *  of wrapping on narrow screens. Used for the bracket round selector and the
  *  `/me` settled-match filter. `layoutId` must be unique per mounted instance. */
 export function SegmentedControl<T extends string | number>({
@@ -37,7 +37,7 @@ export function SegmentedControl<T extends string | number>({
     onChange(next)
   }
   return (
-    <div className={cn("flex gap-1.5", className)}>
+    <div className={cn("flex h-11 rounded-full bg-track p-1", className)}>
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -47,17 +47,17 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => select(o.value)}
             aria-current={active ? true : undefined}
             className={cn(
-              "relative flex-1 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium transition-[color,background-color] duration-[var(--duration-fast)] active:bg-foreground/10",
+              "relative flex-1 rounded-full px-2.5 text-[13px] font-semibold whitespace-nowrap sm:text-sm transition-[color,background-color] duration-[var(--duration-fast)] outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "z-10 text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                ? "z-10 text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground active:bg-foreground/10"
             )}
           >
             {active && (
               <motion.span
                 layoutId={layoutId}
                 aria-hidden
-                className="absolute inset-0 rounded-md border border-ink bg-background shadow-brutal-sm"
+                className="absolute inset-0 rounded-full bg-primary"
                 transition={
                   glide
                     ? { type: "spring", duration: 0.4, bounce: 0.2 }

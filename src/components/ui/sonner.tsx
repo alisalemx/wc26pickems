@@ -1,25 +1,25 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
-// Styled to match the app's "polished neo-brutalist" look: popover surface with a
-// strong `border-ink` outline and offset brutal shadow, small radius, Space Grotesk
-// type. Positioned bottom-center and offset to sit *above* the fixed bottom nav.
+// Styled as a Signage black panel (inverted in dark mode): the primary ink as
+// the surface, no outline or shadow, the app's radius and type. Positioned
+// bottom-center and offset to sit *above* the fixed bottom nav on phones.
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="system"
       position="bottom-center"
-      offset={{ bottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}
-      mobileOffset={{ bottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}
+      offset={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
+      mobileOffset={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
       toastOptions={{
         classNames: {
           toast:
-            "!bg-popover !text-popover-foreground !border !border-ink !rounded-md !shadow-brutal !font-sans",
+            "!bg-primary !text-primary-foreground !border-0 !rounded-xl !shadow-none !font-sans",
           title: "!font-semibold !tracking-tight",
-          description: "!text-muted-foreground",
-          actionButton: "!bg-primary !text-primary-foreground !rounded-md",
-          cancelButton: "!bg-secondary !text-secondary-foreground !rounded-md",
-          success: "!text-primary",
-          error: "!text-destructive",
+          description: "!text-primary-foreground/70",
+          actionButton: "!bg-signal !text-signal-foreground !rounded-full",
+          cancelButton: "!bg-primary-foreground/15 !text-primary-foreground !rounded-full",
+          success: "[&_[data-icon]]:!text-win",
+          error: "[&_[data-icon]]:!text-destructive",
         },
       }}
       {...props}

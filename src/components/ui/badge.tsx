@@ -5,19 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-sm border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] overflow-hidden",
+  "inline-flex h-6 items-center justify-center rounded-full px-2.5 text-xs font-semibold tabular-nums w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:ring-2 focus-visible:ring-ring transition-[color,background-color] overflow-hidden",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+          "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+          "bg-muted text-foreground [a&]:hover:bg-accent",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground [a&]:hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground [a&]:hover:bg-destructive/90",
         outline:
-          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        gold: "border-transparent bg-gold text-gold-foreground [a&]:hover:bg-gold/90",
+          "text-muted-foreground shadow-[inset_0_0_0_1px_var(--input)] [a&]:hover:bg-accent",
+        signal: "bg-signal text-signal-foreground [a&]:hover:bg-signal/90",
+        win: "bg-win text-win-foreground [a&]:hover:bg-win/90",
       },
     },
     defaultVariants: {

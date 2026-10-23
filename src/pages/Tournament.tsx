@@ -1,12 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react"
-import { Info } from "lucide-react"
 import { useMatches, useStandings } from "@/hooks/queries"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -17,6 +11,8 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListSkeleton } from "@/components/ListSkeleton"
+import { Bullet } from "@/components/Bullet"
+import { SignHeading } from "@/components/SignHeading"
 import { TeamDisplay } from "@/components/TeamDisplay"
 import { TeamDetailDialog } from "@/components/TeamInfoDialog"
 import { Bracket } from "@/components/Bracket"
@@ -27,7 +23,6 @@ import {
   type Standing,
 } from "@/lib/standings"
 import type { MatchRow } from "@/lib/types"
-import { cn } from "@/lib/utils"
 
 function Groups() {
   const { data: matches, isLoading: matchesLoading } = useMatches()
@@ -109,72 +104,85 @@ function Groups() {
     return (
       <ListSkeleton
         count={4}
-        className="grid gap-3 sm:grid-cols-2"
-        itemClassName="h-48 w-full"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+        itemClassName="h-60 w-full rounded-xl"
       />
     )
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-primary/30" />
+    <div className="flex flex-col gap-4">
+      {/* The legend uses the same position bullets as the tables. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <Bullet tone="signal" size="xs">1</Bullet>
           Top 2 qualify
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-amber-500/40" />
+        <span className="flex items-center gap-2">
+          <Bullet tone="win" size="xs">3</Bullet>
           Best 8 third-place teams advance
         </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-      {groups.map((g, i) => (
-        <Card
-          key={g.name}
-          className="gap-1.5 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-cubic stagger-in"
-          style={{ "--i": i } as CSSProperties}
-        >
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base">Group {g.name}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-full">Team</TableHead>
-                  <TableHead className="text-center">P</TableHead>
-                  <TableHead className="text-center">GD</TableHead>
-                  <TableHead className="text-center">Pts</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {g.rows.map((r, i) => (
-                  <StandingRow
-                    key={r.team}
-                    r={r}
-                    highlight={cn(
-                      i < 2 && "bg-primary/5",
-                      i === 2 &&
-                        thirdsComparable &&
-                        qualifyingThirds.has(r.code ?? r.team) &&
-                        "bg-amber-500/10"
-                    )}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      ))}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+        {groups.map((g, i) => (
+          <Card
+            key={g.name}
+            className="gap-2 pb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+            style={{ "--i": i } as CSSProperties}
+          >
+            <CardHeader>
+              <SignHeading title={`Group ${g.name}`} size="sm" as="h3" />
+            </CardHeader>
+            <CardContent className="px-2 sm:px-3">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-full pl-2">Team</TableHead>
+                    <TableHead className="text-center">P</TableHead>
+                    <TableHead className="text-center">GD</TableHead>
+                    <TableHead className="pr-3 text-right">Pts</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {g.rows.map((r, i) => (
+                    <StandingRow
+                      key={r.team}
+                      r={r}
+                      position={i + 1}
+                      tone={
+                        i < 2
+                          ? "signal"
+                          : i === 2 &&
+                              thirdsComparable &&
+                              qualifyingThirds.has(r.code ?? r.team)
+                            ? "win"
+                            : "muted"
+                      }
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )
 }
 
-/** One standings row. The whole row opens the team modal; the info icon stays
- *  as a visual affordance. */
-function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
+/** One standings row: the position as a line bullet (green for the top two,
+ *  pale green for a qualifying third), then the team. The whole row opens the
+ *  team modal. */
+function StandingRow({
+  r,
+  position,
+  tone,
+}: {
+  r: Standing
+  position: number
+  tone: "signal" | "win" | "muted"
+}) {
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -189,12 +197,14 @@ function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
             setOpen(true)
           }
         }}
-        className={cn("cursor-pointer active:bg-foreground/10", highlight)}
+        className="h-12 cursor-pointer border-0 transition-colors duration-[var(--duration-fast)] hover:bg-accent active:bg-accent-pressed focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg"
       >
-        <TableCell>
-          <div className="flex items-center gap-1">
-            <TeamDisplay name={r.team} code={r.code} size="sm" />
-            <Info className="size-3.5 text-muted-foreground" aria-hidden />
+        <TableCell className="max-w-0 pl-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Bullet tone={tone} size="xs" label={`Position ${position}`}>
+              {position}
+            </Bullet>
+            <TeamDisplay name={r.team} code={r.code} size="sm" className="min-w-0" />
           </div>
         </TableCell>
         <TableCell className="text-center tabular-nums text-muted-foreground">
@@ -204,7 +214,7 @@ function StandingRow({ r, highlight }: { r: Standing; highlight: string }) {
           {r.gf - r.ga > 0 ? "+" : ""}
           {r.gf - r.ga}
         </TableCell>
-        <TableCell className="text-center font-semibold tabular-nums">
+        <TableCell className="pr-3 text-right font-bold tabular-nums">
           {r.pts}
         </TableCell>
       </TableRow>
@@ -256,15 +266,15 @@ export function Tournament() {
     return (
       <ListSkeleton
         count={4}
-        className="grid gap-3 sm:grid-cols-2"
-        itemClassName="h-48 w-full"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+        itemClassName="h-60 w-full rounded-xl"
       />
     )
   }
 
   return (
-    <Tabs value={tab} onValueChange={setChosen} className="gap-3">
-      <TabsList className="w-full">
+    <Tabs value={tab} onValueChange={setChosen} className="gap-4">
+      <TabsList className="w-full md:w-80">
         <TabsTrigger value="groups">Groups</TabsTrigger>
         <TabsTrigger value="bracket">Bracket</TabsTrigger>
       </TabsList>

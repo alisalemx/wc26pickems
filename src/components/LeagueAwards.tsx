@@ -1,8 +1,8 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react"
 import { Gem, Goal, Infinity as InfinityIcon } from "lucide-react"
-import { useAuth } from "@/hooks/useAuth"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { SignHeading } from "@/components/SignHeading"
 import { EmptyState } from "@/components/EmptyState"
 import { tournamentChampion } from "@/lib/bracket"
 import {
@@ -23,7 +23,8 @@ function handles(usernames: string[]): string {
 }
 
 /** One award row: a small icon, the award's name, who won it and the stat
- *  behind it. Cascades in via .stagger-in (`--i` set by the caller). */
+ *  behind it (numbers are joined to their unit with a no-break space, so a
+ *  wrap never strands "104" at the end of a line). Cascades in via .stagger-in (`--i` set by the caller). */
 function AwardRow({
   i,
   icon: Icon,
@@ -39,15 +40,17 @@ function AwardRow({
 }) {
   return (
     <div
-      className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+      className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0"
       style={{ "--i": i } as CSSProperties}
     >
-      <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
       <div className="min-w-0">
-        <div className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+        <div className="text-[13px] font-medium text-muted-foreground">
           {name}
         </div>
-        <div className="truncate text-sm font-semibold">
+        <div className="text-[15px] font-semibold tracking-tight text-pretty">
           {recipients}{" "}
           <span className="font-normal text-muted-foreground">{detail}</span>
         </div>
@@ -58,24 +61,20 @@ function AwardRow({
 
 /** The league's end-of-tournament awards, shown on both the match list and
  *  the final standings. Gated on the same tournamentChampion predicate as
- *  every finale surface, and the data fetches are further session-gated
- *  because leaderboard/scored_predictions aren't readable anonymously — for
- *  a logged-out visitor the card simply doesn't render. */
+ *  every finale surface. The standings and revealed picks are public, so it
+ *  renders for visitors too. */
 export function LeagueAwards({
   matches,
-  centerTitle = false,
+  className,
 }: {
   matches: MatchRow[] | undefined
-  /** Center the card title (used on the match list, where the card sits
-   *  under the centered champion banner). */
-  centerTitle?: boolean
+  className?: string
 }) {
-  const { session } = useAuth()
   const champion = useMemo(
     () => tournamentChampion(matches ?? []),
     [matches]
   )
-  const enabled = Boolean(session) && champion != null
+  const enabled = champion != null
   const { data: leaderboard } = useLeaderboard(enabled)
   const { data: allScored } = useAllScoredPredictions(enabled)
 
@@ -102,11 +101,14 @@ export function LeagueAwards({
     sharpshooters.length === 0 && !bestCall && everPresent.length === 0
 
   return (
-    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic gap-2">
+    <Card
+      className={cn(
+        "gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        className
+      )}
+    >
       <CardHeader>
-<CardTitle className={cn("text-base", centerTitle && "text-center")}>
-          Hall of fame
-        </CardTitle>
+        <SignHeading title="Hall of fame" />
       </CardHeader>
       <CardContent className="divide-y">
         {empty ? (
@@ -119,7 +121,7 @@ export function LeagueAwards({
                 icon={Goal}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
-                detail={`· ${sharpshooters[0].exact_count} exact ${
+                detail={`·\u00a0${sharpshooters[0].exact_count}\u00a0exact ${
                   sharpshooters[0].exact_count === 1 ? "score" : "scores"
                 }`}
               />
@@ -130,7 +132,7 @@ export function LeagueAwards({
                 icon={Gem}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
-                detail={`· ${bestCall.home_pred}-${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points} pts`}
+                detail={`·\u00a0${bestCall.home_pred}–${bestCall.away_pred} in the ${STAGE_LABEL[bestCall.stage]}, +${bestCall.points}\u00a0pts`}
               />
             )}
             {everPresent.length > 0 && (
@@ -139,7 +141,7 @@ export function LeagueAwards({
                 icon={InfinityIcon}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
-                detail={`· ${everPresent[0].scored_count} scored ${
+                detail={`·\u00a0${everPresent[0].scored_count}\u00a0scored ${
                   everPresent[0].scored_count === 1
                     ? "prediction"
                     : "predictions"

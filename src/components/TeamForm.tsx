@@ -7,15 +7,15 @@ import { cn } from "@/lib/utils"
  *  games the live results push the oldest pre-tournament pills off the left. A
  *  vertical divider marks the pre→tournament boundary when both are visible.
  *  Renders nothing when there's no form on either side, so callers can drop it
- *  in unconditionally. Pills use soft tints over the card — pale green win,
- *  pale red loss, neutral draw — with a near-ink letter. */
+ *  in unconditionally. Pills are small round line bullets in soft tints over
+ *  the card — pale green win, pale red loss, neutral draw — with an ink letter. */
 type Outcome = "W" | "D" | "L"
 
 /** Total pills shown — pre-tournament + in-tournament combined. */
 const MAX_PILLS = 5
 
 const PILL: Record<Outcome, string> = {
-  W: "bg-primary/20 text-foreground",
+  W: "bg-win text-foreground",
   D: "bg-muted text-foreground",
   L: "bg-destructive/20 text-foreground",
 }
@@ -38,7 +38,7 @@ export function FormPill({
   return (
     <span
       className={cn(
-        "grid size-4 place-items-center rounded-sm text-[10px] font-bold leading-none",
+        "grid size-4 place-items-center rounded-full text-[9px] font-bold leading-none sm:size-[18px] sm:text-[10px]",
         PILL[outcome],
         className
       )}
@@ -82,7 +82,7 @@ export function TeamForm({
         <FormPill key={`p${i}`} outcome={o} />
       ))}
       {preP.length > 0 && tourP.length > 0 && (
-        <span aria-hidden className="mx-0.5 h-4 w-px bg-ink/40" />
+        <span aria-hidden className="mx-0.5 h-4 w-px bg-input" />
       )}
       {tourP.map((o, i) => (
         <FormPill key={`t${i}`} outcome={o} />

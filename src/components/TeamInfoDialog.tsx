@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FormPill } from "./TeamForm"
 import { StageBadge } from "./StageBadge"
 import { TeamDisplay } from "./TeamDisplay"
-import { flagEmoji } from "@/lib/flags"
+import { Flag } from "@/components/Flag"
 import { shortDayHeading, kickoffTime } from "@/lib/format"
 import {
   useHeadToHead,
@@ -68,7 +68,7 @@ function ResultRow({
  *  predicting still happens on the matches tab. */
 function UpcomingMatchCard({ match }: { match: MatchRow }) {
   return (
-    <Card className="gap-2 px-4 py-3">
+    <Card className="gap-2.5 rounded-xl bg-muted px-4 py-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <StageBadge stage={match.stage} group={match.group_name} />
         <span className="tabular-nums">
@@ -77,7 +77,7 @@ function UpcomingMatchCard({ match }: { match: MatchRow }) {
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         <TeamDisplay name={match.home_team} code={match.home_code} size="sm" />
-        <span className="px-1 text-xs font-medium text-muted-foreground">vs</span>
+        <span className="px-1 text-xs font-semibold text-quiet">vs</span>
         <TeamDisplay
           name={match.away_team}
           code={match.away_code}
@@ -99,7 +99,7 @@ function UpcomingMatches({ code }: { code: string | null }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-2">
       {matches.map((m) => (
         <UpcomingMatchCard key={m.id} match={m} />
       ))}
@@ -117,14 +117,14 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1.5">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="flex flex-col gap-2.5">
+      <h4 className="text-[15px] font-bold tracking-tight text-foreground">
         {title}
       </h4>
       {empty ? (
-        <p className="text-sm text-muted-foreground">—</p>
+        <p className="text-sm text-muted-foreground">None</p>
       ) : (
-        <ul className="space-y-1">{children}</ul>
+        <ul className="flex flex-col gap-2">{children}</ul>
       )}
     </div>
   )
@@ -161,7 +161,7 @@ function FormSections({
   className?: string
 }) {
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("flex flex-col gap-7", className)}>
       {h2h && (
         <Section
           title="Head-to-head (last 15 years)"
@@ -257,16 +257,20 @@ function TeamPanel({
   const sections = (
     <FormSections pre={pre} tournament={tournament} honors={honors} h2h={h2h} />
   )
+  // Open on Upcoming while the team still has matches to play, and on Form
+  // once it's out or the tournament is over (an empty first tab reads broken).
+  const upcomingByCode = useUpcomingMatches()
+  const hasUpcoming = code ? (upcomingByCode[code]?.length ?? 0) > 0 : false
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className={cn("flex items-center gap-2", headerClassName)}>
-        <span className="text-3xl leading-none">{flagEmoji(code)}</span>
-        <span className="font-semibold">{name ?? "TBD"}</span>
+    <div className={cn("flex flex-col gap-5", className)}>
+      <div className={cn("flex items-center gap-3", headerClassName)}>
+        <Flag code={code} size="lg" />
+        <span className="text-lg font-bold tracking-tight">{name ?? "TBD"}</span>
       </div>
 
       {showUpcoming ? (
-        <Tabs defaultValue="upcoming" className="gap-4">
+        <Tabs defaultValue={hasUpcoming ? "upcoming" : "form"} className="gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="form">Form</TabsTrigger>
@@ -306,12 +310,12 @@ export function TeamDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="top-[5dvh] max-h-[90dvh] translate-y-0 overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-center gap-2">
-            <span className="text-2xl leading-none">{flagEmoji(code)}</span>
+          <DialogTitle className="flex items-center gap-3">
+            <Flag code={code} size="md" />
             {name ?? "Team"}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            {name ?? "Team"} — recent form, this tournament, and honours.
+            {name ?? "Team"}: recent form, this tournament, and honours.
           </DialogDescription>
         </DialogHeader>
         <TeamPanel
@@ -352,17 +356,17 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 gap-1 px-2 text-xs font-medium text-muted-foreground"
+          className="h-8 gap-1.5 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
           aria-label="Compare teams"
         >
-          <Info className="size-3.5" /> Compare
+          <Info className="size-3.5" aria-hidden /> Compare
         </Button>
       </DialogTrigger>
       <DialogContent className="top-[5dvh] max-h-[90dvh] translate-y-0 overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Comparison</DialogTitle>
           <DialogDescription className="sr-only">
-            {match.home_team ?? "Home"} vs {match.away_team ?? "Away"} — recent
+            {match.home_team ?? "Home"} vs {match.away_team ?? "Away"}: recent
             form, this tournament, and honours.
           </DialogDescription>
         </DialogHeader>
@@ -395,10 +399,10 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               <Tabs defaultValue="home" className="gap-4 sm:hidden">
                 <TabsList className="w-full">
                   <TabsTrigger value="home">
-                    {flagEmoji(match.home_code)} {match.home_team ?? "Home"}
+                    <Flag code={match.home_code} size="xs" /> {match.home_team ?? "Home"}
                   </TabsTrigger>
                   <TabsTrigger value="away">
-                    {flagEmoji(match.away_code)} {match.away_team ?? "Away"}
+                    <Flag code={match.away_code} size="xs" /> {match.away_team ?? "Away"}
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="home">{homePanel}</TabsContent>
@@ -406,7 +410,7 @@ export function TeamInfoDialog({ match }: { match: MatchRow }) {
               </Tabs>
 
               {/* Desktop: both teams side by side */}
-              <div className="hidden gap-8 sm:grid sm:grid-cols-2">
+              <div className="hidden gap-10 sm:grid sm:grid-cols-2">
                 {homePanel}
                 {awayPanel}
               </div>
