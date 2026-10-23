@@ -196,8 +196,21 @@ Enforced by Postgres `now()` vs `matches.kickoff`, never by the UI:
   public HTTP endpoint is locked down separately (see "Sync auth gate" below).
 - The `matches` table is **publicly readable** (`0004_public_matches.sql` grants
   `select` to `anon`) so fixtures and standings render for logged-out visitors.
-  `predictions`, `scored_predictions`, and `leaderboard` are deliberately **not**
-  granted to `anon` — predicting and the leaderboard still require a session.
+- **The rest of the app is publicly readable too, read-only (`0019_public_read.sql`).**
+  The tournament is over and the site is a portfolio piece, so `anon` can read
+  the `leaderboard` and `scored_predictions` views, `predictions` rows for
+  matches that have kicked off (`predictions readable by anon after kickoff`,
+  the same reveal rule signed-in players get, so pre-kickoff picks stay
+  hidden), and `profiles.id` + `username` only. That last one is a column
+  grant: `is_admin`, `created_at`, and `username_chosen` stay hidden, and an
+  anon `select=*` on `profiles` fails. Both views are `security_invoker`, so
+  they need the table policies, not just the view grants. Writes stay locked:
+  `anon` has no write policy anywhere, and its default write grants on
+  `predictions` and `profiles` are revoked. `prediction_distributions()`,
+  `username_available()`, and `set_username()` stay authenticated-only.
+  Before opening this, every handle was replaced with a randomly assigned
+  footballer pun (`scripts/sql/2026-anonymize-handles.sql`, applied
+  2026-10-23) so the public pages don't reveal who played.
 
 ### Sync auth gate (`netlify/lib/sync-auth.mts`)
 The sync function is publicly reachable over HTTP at
