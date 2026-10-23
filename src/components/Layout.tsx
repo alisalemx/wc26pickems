@@ -36,16 +36,36 @@ const LIVE_NAV: NavItem[] = [MATCHES_NAV, TOURNAMENT_NAV, LEADERBOARD_NAV]
 // Leaderboard moves up to second place.
 const FINALE_NAV: NavItem[] = [MATCHES_NAV, LEADERBOARD_NAV, TOURNAMENT_NAV]
 
-/** The two-tone Signage wordmark: the name in ink over "Pick'ems" in grey. */
+/** The logo mark: a turf-green pitch with its halfway line, centre circle, and
+ *  penalty boxes drawn in the signal’s dark ink. The favicon and app icons in
+ *  public/ redraw it as a square tile. */
+function PitchMark() {
+  return (
+    <svg viewBox="0 0 36 26" className="h-[26px] w-9 shrink-0" aria-hidden>
+      <rect width="36" height="26" rx="6" className="fill-signal" />
+      <g fill="none" strokeWidth={1.5} className="stroke-signal-foreground">
+        <path d="M18 0v26" />
+        <circle cx="18" cy="13" r="5" />
+        <path d="M0 7.5h5v11H0M36 7.5h-5v11h5" />
+      </g>
+    </svg>
+  )
+}
+
+/** The logo: the pitch mark beside the two-tone Signage wordmark, the name in
+ *  ink over "Pick’ems" in grey. */
 function Wordmark() {
   return (
     <Link
       to="/"
       aria-label="WC26 Pick’ems, home"
-      className="-mx-1.5 flex flex-col rounded-md px-1.5 py-1 text-[15px] leading-[1.05] font-bold tracking-tight transition-colors duration-[var(--duration-fast)] active:bg-foreground/10"
+      className="-mx-1.5 flex shrink-0 items-center gap-2.5 rounded-lg px-1.5 py-1 transition-colors duration-[var(--duration-fast)] active:bg-foreground/10"
     >
-      <span>WC26</span>
-      <span className="text-quiet">Pick’ems</span>
+      <PitchMark />
+      <span className="flex flex-col text-[15px] leading-[1.05] font-bold tracking-tight">
+        <span>WC26</span>
+        <span className="text-quiet">Pick’ems</span>
+      </span>
     </Link>
   )
 }

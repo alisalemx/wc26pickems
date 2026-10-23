@@ -179,6 +179,13 @@ export function Matches() {
   // pinned (the user has scrolled past the segmented controls); if they're
   // still at the top with the controls visible, leave the scroll alone.
   const dayViewRef = useRef<HTMLDivElement>(null)
+  // Keeping the strip pinned after a switch needs the page to run at least a
+  // viewport below it, or a short day shrinks the document and the browser
+  // clamps the scroll back up. So a pinned switch reserves that height, minus
+  // what already sits below the day view (main's padding and the footer), so
+  // the footer lands on the viewport's bottom edge. It's held only after a
+  // pinned switch: otherwise a short day ends at its last card.
+  const [reservedOffset, setReservedOffset] = useState<number | null>(null)
   function goToDay(key: string) {
     setSelectedDay(key)
     const el = dayViewRef.current
@@ -186,7 +193,13 @@ export function Matches() {
     if (!el || !strip) return
     const pinnedAt = parseFloat(getComputedStyle(strip).top) || 0
     const rect = el.getBoundingClientRect()
-    if (rect.top > pinnedAt) return
+    if (rect.top > pinnedAt) {
+      setReservedOffset(null)
+      return
+    }
+    const below =
+      document.documentElement.scrollHeight - (window.scrollY + rect.bottom)
+    setReservedOffset(pinnedAt + below)
     window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - pinnedAt) })
   }
 
@@ -305,7 +318,10 @@ export function Matches() {
       )}
       <Tabs
         value={view}
-        onValueChange={(v) => setView(v as View)}
+        onValueChange={(v) => {
+          setView(v as View)
+          setReservedOffset(null)
+        }}
         className="mt-2"
       >
         <TabsList className="flex w-full md:w-80">
@@ -326,14 +342,16 @@ export function Matches() {
 
       {/* Day-by-day view */}
       {!isLoading && view === "day" && current && (
-        // min-height keeps the day view at least one viewport tall so a short
-        // day (e.g. knockout cards with undecided teams) still has room to
-        // scroll its header flush under the app header. Without it, switching
-        // to a short day shrinks the document and the browser clamps the
-        // scroll back to the top.
+        // The reserved height (see goToDay) uses dvh so it tracks mobile
+        // Safari's toolbar as it collapses and expands.
         <div
           ref={dayViewRef}
-          className="flex min-h-[calc(100dvh-3.5rem)] flex-col gap-3"
+          className="flex flex-col gap-3"
+          style={
+            reservedOffset != null
+              ? { minHeight: `calc(100dvh - ${reservedOffset}px)` }
+              : undefined
+          }
         >
           <DayHeader
             heading={dayHeading(current[1][0].kickoff)}

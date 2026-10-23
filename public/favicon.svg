@@ -1,3 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text x="50" y="52" font-size="84" text-anchor="middle" dominant-baseline="central">🏆</text>
+  <rect width="100" height="100" rx="22" fill="#2eb45c"/>
+  <g fill="none" stroke="#0c1a0f" stroke-width="5.5">
+    <path d="M50 0v100"/>
+    <circle cx="50" cy="50" r="19"/>
+    <path d="M0 29h14v42H0M100 29H86v42h14"/>
+  </g>
 </svg>

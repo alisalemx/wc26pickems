@@ -70,9 +70,9 @@ dark — no manual toggle). The rules of the look:
   near-black ground with green-graphite panels. `--border` is only a hairline for
   row dividers and the header edge. Don't bring back `border-ink` card outlines or
   offset shadows.
-- **One bold colour, `--signal` (turf green), used sparingly**: the champion hero,
-  the Exact badge, the leader's rank bullet and podium bar, the Final stage tag,
-  "Today", and the Final's bracket ring. Its pale tint `--win` (a `color-mix` of
+- **One bold colour, `--signal` (turf green), used sparingly**: the logo's pitch
+  mark, the champion hero, the Exact badge, the leader's rank bullet and podium
+  bar, the Final stage tag, "Today", and the Final's bracket ring. Its pale tint `--win` (a `color-mix` of
   the signal into the card) marks the quieter "correct" states: the Outcome badge,
   W form pills, the viewer's own leaderboard row, and a qualifying third. Red
   (`--destructive`) is live/loss/error only. Keep green from meaning two things.
@@ -94,6 +94,14 @@ dark — no manual toggle). The rules of the look:
   body text is antialiased (`@layer base`), and copy is sentence case everywhere,
   with no all-caps labels.
 - **Focus rings are neutral** (`--ring` is the ink colour, 2px), never green.
+- **The logo is a pitch mark beside the two-tone wordmark** (`PitchMark` and
+  `Wordmark` in `Layout.tsx`): a turf-green rounded rectangle with the halfway
+  line, centre circle, and penalty boxes in `--signal-foreground`, picked by Ali
+  on 2026-10-23. The favicon (`favicon.svg`, `favicon.ico`) and the app icons in
+  `public/` redraw it as a square tile, with the light theme's signal colours
+  baked in as hex (`#2eb45c` ground, `#0c1a0f` lines). The maskable and Apple
+  icons run full bleed, since the OS rounds them. Redraw all of them if the mark
+  changes.
 
 **Pressed states are a uniform convention: every interactive element settles on a
 subtle background tint while held (`:active`) — no scale or translate — and the
@@ -133,7 +141,7 @@ colour distinction, keep the Final the only special one.
 
 **Layout:** the shell is `max-w-6xl`. Navigation **floats**: a frosted pill
 top bar (inset from the edges, lined up with the content width) holds the
-wordmark, the nav on desktop (`md`+), and sign-in; on phones the tabs sit in a
+logo, the nav on desktop (`md`+), and sign-in; on phones the tabs sit in a
 matching frosted pill floating above the home indicator, and the sticky day
 strip is a third floating pill that parks under the top bar. No shadows and no
 borders: the pills use `--bar`, a frosted fill halfway between the sand ground and the
