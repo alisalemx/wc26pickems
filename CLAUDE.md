@@ -111,7 +111,9 @@ tint matches the element.** Three tiers:
 
 The **`Switch`** is the one outlier: it darkens via `active:brightness-95` so the
 press doesn't paint over its on/off state colour. Tinted text links pad the
-highlight with `rounded-sm -mx-1 px-1` so it doesn't hug the glyphs. All are CSS
+highlight with `rounded-sm -mx-1 px-1` so it doesn't hug the glyphs; the
+podium's player links put that same tint on the name (`group-active:`), since
+phones get no hover and the tap would otherwise show nothing. All are CSS
 `transition`s, so the global `prefers-reduced-motion` backstop neutralizes their
 timing automatically (no per-element gating needed).
 
@@ -162,30 +164,71 @@ durations/easings.
 
 Two layers, both honoring `prefers-reduced-motion`:
 - **CSS / `tw-animate-css`** (`animate-in fade-in-0 slide-in-from-bottom-*`,
-  `zoom-in-95`, etc.) for entrances, exits, and the dialog/tabs transitions —
+  `zoom-in-95`, etc.) for entrances, exits, and the dialog transitions —
   the default for one-shot reveals.
 - **`motion`** (Framer Motion's successor, imported from `motion/react`) for
   JS-driven *shared-layout* animation — the sliding `layoutId` pill in
-  `SegmentedControl`, animated tab/route content, and the leaderboard. These
+  `SegmentedControl` and the tab strip, and the leaderboard. These
   bypass the CSS reduced-motion backstop, so each such component must gate its
-  own motion with `useReducedMotion()`.
+  own motion with `useReducedMotion()`. A Motion tween needs an explicit
+  `ease` (e.g. the ease-out-quint curve as `[0.23, 1, 0.32, 1]`): give it only a
+  `duration` and Motion falls back to ease-in-out. A shared-layout pill sets its
+  radius inline (`style={{ borderRadius: 9999 }}`), not with `rounded-full`:
+  Motion only corrects a radius it can read from `style`, so a class radius
+  squashes when the pill stretches between tabs of different widths.
 
 Tokens (do not hardcode timings — use these):
 - **Durations** live in `:root` as plain custom properties (so they're never
-  tree-shaken) and are consumed via `duration-[var(--duration-*)]`:
-  `--duration-fast` 130ms (micro: chip press, badge pop), `--duration-base` 240ms
-  (entrances, collapse), `--duration-slow` 280ms (modals/drawers), `--duration-exit`
-  160ms. Keep UI motion under ~300ms and make exits ~20% faster than entrances.
+  tree-shaken): `--duration-fast` 130ms (micro: chip press, quick fades),
+  `--duration-base` 240ms (entrances, collapse), `--duration-slow` 280ms
+  (modals/drawers), `--duration-exit` 160ms. Keep UI motion under ~300ms and
+  make exits ~20% faster than entrances (the dialog closes on `--duration-exit`).
+  **Transitions** use `duration-[var(--duration-*)]`; **`animate-in`/`animate-out`
+  entrances use `animation-duration-[var(--duration-*)]`**. Never put
+  `duration-*` on an entrance: it also sets `transition-duration`, and with no
+  `transition-property` declared the browser then animates *every* property
+  for that long (it made the champion word visibly resize on every visit).
 - **Easings** live in `@theme` (so Tailwind generates `ease-*` utilities from the
   `--ease-*` namespace): `ease-out-cubic` (general), `ease-out-quint` (livelier
-  card entrance), `ease-in-out-quart` (collapse / on-screen morph). Hover and
-  color transitions stay on plain `ease`.
+  card entrance), `ease-out-quart` (an expand/collapse you just tapped, like a
+  card's Picks panel: it moves at once), `ease-in-out-quart` (on-screen morph,
+  and the dismissable notes' collapse). Hover and color transitions stay on
+  plain `ease`.
+
+**One entrance per container.** A panel that animates in brings its contents
+with it; don't also cascade its children (the champion banner, Hall of fame,
+and the bracket enter as one piece). A long list does the opposite: its panel
+stays still and the rows cascade (the settled picks on `/me` and the player
+pages, the match list). `ResultBadge` and tab panels have no entrance of their
+own for the same reason.
+
+**Only a first load cascades** (`src/lib/entrance.ts`). Switching what a list
+shows is repeated, so after the first load: a switch made with a pointer
+(another day, the By day / All matches view, a stage filter, the Tournament
+tabs) fades the new content in over `--duration-fast` with no movement, and a
+switch made with the arrow keys shows it at once, since keyboard actions don't
+animate. `Tabs` reports which it was through its `onValueChange(value,
+{ keyboard })`, and its pill snaps on arrow keys too. `MatchCard` reads its
+`entrance` once, at mount, so a card that stays on screen through a switch
+never replays it. Bracket cards fade only when a picked round expands them.
+
+**Motion waits for its content.** A card that loads data renders once that
+data is in, so its entrance plays with the real content (the podium and the
+Hall of fame both wait for their queries). Content that would arrive after
+the page below it is on screen must not push it down: the Matches page starts
+the finale row's queries (leaderboard and every scored pick) alongside the
+matches query, and keeps its skeleton until all of them are in, so the hero,
+the finale row, and the list build in one go. Where content still arrives
+after a panel opens, the panel's height follows it: a card's Picks panel
+opens on "Loading picks…", then grows to the list with a Motion height
+animation scaled to the distance (150 to 270ms, `ease-out-quart`) instead of
+jumping.
 
 Bespoke keyframes (all in `src/index.css`, each scoped to a single element class):
 `countdown-pulse` (clock icon in the final minutes before kickoff), `rank-pop`
 (the rank bullet's reveal on `/me` and the player pages, a scale-in with
 overshoot), `podium-fill` (`.podium-bar`, the finale podium bars rising from the
-floor), and `match-highlight` (the one-shot green flash on the card the "Predict
+floor as a `clip-path` reveal that keeps their rounded tops true), and `match-highlight` (the one-shot green flash on the card the "Predict
 next" panel jumps to). Signage is flat, so there are no gradient sheens or
 flowing-gradient CTAs; don't add them back.
 Infinite/constant motion is used sparingly and only on one element at a time by
@@ -438,7 +481,8 @@ is live. Once it resolves:
   earlier kickoff breaks ties), Ever-present (most scored predictions) — pure
   pickers in `src/lib/awards.ts` (unit-tested), fed by
   `useAllScoredPredictions` (every player's revealed scored picks in one query,
-  enabled only once the tournament is over).
+  enabled only once the tournament is over). It renders only once that query
+  and the leaderboard have loaded, like the podium.
 - The Leaderboard retitles to **"Final standings"**, `/me` shows a "Tournament
   complete" wrap with the viewer's own best call, the **nav reorders** to
   Matches, Leaderboard, Tournament (+ Me when signed in; `FINALE_NAV` in
@@ -542,7 +586,7 @@ add the origin to the Google OAuth client's **Authorized JavaScript origins**.
 - **Keep the knockout `FEEDERS` bracket map in sync across `src/lib/bracket.ts` and `fill_ready_knockout_slots()` (`0016`)** — same duplication-by-design as scoring (DB fills the slot / lifts the prediction lock; client fills for display). A wrong feeder pairing sends the wrong team into the next round. See "Knockout unlock".
 - **Panels are flat: no outlines and no shadows.** Cards separate from the ground by tone; `--border` is only for hairline row dividers. Reach for `--signal` (turf green) only where the design-system note lists it, and never use flag emoji (use `<Flag>`). See the design-system note above.
 - **The floating top bar's footprint is `--header-h` in `src/index.css`** (the `pt-3` gap plus the `h-14` pill in `Layout.tsx`), and sticky content parks at `--sticky-top` below it. If you change the header's height or gap, update `--header-h` to match. The Matches scroll helpers (`goToDay`, `visibleBand`) measure the bars from the DOM (`data-app-header`, `data-day-strip`, `data-tab-bar`), so keep those attributes.
-- **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
+- **Animate with the motion tokens, not literals** — `duration-[var(--duration-*)]` for transitions, `animation-duration-[var(--duration-*)]` for `animate-in`/`animate-out` entrances (never `duration-*` there: it turns on an undeclared transition of every property), and the `ease-*` utilities (see "Motion & animation"), and run the `/web-animation-design` skill before adding/altering motion. A `motion`-driven (Framer) component is *not* covered by the CSS `prefers-reduced-motion` backstop; gate it with `useReducedMotion()`. A `SegmentedControl` `layoutId` must be unique per mounted instance or the shared-layout pills will jump between controls.
 - **`USERNAME_RE` in `src/pages/Welcome.tsx` mirrors the `username_format` SQL check** (in both `username_format` and `set_username`) — keep them identical if you change the allowed username shape.
 - `matches.id` is the official match number 1..104 (not a surrogate key); `fd_id` is the football-data.org id (nullable; it was filled in by the sync).
 - **Knockout `matches.id` must be the *official* FIFA match number, and those are NOT chronological** — e.g. Brazil–Japan kicks off before Germany–Paraguay yet is officially match 76, not 74. The bracket linkage (`FEEDERS` in `src/components/Bracket.tsx`) is keyed by official number, so a slot holding the wrong fixture makes the *wrong winners meet in the next round*. football-data's feed carries no official number (its `fd_id`s aren't in bracket order, and `matchday` is null for knockouts), so the API seed pins each knockout fixture to its slot via `KNOCKOUT_FD_ID_TO_NUMBER` in `scripts/fd-shared.ts` (source: openfootball `2026--usa/cup_finals.txt`). **Do not number knockout matches by kickoff time** — only the 1..72 group stage is safe to number chronologically. If a knockout fd_id is missing from that map the seed throws (fail loud). Rows seeded before that fix were renumbered once in production via `scripts/sql/2026-knockout-renumber.sql` — a single-transaction, whole-row move (drop predictions FK → shift ids/predictions to a +1000 temp range → remap to official numbers → restore FK) so each row's teams/kickoff/fd_id and the 4 knockout predictions travel together. **Applied 2026-06-28; it's idempotent-ish (no-op on already-correct data) and should not need re-running.**

@@ -9,6 +9,7 @@ import { Flag } from "@/components/Flag"
 import { STAGE_LABEL, STAGE_SHORT } from "@/lib/scoring"
 import { kickoffTime, shortDayHeading, isLive } from "@/lib/format"
 import { FEEDERS, FINAL_ID, THIRD_ID, resolveMatch, winnerSide } from "@/lib/bracket"
+import { entranceClasses, type Entrance } from "@/lib/entrance"
 import type { MatchRow, MatchStage } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -95,8 +96,19 @@ function TeamLine({
 /** Full knockout match card — shown for the focused round (every round in wide
  *  mode). Fixed width so the round's cards line up into a clean column. Carries
  *  date + FT/kickoff and the two team rows with scores; the stage label lives in
- *  the round nav above. */
-function MatchFull({ m, width = FULL_W }: { m: MatchRow; width?: number }) {
+ *  the round nav above. `fadeIn` is read once, at mount: a card that expands
+ *  when you pick a round fades in, while cards on the first load arrive with
+ *  the bracket (its one entrance), and a re-render never replays the fade. */
+function MatchFull({
+  m,
+  width = FULL_W,
+  fadeIn = false,
+}: {
+  m: MatchRow
+  width?: number
+  fadeIn?: boolean
+}) {
+  const [fade] = useState(fadeIn)
   const w = winnerSide(m)
   const finished = m.status === "FINISHED" && m.home_score != null
   const live = isLive(m.kickoff, m.status, m.stage)
@@ -108,7 +120,9 @@ function MatchFull({ m, width = FULL_W }: { m: MatchRow; width?: number }) {
   return (
     <Card
       className={cn(
-        "shrink-0 gap-0 rounded-lg py-0 animate-in fade-in-0 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        "shrink-0 gap-0 rounded-lg py-0",
+        fade &&
+          "animate-in fade-in-0 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic",
         // The Final's slot is ringed in the one bold colour — the marquee node
         // of the tree.
         m.stage === "FINAL" && "shadow-[inset_0_0_0_2px_var(--signal)]"
@@ -247,6 +261,7 @@ function Node({
   conn,
   wide,
   cardW,
+  fadeIn,
   byId,
 }: {
   id: number
@@ -257,6 +272,8 @@ function Node({
   /** Wide mode: every round renders full, at `cardW`. */
   wide: boolean
   cardW: number
+  /** Fade newly expanded cards in (true once the user has picked a round). */
+  fadeIn: boolean
   byId: Map<number, MatchRow>
 }) {
   const m = resolveMatch(byId, id)
@@ -271,7 +288,7 @@ function Node({
           !full && "opacity-50"
         )}
       >
-        {m && (full ? <MatchFull m={m} width={cardW} /> : <MatchMini m={m} />)}
+        {m && (full ? <MatchFull m={m} width={cardW} fadeIn={fadeIn} /> : <MatchMini m={m} />)}
       </div>
     )
   }
@@ -280,11 +297,11 @@ function Node({
     <div className="flex items-stretch">
       <div className="flex flex-col justify-center">
         <div className="flex items-center">
-          <Node id={feeders[0]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
+          <Node id={feeders[0]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} fadeIn={fadeIn} byId={byId} />
           <div className="shrink-0 border-t border-input" style={{ width: stub }} />
         </div>
         <div className="flex items-center">
-          <Node id={feeders[1]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
+          <Node id={feeders[1]} depth={depth - 1} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} fadeIn={fadeIn} byId={byId} />
           <div className="shrink-0 border-t border-input" style={{ width: stub }} />
         </div>
       </div>
@@ -304,7 +321,7 @@ function Node({
           !full && "opacity-50"
         )}
       >
-        {m && (full ? <MatchFull m={m} width={cardW} /> : <MatchMini m={m} />)}
+        {m && (full ? <MatchFull m={m} width={cardW} fadeIn={fadeIn} /> : <MatchMini m={m} />)}
       </div>
     </div>
   )
@@ -319,8 +336,10 @@ function Node({
  *  their feeder matches finish (winners propagated client-side via `resolveMatch`,
  *  ahead of football-data assigning the slot upstream). The third-place play-off
  *  is fed by the SF losers, so it sits outside the winners' tree and is shown on
- *  its own below. */
-export function Bracket() {
+ *  its own below. `entrance` (src/lib/entrance.ts) is how it arrives: the
+ *  slide-up on the page's first load, or the lighter entrance after a tab
+ *  switch. */
+export function Bracket({ entrance = "cascade" }: { entrance?: Entrance }) {
   const query = useMatches()
   const matches = query.data
   const isLoading = query.isLoading
@@ -407,7 +426,17 @@ export function Bracket() {
   const third = resolveMatch(byId, THIRD_ID)
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic">
+    // The bracket's one entrance; its cards fade only when a picked round
+    // expands them (MatchFull's `fadeIn`).
+    <div
+      className={cn(
+        "flex flex-col gap-4",
+        entranceClasses(
+          entrance,
+          "animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic"
+        )
+      )}
+    >
       {wide ? (
         // Wide mode labels each column instead of offering a selector.
         <div
@@ -435,7 +464,7 @@ export function Bracket() {
       )}
 
       <div ref={setWrap} className="overflow-x-auto">
-        <Node id={FINAL_ID} depth={4} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} byId={byId} />
+        <Node id={FINAL_ID} depth={4} activeDepth={activeDepth} stub={stub} conn={conn} wide={wide} cardW={cardW} fadeIn={chosen != null} byId={byId} />
       </div>
 
       {third && (

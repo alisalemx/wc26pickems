@@ -9,9 +9,15 @@ import { cn } from "@/lib/utils"
 // `layoutId` element can mount on it. This context mirrors Radix's selected
 // value out to the triggers (works for both controlled and uncontrolled Tabs),
 // and carries a per-instance `layoutId` so multiple tab strips on one page
-// each animate their own pill instead of sharing one.
-const TabsCtx = React.createContext<{ value?: string; layoutId: string }>({
+// each animate their own pill instead of sharing one. `keyboard` records
+// whether the last input was a key press, so the pill can snap on arrow keys.
+const TabsCtx = React.createContext<{
+  value?: string
+  layoutId: string
+  keyboard: boolean
+}>({
   layoutId: "tabs",
+  keyboard: false,
 })
 
 function Tabs({
@@ -20,7 +26,11 @@ function Tabs({
   defaultValue,
   onValueChange,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: Omit<React.ComponentProps<typeof TabsPrimitive.Root>, "onValueChange"> & {
+  /** `keyboard` is true when the arrow keys made the change, so a caller can
+   *  bring the new panel in without animating it (see src/lib/entrance.ts). */
+  onValueChange?: (value: string, details: { keyboard: boolean }) => void
+}) {
   const layoutId = React.useId()
   // Mirror selection for the pill. Radix stays the source of truth for actual
   // tab switching — we only track the value to know where to draw the pill.
@@ -28,9 +38,19 @@ function Tabs({
     value ?? defaultValue
   )
   const current = value ?? internal
+  // Radix selects a tab as the arrow keys move focus, so a key press can
+  // change tabs several times a second. The pill snaps for those (motion that
+  // trails behind the focus feels slow) and glides only for a pointer. The
+  // state drives the pill; the ref is what the change handler reads.
+  const [keyboard, setKeyboard] = React.useState(false)
+  const keyboardRef = React.useRef(false)
+  const setInput = (fromKeyboard: boolean) => {
+    keyboardRef.current = fromKeyboard
+    setKeyboard(fromKeyboard)
+  }
 
   return (
-    <TabsCtx.Provider value={{ value: current, layoutId }}>
+    <TabsCtx.Provider value={{ value: current, layoutId, keyboard }}>
       <TabsPrimitive.Root
         data-slot="tabs"
         className={cn("flex flex-col gap-2", className)}
@@ -38,8 +58,10 @@ function Tabs({
         defaultValue={defaultValue}
         onValueChange={(v) => {
           if (value === undefined) setInternal(v) // uncontrolled: track it
-          onValueChange?.(v)
+          onValueChange?.(v, { keyboard: keyboardRef.current })
         }}
+        onKeyDownCapture={() => setInput(true)}
+        onPointerDownCapture={() => setInput(false)}
         {...props}
       />
     </TabsCtx.Provider>
@@ -68,7 +90,7 @@ function TabsTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
-  const { value: activeValue, layoutId } = React.useContext(TabsCtx)
+  const { value: activeValue, layoutId, keyboard } = React.useContext(TabsCtx)
   const reduceMotion = useReducedMotion()
   const isActive = activeValue === value
 
@@ -92,9 +114,13 @@ function TabsTrigger({
           // falls into place on its own.
           layoutDependency={activeValue}
           aria-hidden
-          className="bg-primary absolute inset-0 rounded-full"
+          className="bg-primary absolute inset-0"
+          // Inline, not `rounded-full`: Motion only corrects a radius it can
+          // read from `style`, and the pill stretches between tabs of
+          // different widths, which would squash its round ends mid-glide.
+          style={{ borderRadius: 9999 }}
           transition={
-            reduceMotion
+            reduceMotion || keyboard
               ? { duration: 0 }
               : { type: "spring", duration: 0.4, bounce: 0.2 }
           }
@@ -113,7 +139,9 @@ function TabsContent({
     <TabsPrimitive.Content
       data-slot="tabs-content"
       className={cn(
-        "flex-1 outline-none data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:fill-mode-backwards data-[state=active]:duration-[var(--duration-base)] data-[state=active]:ease-out-cubic",
+        // No entrance of its own: each panel's cards already animate in, and
+        // a fade here would stack on theirs.
+        "flex-1 outline-none",
         className
       )}
       {...props}

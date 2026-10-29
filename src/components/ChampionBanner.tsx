@@ -18,12 +18,6 @@ import { ordinal } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MatchRow } from "@/lib/types"
 
-/** The tw-animate idiom for each cascading element: fade/slide in, delayed
- *  by the inline `--i` index via the shared .stagger-in utility (backwards
- *  fill holds the hidden start frame during the delay). */
-const LINE_IN =
-  "animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
-
 /** Fits one line of display text to its box's width: measures the word at its
  *  current size and scales it so it spans the box's content width exactly,
  *  capped at `max` px. Width scales linearly with font size here (the tracking
@@ -60,7 +54,8 @@ function useFitText(text: string | undefined, max: number) {
  *  panel with the two-tone "World champions" heading and the winner's
  *  flag, over the team's name set as one huge word that bleeds off the bottom
  *  edge. The word is measured and fitted to the panel width (useFitText), so
- *  any name runs edge to edge whatever its letters. */
+ *  any name runs edge to edge whatever its letters. The panel is the one
+ *  entrance; its contents arrive with it. */
 export function ChampionBanner({
   matches,
 }: {
@@ -80,7 +75,7 @@ export function ChampionBanner({
   return (
     <section
       aria-label={`${champion.team} are world champions`}
-      className="@container relative isolate overflow-hidden rounded-2xl bg-signal text-signal-foreground animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-quint"
+      className="@container relative isolate overflow-hidden rounded-2xl bg-signal text-signal-foreground animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-quint"
     >
       <div className="flex items-start justify-between gap-4 p-5 sm:p-7">
         <SignHeading
@@ -89,24 +84,14 @@ export function ChampionBanner({
           title="World"
           sub="champions"
           subClassName="text-signal-foreground/65"
-          className={LINE_IN}
         />
-        <Flag
-          code={champion.code}
-          size="xl"
-          className={cn("sm:size-20", LINE_IN)}
-        />
+        <Flag code={champion.code} size="xl" className="sm:size-20" />
       </div>
       <div
         ref={boxRef}
         aria-hidden
-        className={cn(
-          "-mt-2 -mb-[0.09em] px-3 leading-[0.74] font-bold tracking-display whitespace-nowrap select-none sm:px-5",
-          LINE_IN
-        )}
-        style={
-          { fontSize: size ? `${size}px` : estimate, "--i": 1 } as CSSProperties
-        }
+        className="-mt-2 -mb-[0.09em] px-3 leading-[0.74] font-bold tracking-display whitespace-nowrap select-none sm:px-5"
+        style={{ fontSize: size ? `${size}px` : estimate }}
       >
         <span ref={wordRef} className="inline-block">
           {champion.team}
@@ -126,7 +111,7 @@ const BAR_TONE = ["bg-signal", "bg-sunk", "bg-sunk"]
 /** The tw-animate idiom for a podium column's content, which reveals once its
  *  bar has finished filling. */
 const CONTENT_IN =
-  "animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic"
+  "animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic"
 
 /** When a column's content may enter: its bar's stagger delay plus the bar's
  *  fill time. MUST mirror .podium-bar in index.css (delay
@@ -183,7 +168,7 @@ export function LeaguePodium({
   return (
     <Card
       className={cn(
-        "gap-5 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        "gap-5 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic",
         className
       )}
     >
@@ -216,9 +201,11 @@ export function LeaguePodium({
                 )}
                 style={contentDelay(enter)}
               >
+                {/* The column's press tint lands on the name, padded like a
+                    text link's, so a tap shows on phones (which get no hover). */}
                 <span
                   title={`@${row.username}`}
-                  className="max-w-full truncate text-[15px] font-bold tracking-tight underline-offset-4 decoration-1 group-hover:underline"
+                  className="-mx-1 max-w-full truncate rounded-sm px-1 text-[15px] font-bold tracking-tight underline-offset-4 decoration-1 transition-colors duration-[var(--duration-fast)] group-hover:underline group-active:bg-foreground/10"
                 >
                   @{row.username}
                 </span>

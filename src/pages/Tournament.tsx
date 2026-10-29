@@ -22,9 +22,13 @@ import {
   type PositionLookup,
   type Standing,
 } from "@/lib/standings"
+import { entranceClasses, switchEntrance, type Entrance } from "@/lib/entrance"
 import type { MatchRow } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
-function Groups() {
+/** The group tables. `entrance` is how its cards arrive: the cascade on the
+ *  page's first load, or the lighter switch entrance (src/lib/entrance.ts). */
+function Groups({ entrance }: { entrance: Entrance }) {
   const { data: matches, isLoading: matchesLoading } = useMatches()
   const { data: standings, isLoading: standingsLoading } = useStandings()
 
@@ -128,7 +132,13 @@ function Groups() {
         {groups.map((g, i) => (
           <Card
             key={g.name}
-            className="gap-2 pb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+            className={cn(
+              "gap-2 pb-3",
+              entranceClasses(
+                entrance,
+                "animate-in fade-in-0 slide-in-from-bottom-2 animation-duration-[var(--duration-base)] ease-out-cubic stagger-in"
+              )
+            )}
             style={{ "--i": i } as CSSProperties}
           >
             <CardHeader>
@@ -258,6 +268,8 @@ export function Tournament() {
   // effect) means the warm-cache case (the matches query is usually already
   // populated from the Matches page) lands on the right tab with no flicker.
   const [chosen, setChosen] = useState<string | null>(null)
+  // The first tab shown cascades in; a later switch uses the lighter entrance.
+  const [entrance, setEntrance] = useState<Entrance>("cascade")
   const tab =
     chosen ??
     (matches ? (reachedKnockout(matches) ? "bracket" : "groups") : undefined)
@@ -273,16 +285,23 @@ export function Tournament() {
   }
 
   return (
-    <Tabs value={tab} onValueChange={setChosen} className="gap-4">
+    <Tabs
+      value={tab}
+      onValueChange={(v, { keyboard }) => {
+        setChosen(v)
+        setEntrance(switchEntrance(keyboard))
+      }}
+      className="gap-4"
+    >
       <TabsList className="w-full md:w-80">
         <TabsTrigger value="groups">Groups</TabsTrigger>
         <TabsTrigger value="bracket">Bracket</TabsTrigger>
       </TabsList>
       <TabsContent value="groups">
-        <Groups />
+        <Groups entrance={entrance} />
       </TabsContent>
       <TabsContent value="bracket">
-        <Bracket />
+        <Bracket entrance={entrance} />
       </TabsContent>
     </Tabs>
   )

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import {
+  useAllScoredPredictions,
+  useLeaderboard,
   useMatches,
   useMyPredictions,
   useUpsertPrediction,
@@ -20,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dayHeading, dayKey, isPredictionLocked, shortDate } from "@/lib/format"
 import { resolveKnockoutTeams, tournamentChampion } from "@/lib/bracket"
 import { STAGE_MULTIPLIER } from "@/lib/scoring"
+import { switchEntrance, type Entrance } from "@/lib/entrance"
 import type { MatchRow, MatchStage } from "@/lib/types"
 
 const FILTERS: { value: string; label: string; stages: MatchStage[] }[] = [
@@ -116,6 +119,17 @@ export function Matches() {
     () => tournamentChampion(matches ?? []) != null,
     [matches]
   )
+  // The finale row (podium + Hall of fame) needs the leaderboard and every
+  // scored pick. Fetch both with the page, alongside matches, rather than once
+  // the matches show the tournament is over: that wait landed the row ~430ms
+  // after the list had appeared, shoving it down (618px on a phone). The page
+  // keeps its skeleton until all of it is in, then builds in one go. The
+  // tournament is over for good, so the row is always shown.
+  const finaleLeaderboard = useLeaderboard()
+  const finaleScored = useAllScoredPredictions(true)
+  const loading =
+    isLoading ||
+    (over && (finaleLeaderboard.isPending || finaleScored.isPending))
   // From the Round of 16 on (the first points-multiplied round), the reminder
   // above the list switches from the penalty note to a "this round is worth
   // more" note that tracks the stage the tournament has reached. GROUP and R32
@@ -186,8 +200,13 @@ export function Matches() {
   // the footer lands on the viewport's bottom edge. It's held only after a
   // pinned switch: otherwise a short day ends at its last card.
   const [reservedOffset, setReservedOffset] = useState<number | null>(null)
+  // How the list's cards arrive (src/lib/entrance.ts). Only the page's first
+  // load cascades: switching days, views, or stage filters is repeated, so
+  // later cards fade in, or appear at once when the arrow keys switched tabs.
+  const [listEntrance, setListEntrance] = useState<Entrance>("cascade")
   function goToDay(key: string) {
     setSelectedDay(key)
+    setListEntrance("fade")
     const el = dayViewRef.current
     const strip = el?.firstElementChild
     if (!el || !strip) return
@@ -212,6 +231,7 @@ export function Matches() {
   function goToMatch(m: MatchRow) {
     if (view === "day") setSelectedDay(dayKey(m.kickoff))
     else setChosenFilter(STAGE_TO_FILTER[m.stage])
+    setListEntrance("fade")
     setHighlightId(m.id)
   }
   useEffect(() => {
@@ -273,6 +293,7 @@ export function Matches() {
         key={m.id}
         match={m}
         index={index}
+        entrance={listEntrance}
         prediction={predictions?.[m.id]}
         ownUserId={userId}
         highlighted={m.id === highlightId}
@@ -309,39 +330,42 @@ export function Matches() {
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      <ChampionBanner matches={matches} />
-      {over && (
+      {!loading && <ChampionBanner matches={matches} />}
+      {!loading && over && (
         <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
           <LeaguePodium matches={matches} />
           <LeagueAwards matches={matches} />
         </div>
       )}
-      <Tabs
-        value={view}
-        onValueChange={(v) => {
-          setView(v as View)
-          setReservedOffset(null)
-        }}
-        className="mt-2"
-      >
-        <TabsList className="flex w-full md:w-80">
-          <TabsTrigger value="day" className="flex-1">
-            By day
-          </TabsTrigger>
-          <TabsTrigger value="all" className="flex-1">
-            All matches
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {!loading && (
+        <Tabs
+          value={view}
+          onValueChange={(v, { keyboard }) => {
+            setView(v as View)
+            setReservedOffset(null)
+            setListEntrance(switchEntrance(keyboard))
+          }}
+          className="mt-2"
+        >
+          <TabsList className="flex w-full md:w-80">
+            <TabsTrigger value="day" className="flex-1">
+              By day
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex-1">
+              All matches
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
-      {isLoading && <ListSkeleton count={4} itemClassName="h-28 w-full" />}
+      {loading && <ListSkeleton count={4} itemClassName="h-28 w-full" />}
 
-      {!isLoading && days.length === 0 && (
+      {!loading && days.length === 0 && (
         <EmptyState>No matches yet. Seed the schedule to get started.</EmptyState>
       )}
 
       {/* Day-by-day view */}
-      {!isLoading && view === "day" && current && (
+      {!loading && view === "day" && current && (
         // The reserved height (see goToDay) uses dvh so it tracks mobile
         // Safari's toolbar as it collapses and expands.
         <div
@@ -390,9 +414,15 @@ export function Matches() {
       )}
 
       {/* All-matches view */}
-      {!isLoading && view === "all" && days.length > 0 && (
+      {!loading && view === "all" && days.length > 0 && (
         <div className="flex flex-col gap-4">
-          <Tabs value={filter} onValueChange={setChosenFilter}>
+          <Tabs
+            value={filter}
+            onValueChange={(v, { keyboard }) => {
+              setChosenFilter(v)
+              setListEntrance(switchEntrance(keyboard))
+            }}
+          >
             <TabsList className="flex w-full md:w-fit">
               {FILTERS.map((f) => (
                 <TabsTrigger key={f.value} value={f.value} className="flex-1">

@@ -18,7 +18,7 @@ export function AuthShell({
     <div className="flex min-h-dvh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-3">
         <section
-          className="@container relative isolate overflow-hidden rounded-2xl bg-signal px-6 pt-6 text-signal-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in"
+          className="@container relative isolate overflow-hidden rounded-2xl bg-signal px-6 pt-6 text-signal-foreground animate-in fade-in-0 slide-in-from-bottom-2 animation-duration-[var(--duration-base)] ease-out-quint stagger-in"
           style={{ "--i": 0 } as CSSProperties}
         >
           <SignHeading
@@ -37,7 +37,7 @@ export function AuthShell({
           </p>
         </section>
         <div
-          className="flex flex-col gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in"
+          className="flex flex-col gap-3 animate-in fade-in-0 slide-in-from-bottom-2 animation-duration-[var(--duration-base)] ease-out-quint stagger-in"
           style={{ "--i": 1 } as CSSProperties}
         >
           {children}

@@ -7,9 +7,13 @@
   --radius: 0.75rem;
 
   /* Motion durations (course guidance — keep UI < 300ms; exits ~20% faster).
-     Plain custom properties (not @theme) so they're never tree-shaken; consumed
-     via duration-[var(--duration-*)] utilities. Theme-independent. */
-  --duration-fast: 130ms;  /* micro: chip press, badge pop */
+     Plain custom properties (not @theme) so they're never tree-shaken.
+     Transitions consume them via duration-[var(--duration-*)]; animate-in /
+     animate-out entrances via animation-duration-[var(--duration-*)], because
+     duration-* also sets transition-duration, and with no transition-property
+     declared that quietly animates every property (font size, margins...).
+     Theme-independent. */
+  --duration-fast: 130ms;  /* micro: chip press, quick fades */
   --duration-base: 240ms;  /* standard: content entrance, collapse */
   --duration-slow: 280ms;  /* modals/drawers */
   --duration-exit: 160ms;  /* exits ~20% faster */
@@ -155,6 +159,8 @@
      referenced via duration-[var(--duration-*)]. Hover/color stays on `ease`. */
   --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);     /* livelier card entrance */
+  /* Expand/collapse a user just tapped: moves at once, settles softly. */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1); /* collapse / on-screen morph */
 }
 
@@ -189,20 +195,22 @@
 }
 
 /* The finale podium's bars (ChampionBanner, its only user): each bar fills
-   upward from the floor as its column enters. Transform-only (scaleY from 0,
-   origin bottom) so it never triggers layout; the column's inline --i is
+   upward from the floor as its column enters. A clip-path reveal rather than
+   a scaleY, so the bar's rounded top (rounded-t-xl, matched by the `round`
+   radii here) keeps its true shape while it rises instead of squashing into a
+   flat oval, and it never triggers layout. The column's inline --i is
    inherited, so the same stagger that cascades the columns delays each fill,
-   plus a beat so the bar rises as its column lands. The rank bullet riding the
-   bar is a SIBLING of this element, not a child — a child would squash with
-   the scale — and fades in separately after. `both` fill holds scaleY(0)
-   during the delay and rests at full height; under reduced motion the global
+   plus a beat so the bar rises as its column lands. The rank number riding
+   the bar is a SIBLING of this element, not a child, so the clip never cuts
+   it, and it fades in separately after. `both` fill holds the bar hidden
+   during the delay and rests fully shown; under reduced motion the global
    backstop collapses the play to an instant at full height. */
 @keyframes podium-fill {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
+  from { clip-path: inset(100% 0 0 0 round var(--podium-radius) var(--podium-radius) 0 0); }
+  to   { clip-path: inset(0 round var(--podium-radius) var(--podium-radius) 0 0); }
 }
 .podium-bar {
-  transform-origin: bottom;
+  --podium-radius: calc(var(--radius) + 4px); /* rounded-t-xl */
   /* Slower than the UI's base beat on purpose: a rare one-shot reveal, and
      the fill reads as the podium being built rather than a snap. */
   animation: podium-fill calc(var(--duration-base) * 1.75) var(--ease-out-cubic)

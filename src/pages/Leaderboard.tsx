@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils"
 const COLS =
   "grid grid-cols-[2rem_minmax(0,1fr)_3rem_4.25rem_3.5rem] items-center gap-2 sm:grid-cols-[2.25rem_minmax(0,1fr)_4.5rem_5rem_4.5rem] sm:gap-3"
 
+// The --ease-out-quint token (index.css), for the rows' Motion entrance.
+const EASE_OUT_QUINT = [0.23, 1, 0.32, 1] as const
+
 export function Leaderboard() {
   const { session } = useAuth()
   const { data, isLoading } = useLeaderboard()
@@ -113,12 +116,16 @@ export function Leaderboard() {
                                 duration: 0.5,
                                 bounce: 0.15,
                               },
+                              // An explicit ease: a duration on its own makes
+                              // Motion fall back to ease-in-out.
                               opacity: {
                                 duration: 0.18,
+                                ease: EASE_OUT_QUINT,
                                 delay: Math.min(i, 8) * 0.03,
                               },
                               y: {
                                 duration: 0.18,
+                                ease: EASE_OUT_QUINT,
                                 delay: Math.min(i, 8) * 0.03,
                               },
                             }

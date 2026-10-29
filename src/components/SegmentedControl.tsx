@@ -57,7 +57,9 @@ export function SegmentedControl<T extends string | number>({
               <motion.span
                 layoutId={layoutId}
                 aria-hidden
-                className="absolute inset-0 rounded-full bg-primary"
+                className="absolute inset-0 bg-primary"
+                // Inline so Motion can correct it mid-glide (see TabsTrigger).
+                style={{ borderRadius: 9999 }}
                 transition={
                   glide
                     ? { type: "spring", duration: 0.4, bounce: 0.2 }

@@ -53,11 +53,11 @@ export function PredictReminder({
   const isFinal = next.id === FINAL_ID
 
   return (
-    // The entrance lives on a wrapper: `duration-*`/`ease-*` utilities set the
-    // transition and the animate-in timing alike, so keeping them on one
-    // element would make the hover transition and the entrance fight over the
-    // same custom properties.
-    <div className="animate-in fade-in-0 slide-in-from-top-1 duration-[var(--duration-base)] ease-out-cubic">
+    // The entrance lives on a wrapper: `ease-*` utilities set the transition
+    // and the animate-in easing alike, so keeping them on one element would
+    // make the hover transition and the entrance fight over the same custom
+    // property.
+    <div className="animate-in fade-in-0 slide-in-from-top-1 animation-duration-[var(--duration-base)] ease-out-cubic">
       {/* A signage numbered panel: the count in a bullet, the destination,
           and an arrow in a circle. */}
       <button

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { ChevronDown, Lock, CheckCircle2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
@@ -22,8 +22,18 @@ import {
   useTeamForm,
   useTournamentForm,
 } from "@/hooks/queries"
+import { entranceClasses, type Entrance } from "@/lib/entrance"
 import type { MatchRow, PredictionRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+// The --ease-out-quart token (index.css), for the Picks panel's Motion height.
+const EASE_OUT_QUART = [0.25, 1, 0.5, 1] as const
+
+/** How long a height change takes, in seconds: proportional to the distance
+ *  (500px a second), kept between 150 and 270ms so a small change stays quick
+ *  and a big one never drags. */
+const heightDuration = (delta: number) =>
+  Math.min(Math.max(delta / 500, 0.15), 0.27)
 
 interface Props {
   match: MatchRow
@@ -33,6 +43,11 @@ interface Props {
   saving?: boolean
   /** Position in the list — drives the entrance stagger via the --i CSS var. */
   index?: number
+  /** How the card arrives (see src/lib/entrance.ts): the slide-up cascade on
+   *  the list's first load, a quick fade after a pointer switch, or nothing
+   *  after an arrow-key switch. Read once, at mount, so a card that stays on
+   *  screen through a switch never replays it. */
+  entrance?: Entrance
   /** Flash the one-shot gold attention ring (the reminder banner's "Predict
    *  next" CTA just jumped here). */
   highlighted?: boolean
@@ -45,8 +60,10 @@ export function MatchCard({
   onSave,
   saving,
   index = 0,
+  entrance = "cascade",
   highlighted,
 }: Props) {
+  const [arrival] = useState(entrance)
   const signedIn = ownUserId != null
   const reduceMotion = useReducedMotion()
   const locked = isPredictionLocked(match)
@@ -167,7 +184,11 @@ export function MatchCard({
     <Card
       id={`match-${match.id}`}
       className={cn(
-        "gap-0 overflow-hidden py-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--duration-base)] ease-out-quint stagger-in",
+        "gap-0 overflow-hidden py-0",
+        entranceClasses(
+          arrival,
+          "animate-in fade-in-0 slide-in-from-bottom-2 animation-duration-[var(--duration-base)] ease-out-quint stagger-in"
+        ),
         highlighted && "match-highlight"
       )}
       style={{ "--i": index } as CSSProperties}
@@ -374,21 +395,9 @@ export function MatchCard({
               // match repeats the same "Worth up to 3 pts".
               `Worth up to ${maxPoints(match.stage)} pts`
             ) : null)}
-          {finished &&
-            own &&
-            (own.result === "EXACT" ? (
-              // Celebrate only the current user's exact hit — a rare, personal
-              // moment. Other people's exacts (RevealedPicks) stay calm.
-              <motion.span
-                initial={reduceMotion ? false : { scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", duration: 0.5, bounce: 0.35 }}
-              >
-                <ResultBadge result={own.result} points={own.points} />
-              </motion.span>
-            ) : (
-              <ResultBadge result={own.result} points={own.points} />
-            ))}
+          {finished && own && (
+            <ResultBadge result={own.result} points={own.points} />
+          )}
         </div>
 
         <div>
@@ -415,7 +424,7 @@ export function MatchCard({
               Picks
               <ChevronDown
                 className={cn(
-                  "size-4 transition-transform duration-[var(--duration-base)] ease-in-out-quart",
+                  "size-4 transition-transform duration-[var(--duration-base)] ease-out-quart",
                   expanded && "rotate-180"
                 )}
               />
@@ -426,12 +435,14 @@ export function MatchCard({
       )}
 
       {locked && (
-        // Grid-rows 0fr→1fr collapse animates only the track (GPU-friendly).
-        // RevealedPicks mounts on first open (lazy query) and then stays mounted
-        // so collapsing animates the track shrinking instead of vanishing.
+        // Grid-rows 0fr→1fr collapse animates the track to the content's height
+        // (a layout animation, fine for an occasional tap). ease-out-quart so it
+        // moves the moment you tap. RevealedPicks mounts on first open (lazy
+        // query) and then stays mounted so collapsing animates the track
+        // shrinking instead of vanishing.
         <div
           id={`picks-${match.id}`}
-          className="grid transition-[grid-template-rows] duration-[var(--duration-base)] ease-in-out-quart"
+          className="grid transition-[grid-template-rows] duration-[var(--duration-base)] ease-out-quart"
           style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
         >
           <div className="overflow-hidden">
@@ -549,13 +560,50 @@ function RevealedPicks({
   ownUserId?: string
 }) {
   const { data, isLoading } = useRevealedPredictions(match.id, true)
+  const reduceMotion = useReducedMotion()
   const finished =
     match.status === "FINISHED" &&
     match.home_score != null &&
     match.away_score != null
 
+  // The panel opens on "Loading picks…" and the list lands a moment later,
+  // which used to grow the panel (and shove every card below) in one frame.
+  // So the panel's height follows its content: the first measure applies
+  // instantly (the card's grid-rows expand handles the opening), and each
+  // change after that animates, with a duration scaled to how far it moves.
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [box, setBox] = useState<{ height: number; duration: number } | null>(
+    null
+  )
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      const height = entry.borderBoxSize[0].blockSize
+      setBox((prev) =>
+        prev?.height === height
+          ? prev
+          : {
+              height,
+              duration: prev ? heightDuration(Math.abs(height - prev.height)) : 0,
+            }
+      )
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
-    <div className="bg-muted/60">
+    <motion.div
+      className="overflow-hidden bg-muted/60"
+      initial={false}
+      animate={{ height: box?.height ?? "auto" }}
+      transition={{
+        duration: reduceMotion ? 0 : (box?.duration ?? 0),
+        ease: EASE_OUT_QUART,
+      }}
+    >
+      <div ref={contentRef}>
       {/* Separator sits at the very top edge so it lands on the white→muted
           boundary rather than floating inside the muted block. */}
       <Separator />
@@ -603,6 +651,7 @@ function RevealedPicks({
         })}
       </ul>
       </div>
-    </div>
+      </div>
+    </motion.div>
   )
 }

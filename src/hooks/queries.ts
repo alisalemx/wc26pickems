@@ -130,7 +130,9 @@ export function usePlayerScoredPredictions(userId: string | undefined) {
  *  awards on the final-standings Leaderboard. RLS (security_invoker) still
  *  applies: rows for other players are only visible once their match has
  *  kicked off. `enabled` lets the caller keep this off until the tournament
- *  is actually over (see tournamentChampion), so it isn't fetched mid-season. */
+ *  is actually over (see tournamentChampion), so it isn't fetched mid-season.
+ *  The Matches page starts it with the page instead, so the finale row isn't
+ *  left waiting on the matches query (the tournament is over for good). */
 export function useAllScoredPredictions(enabled: boolean) {
   return useQuery({
     queryKey: ["scored-predictions", "all"],

@@ -29,7 +29,7 @@ export function RankSummary({
   return (
     <Card
       className={cn(
-        "gap-6 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        "gap-6 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic",
         className
       )}
     >
@@ -97,7 +97,7 @@ export function PickRow({
 }) {
   return (
     <li
-      className="flex items-center justify-between gap-3 py-3 animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-base)] ease-out-cubic stagger-in"
+      className="flex items-center justify-between gap-3 py-3 animate-in fade-in-0 slide-in-from-bottom-1 animation-duration-[var(--duration-base)] ease-out-cubic stagger-in"
       style={{ "--i": index } as CSSProperties}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
@@ -125,7 +125,9 @@ export function PickRow({
 }
 
 /** The panel that holds the settled picks: a heading, the filter control, and
- *  the hairline-divided rows, or `empty` in their place when there are none. */
+ *  the hairline-divided rows, or `empty` in their place when there are none.
+ *  The panel itself stays still: its rows cascade in (PickRow), and a second
+ *  entrance here would stack on theirs. */
 export function SettledList({
   title,
   filter,
@@ -140,12 +142,7 @@ export function SettledList({
   className?: string
 }) {
   return (
-    <Card
-      className={cn(
-        "gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
-        className
-      )}
-    >
+    <Card className={cn("gap-4", className)}>
       <CardContent className="flex flex-col gap-4">
         <SignHeading title={title} size="md" as="h2" />
         {filter}

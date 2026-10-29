@@ -49,7 +49,7 @@ export function PenaltyNote() {
       }}
     >
       <div className="overflow-hidden">
-        <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-12 duration-[var(--duration-base)] ease-out-cubic">
+        <Alert className="animate-in fade-in-0 slide-in-from-top-1 pr-12 animation-duration-[var(--duration-base)] ease-out-cubic">
           <Info />
           <AlertDescription>
             <p>

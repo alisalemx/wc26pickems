@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
 import { Gem, Goal, Infinity as InfinityIcon } from "lucide-react"
 import { useAllScoredPredictions, useLeaderboard } from "@/hooks/queries"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -24,15 +24,14 @@ function handles(usernames: string[]): string {
 
 /** One award row: a small icon, the award's name, who won it and the stat
  *  behind it (numbers are joined to their unit with a no-break space, so a
- *  wrap never strands "104" at the end of a line). Cascades in via .stagger-in (`--i` set by the caller). */
+ *  wrap never strands "104" at the end of a line). It arrives with the card,
+ *  which is the one entrance. */
 function AwardRow({
-  i,
   icon: Icon,
   name,
   recipients,
   detail,
 }: {
-  i: number
   icon: typeof Gem
   name: string
   recipients: string
@@ -40,8 +39,7 @@ function AwardRow({
 }) {
   return (
     <div
-      className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic stagger-in flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0"
-      style={{ "--i": i } as CSSProperties}
+      className="flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
         <Icon className="size-5" aria-hidden="true" />
@@ -75,8 +73,10 @@ export function LeagueAwards({
     [matches]
   )
   const enabled = champion != null
-  const { data: leaderboard } = useLeaderboard(enabled)
-  const { data: allScored } = useAllScoredPredictions(enabled)
+  const { data: leaderboard, isPending: leaderboardPending } =
+    useLeaderboard(enabled)
+  const { data: allScored, isPending: scoredPending } =
+    useAllScoredPredictions(enabled)
 
   const sharpshooters = useMemo(
     () => pickSharpshooters(leaderboard ?? []),
@@ -96,14 +96,19 @@ export function LeagueAwards({
     return pickBestSingleCall(named)
   }, [allScored, leaderboard])
 
-  if (!enabled) return null
+  // Wait for both queries, as the podium does: rendering earlier showed
+  // "Awards aren't in yet" until they landed, and on the match list the card
+  // sat in the podium's column, then jumped across when the podium arrived.
+  // This way its entrance plays once, with the real awards. (A failed query
+  // stops pending, so the card still falls back to the empty state.)
+  if (!enabled || leaderboardPending || scoredPending) return null
   const empty =
     sharpshooters.length === 0 && !bestCall && everPresent.length === 0
 
   return (
     <Card
       className={cn(
-        "gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-[var(--duration-base)] ease-out-cubic",
+        "gap-4 animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards animation-duration-[var(--duration-base)] ease-out-cubic",
         className
       )}
     >
@@ -117,7 +122,6 @@ export function LeagueAwards({
           <>
             {sharpshooters.length > 0 && (
               <AwardRow
-                i={0}
                 icon={Goal}
                 name="Sharpshooter"
                 recipients={handles(sharpshooters.map((s) => s.username))}
@@ -128,7 +132,6 @@ export function LeagueAwards({
             )}
             {bestCall && (
               <AwardRow
-                i={1}
                 icon={Gem}
                 name="Best single call"
                 recipients={`@${bestCall.username}`}
@@ -137,7 +140,6 @@ export function LeagueAwards({
             )}
             {everPresent.length > 0 && (
               <AwardRow
-                i={2}
                 icon={InfinityIcon}
                 name="Ever-present"
                 recipients={handles(everPresent.map((s) => s.username))}
